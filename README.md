@@ -1,2 +1,39 @@
-# sistema_hospital
-Aplicación web para facilitar la gestión de un hospital privado
+# Sistema Hospitalario Privado
+
+Backend para un sistema hospitalario privado basado en PostgreSQL y casos de uso definidos para:
+- usuarios y roles
+- personal y especialidades
+- pacientes y seguros
+- citas
+- admisiones
+- triage
+- atenciones médicas
+- órdenes médicas
+- laboratorio
+- imágenes
+- medicamentos
+- pagos
+- bitácora
+
+## Objetivo
+Construir una API REST mantenible, por fases, con seguridad y frontend separados en planes posteriores.
+
+## Stack objetivo
+- Java 21
+- Spring Boot
+- Spring Data JPA
+- PostgreSQL
+- Maven
+
+## Base de datos
+El modelo base está en:
+- `hospital_postgresql_15_tablas_es.sql`
+
+## Estrategia de trabajo con agente
+1. Analizar contexto
+2. Crear plan
+3. Ejecutar por fases
+4. Revisar compilación
+5. Probar endpoints
+6. Agregar seguridad
+7. Construir frontend
