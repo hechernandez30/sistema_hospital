@@ -1,0 +1,95 @@
+<mat-card class="page-card">
+  <mat-card-header>
+    <mat-icon mat-card-avatar class="page-avatar">medical_services</mat-icon>
+    <mat-card-title>Atenciones médicas</mat-card-title>
+    <mat-card-subtitle>Consultas y evolución — Hospital H&amp;H</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="toolbar-row">
+      @if (canMutate) {
+        <button mat-flat-button color="primary" type="button" (click)="openCreate()">
+          <mat-icon>add</mat-icon>
+          Nueva atención
+        </button>
+      }
+      <mat-form-field appearance="outline" class="adm-field" subscriptSizing="dynamic">
+        <mat-label>Filtrar por ID paciente</mat-label>
+        <input matInput [(ngModel)]="filterPatientId" inputmode="numeric" placeholder="Opcional" />
+      </mat-form-field>
+      <button mat-stroked-button type="button" (click)="applyPatientFilter()">Aplicar</button>
+      <button mat-button type="button" (click)="clearPatientFilter()">Limpiar filtro</button>
+      <span class="spacer"></span>
+      <mat-form-field appearance="outline" class="filter-field" subscriptSizing="dynamic">
+        <mat-label>Buscar en tabla</mat-label>
+        <input matInput (keyup)="applyTextFilter($any($event.target).value)" placeholder="Texto libre" />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+
+    @if (loading) {
+      <div class="loading">
+        <mat-progress-spinner diameter="40" mode="indeterminate" />
+      </div>
+    } @else if (dataSource.data.length === 0) {
+      <div class="hh-table-empty">
+        <mat-icon>medical_information</mat-icon>
+        <p class="hh-table-empty-title">No hay atenciones médicas</p>
+        <p class="hh-table-empty-sub">
+          @if (canMutate) {
+            Registre una atención o ajuste el filtro por paciente.
+          } @else {
+            No hay resultados con los filtros actuales.
+          }
+        </p>
+      </div>
+    } @else {
+      <div class="table-wrap mat-elevation-z0">
+        <table mat-table [dataSource]="dataSource" matSort>
+          <ng-container matColumnDef="id">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="id">ID</th>
+            <td mat-cell *matCellDef="let row">{{ row.id }}</td>
+          </ng-container>
+          <ng-container matColumnDef="careDate">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="careDate">Fecha</th>
+            <td mat-cell *matCellDef="let row">{{ row.careDate ? (row.careDate | date: 'short') : '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="patientLabel">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="patientLabel">Paciente</th>
+            <td mat-cell *matCellDef="let row">{{ row.patientLabel }}</td>
+          </ng-container>
+          <ng-container matColumnDef="doctorLabel">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="doctorLabel">Médico / personal</th>
+            <td mat-cell *matCellDef="let row">{{ row.doctorLabel }}</td>
+          </ng-container>
+          <ng-container matColumnDef="diagnosis">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="diagnosis">Diagnóstico</th>
+            <td mat-cell *matCellDef="let row">{{ clip(row.diagnosis, 80) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="requiresHospitalization">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="requiresHospitalization">Hosp.</th>
+            <td mat-cell *matCellDef="let row">{{ row.requiresHospitalization ? 'Sí' : 'No' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="col-actions">Acciones</th>
+            <td mat-cell *matCellDef="let row" class="col-actions">
+              <button mat-icon-button type="button" (click)="openDetail(row)" matTooltip="Ver detalle">
+                <mat-icon>visibility</mat-icon>
+              </button>
+              @if (canMutate) {
+                <button mat-icon-button type="button" (click)="openEdit(row)" matTooltip="Editar">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button type="button" color="warn" (click)="confirmDelete(row)" matTooltip="Eliminar">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+        <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

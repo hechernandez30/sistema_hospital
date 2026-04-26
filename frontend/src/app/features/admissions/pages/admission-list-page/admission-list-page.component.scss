@@ -1,0 +1,46 @@
+.page-card mat-card-header {
+  margin-bottom: 0.5rem;
+}
+
+.page-avatar {
+  background: rgba(21, 101, 192, 0.1) !important;
+  color: var(--hh-primary) !important;
+  border-radius: 12px !important;
+}
+
+.toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.filter-field {
+  width: min(100%, 300px);
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 2.5rem;
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--hh-border);
+  border-radius: var(--hh-radius-md);
+}
+
+table {
+  width: 100%;
+}
+
+.col-actions {
+  text-align: right;
+  white-space: nowrap;
+}

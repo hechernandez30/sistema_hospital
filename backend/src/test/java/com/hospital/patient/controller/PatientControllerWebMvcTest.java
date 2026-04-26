@@ -2,6 +2,8 @@ package com.hospital.patient.controller;
 
 import com.hospital.patient.dto.PatientResponse;
 import com.hospital.patient.service.PatientService;
+import com.hospital.security.HospitalUserDetailsService;
+import com.hospital.testsupport.HospitalWebMvcSecurity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -18,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = PatientController.class)
+@HospitalWebMvcSecurity
 class PatientControllerWebMvcTest {
 
     @Autowired
@@ -25,6 +28,9 @@ class PatientControllerWebMvcTest {
 
     @MockBean
     private PatientService patientService;
+
+    @MockBean
+    private HospitalUserDetailsService hospitalUserDetailsService;
 
     @Test
     void listPatientsReturnsOk() throws Exception {

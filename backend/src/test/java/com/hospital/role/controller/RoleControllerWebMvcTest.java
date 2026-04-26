@@ -2,6 +2,8 @@ package com.hospital.role.controller;
 
 import com.hospital.role.dto.RoleResponse;
 import com.hospital.role.service.RoleService;
+import com.hospital.security.HospitalUserDetailsService;
+import com.hospital.testsupport.HospitalWebMvcSecurity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = RoleController.class)
+@HospitalWebMvcSecurity
 class RoleControllerWebMvcTest {
 
     @Autowired
@@ -23,6 +26,9 @@ class RoleControllerWebMvcTest {
 
     @MockBean
     private RoleService roleService;
+
+    @MockBean
+    private HospitalUserDetailsService hospitalUserDetailsService;
 
     @Test
     void listRolesReturnsOk() throws Exception {

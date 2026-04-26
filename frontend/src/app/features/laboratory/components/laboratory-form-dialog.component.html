@@ -1,0 +1,115 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">{{ isEdit ? 'edit' : 'science' }}</mat-icon>
+  {{ isEdit ? 'Editar laboratorio' : 'Nuevo registro de laboratorio' }}
+</h2>
+
+@if (loading) {
+  <mat-dialog-content class="loading-wrap">
+    <mat-progress-spinner diameter="40" mode="indeterminate" />
+  </mat-dialog-content>
+} @else {
+  <form [formGroup]="form" novalidate (ngSubmit)="submit()">
+    <mat-dialog-content class="form-scroll">
+      <p class="hint">
+        <mat-icon>info</mat-icon>
+        En alta debe existir la orden médica. Tipos y estado son valores cerrados. Fechas de recepción/resultado solo en edición.
+      </p>
+      @if (!isEdit) {
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>ID orden médica</mat-label>
+          <input matInput formControlName="medicalOrderId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.medicalOrderId.hasError('required') && form.controls.medicalOrderId.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.medicalOrderId.hasError('positiveInteger') && form.controls.medicalOrderId.touched) {
+            <mat-error>Entero positivo</mat-error>
+          }
+        </mat-form-field>
+      }
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>Solicitante</mat-label>
+          <mat-select formControlName="requesterType">
+            <mat-option value="">—</mat-option>
+            <mat-option value="INTERNO">INTERNO</mat-option>
+            <mat-option value="EXTERNO">EXTERNO</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo solicitud</mat-label>
+          <mat-select formControlName="requestType">
+            <mat-option value="">—</mat-option>
+            <mat-option value="MUESTRA_MEDICA">MUESTRA_MEDICA</mat-option>
+            <mat-option value="LABORATORIO">LABORATORIO</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Nº expediente / registro</mat-label>
+        <input matInput formControlName="recordNumber" maxlength="40" />
+        @if (form.controls.recordNumber.hasError('maxlength') && form.controls.recordNumber.touched) {
+          <mat-error>Máx. 40</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Descripción muestra</mat-label>
+        <textarea matInput rows="2" formControlName="sampleDescription"></textarea>
+      </mat-form-field>
+      <mat-checkbox formControlName="sampleReceived">Muestra recibida</mat-checkbox>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Muestra válida</mat-label>
+        <mat-select formControlName="sampleValidChoice">
+          @for (o of sampleValidOptions; track o.value) {
+            <mat-option [value]="o.value">{{ o.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Estado</mat-label>
+        <mat-select formControlName="status">
+          @for (s of statuses; track s) {
+            <mat-option [value]="s">{{ s }}</mat-option>
+          }
+        </mat-select>
+        @if (form.controls.status.invalid && form.controls.status.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+      </mat-form-field>
+      @if (isEdit) {
+        <div class="row two">
+          <mat-form-field appearance="outline">
+            <mat-label>Recepción</mat-label>
+            <input matInput type="datetime-local" formControlName="receptionAt" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Resultado (fecha)</mat-label>
+            <input matInput type="datetime-local" formControlName="resultAt" />
+          </mat-form-field>
+        </div>
+      }
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Incidente</mat-label>
+        <textarea matInput rows="2" formControlName="incident"></textarea>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Resultado (texto)</mat-label>
+        <textarea matInput rows="2" formControlName="result"></textarea>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Adjunto / referencia</mat-label>
+        <input matInput formControlName="attachment" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>ID staff responsable (opcional)</mat-label>
+        <input matInput formControlName="responsibleStaffId" inputmode="numeric" autocomplete="off" />
+        @if (form.controls.responsibleStaffId.hasError('positiveInteger') && form.controls.responsibleStaffId.touched) {
+          <mat-error>ID válido o vacío</mat-error>
+        }
+      </mat-form-field>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>
+      <button mat-flat-button color="primary" type="button" [disabled]="saving" (click)="submit()">Guardar</button>
+    </mat-dialog-actions>
+  </form>
+}

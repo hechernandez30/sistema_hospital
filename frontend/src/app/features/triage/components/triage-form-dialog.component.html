@@ -1,0 +1,142 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">{{ isEdit ? 'edit' : 'emergency' }}</mat-icon>
+  {{ isEdit ? 'Editar triage' : 'Nuevo triage' }}
+</h2>
+
+@if (loading) {
+  <mat-dialog-content class="loading-wrap">
+    <mat-progress-spinner diameter="40" mode="indeterminate" />
+  </mat-dialog-content>
+} @else {
+  <form [formGroup]="form" novalidate (ngSubmit)="submit()">
+    <mat-dialog-content class="form-scroll">
+      <p class="hint">
+        <mat-icon>info</mat-icon>
+        ID de admisión obligatorio (solo dígitos). Signos vitales opcionales. SpO₂ 0–100 y temperatura 20–45 °C (use
+        punto o coma decimal). Staff responsable: ID entero positivo opcional.
+      </p>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>ID admisión</mat-label>
+        <input matInput formControlName="admissionId" inputmode="numeric" autocomplete="off" />
+        @if (form.controls.admissionId.hasError('required') && form.controls.admissionId.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+        @if (form.controls.admissionId.hasError('positiveInteger') && form.controls.admissionId.touched) {
+          <mat-error>Solo dígitos, sin 0 a la izquierda</mat-error>
+        }
+      </mat-form-field>
+      <div class="row three">
+        <mat-form-field appearance="outline">
+          <mat-label>FC (lpm)</mat-label>
+          <input matInput formControlName="heartRate" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.heartRate.hasError('integer') && form.controls.heartRate.touched) {
+            <mat-error>Solo números enteros</mat-error>
+          }
+          @if (form.controls.heartRate.hasError('range') && form.controls.heartRate.touched) {
+            <mat-error>Entre {{ form.controls.heartRate.getError('range')?.min }} y {{ form.controls.heartRate.getError('range')?.max }}</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>FR</mat-label>
+          <input matInput formControlName="respiratoryRate" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.respiratoryRate.hasError('integer') && form.controls.respiratoryRate.touched) {
+            <mat-error>Solo números enteros</mat-error>
+          }
+          @if (form.controls.respiratoryRate.hasError('range') && form.controls.respiratoryRate.touched) {
+            <mat-error>Entre {{ form.controls.respiratoryRate.getError('range')?.min }} y {{ form.controls.respiratoryRate.getError('range')?.max }}</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Dolor (0–10)</mat-label>
+          <input matInput formControlName="pain" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.pain.hasError('integer') && form.controls.pain.touched) {
+            <mat-error>Solo números enteros</mat-error>
+          }
+          @if (form.controls.pain.hasError('range') && form.controls.pain.touched) {
+            <mat-error>Entre 0 y 10</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>TA sistólica</mat-label>
+          <input matInput formControlName="systolicPressure" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.systolicPressure.hasError('integer') && form.controls.systolicPressure.touched) {
+            <mat-error>Solo números enteros</mat-error>
+          }
+          @if (form.controls.systolicPressure.hasError('range') && form.controls.systolicPressure.touched) {
+            <mat-error>Entre 0 y 300</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>TA diastólica</mat-label>
+          <input matInput formControlName="diastolicPressure" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.diastolicPressure.hasError('integer') && form.controls.diastolicPressure.touched) {
+            <mat-error>Solo números enteros</mat-error>
+          }
+          @if (form.controls.diastolicPressure.hasError('range') && form.controls.diastolicPressure.touched) {
+            <mat-error>Entre 0 y 200</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>SpO₂ (%)</mat-label>
+          <input matInput formControlName="oxygenSaturation" inputmode="decimal" placeholder="ej. 98" autocomplete="off" />
+          @if (form.controls.oxygenSaturation.hasError('decimal') && form.controls.oxygenSaturation.touched) {
+            <mat-error>Número decimal válido</mat-error>
+          }
+          @if (form.controls.oxygenSaturation.hasError('range') && form.controls.oxygenSaturation.touched) {
+            <mat-error>Entre 0 y 100</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Temperatura (°C)</mat-label>
+          <input matInput formControlName="temperature" inputmode="decimal" placeholder="ej. 36.5" autocomplete="off" />
+          @if (form.controls.temperature.hasError('decimal') && form.controls.temperature.touched) {
+            <mat-error>Número decimal válido</mat-error>
+          }
+          @if (form.controls.temperature.hasError('range') && form.controls.temperature.touched) {
+            <mat-error>Entre 20 y 45</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Síntomas</mat-label>
+        <textarea matInput rows="2" formControlName="symptoms"></textarea>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Prioridad</mat-label>
+        <mat-select formControlName="priority">
+          @for (p of priorities; track p) {
+            <mat-option [value]="p">{{ p }}</mat-option>
+          }
+        </mat-select>
+        @if (form.controls.priority.invalid && form.controls.priority.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Meta minutos (opcional)</mat-label>
+        <input matInput formControlName="targetMinutes" inputmode="numeric" autocomplete="off" />
+        @if (form.controls.targetMinutes.hasError('integer') && form.controls.targetMinutes.touched) {
+          <mat-error>Solo números enteros</mat-error>
+        }
+        @if (form.controls.targetMinutes.hasError('range') && form.controls.targetMinutes.touched) {
+          <mat-error>Valor fuera de rango</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>ID staff responsable (opcional)</mat-label>
+        <input matInput formControlName="responsibleStaffId" inputmode="numeric" autocomplete="off" />
+        @if (form.controls.responsibleStaffId.hasError('positiveInteger') && form.controls.responsibleStaffId.touched) {
+          <mat-error>ID entero positivo (sin letras)</mat-error>
+        }
+      </mat-form-field>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>
+      <button mat-flat-button color="primary" type="button" [disabled]="saving" (click)="submit()">Guardar</button>
+    </mat-dialog-actions>
+  </form>
+}

@@ -1,0 +1,23 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">visibility</mat-icon>
+  Pago #{{ data.id }}
+</h2>
+<mat-dialog-content class="detail">
+  <div class="field"><span class="label">Paciente</span><span class="value">{{ data.patientLabel }}</span></div>
+  <div class="field"><span class="label">Admisión</span><span class="value">{{ data.admissionId ?? '—' }}</span></div>
+  <div class="field"><span class="label">Orden médica</span><span class="value">{{ data.medicalOrderId != null ? 'Orden médica #' + data.medicalOrderId : '—' }}</span></div>
+  <div class="field full"><span class="label">Concepto</span><span class="value">{{ data.concept }}</span></div>
+  <div class="field"><span class="label">Subtotal</span><span class="value">{{ data.subtotal | number: '1.2-4' }}</span></div>
+  <div class="field"><span class="label">% seguro</span><span class="value">{{ data.insurancePercent | number: '1.2-4' }}</span></div>
+  <div class="field"><span class="label">Dto. seguro</span><span class="value num">{{ data.insuranceDiscount | number: '1.2-4' }}</span></div>
+  <div class="field"><span class="label">Copago</span><span class="value">{{ data.copay | number: '1.2-4' }}</span></div>
+  <div class="field highlight"><span class="label">Total a pagar</span><span class="value num">{{ data.totalToPay | number: '1.2-4' }}</span></div>
+  <div class="field"><span class="label">Método</span><span class="value">{{ data.paymentMethod ?? '—' }}</span></div>
+  <div class="field"><span class="label">Estado</span><span class="value">{{ data.status }}</span></div>
+  <div class="field"><span class="label">Recibo</span><span class="value">{{ data.receiptNumber ?? '—' }}</span></div>
+  <div class="field full"><span class="label">Pagado</span><span class="value">{{ data.paidAt ? (data.paidAt | date: 'medium') : '—' }}</span></div>
+  <div class="field"><span class="label">Usuario registro</span><span class="value">{{ data.registeredByUserId ?? '—' }}</span></div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>
+</mat-dialog-actions>

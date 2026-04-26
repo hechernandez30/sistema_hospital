@@ -44,7 +44,7 @@ La base de datos de referencia está en `hospital_postgresql_15_tablas_es.sql`.
 - config
 
 ## Restricciones
-- No usar JWT todavía en la fase inicial
+- Fase inicial (S1): autenticación por sesión; **S2: JWT stateless** (Bearer) y roles; **S3: respuestas 401/403 unificadas (`ApiErrorResponse`), auditoría de seguridad interna y configuración sin duplicar rutas públicas**.
 - No generar microservicios
 - No agregar Redis, Kafka ni colas
 - No agregar Docker salvo que se pida

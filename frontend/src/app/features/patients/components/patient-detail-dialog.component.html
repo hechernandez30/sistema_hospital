@@ -1,0 +1,30 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">person</mat-icon>
+  Paciente — {{ data.firstName }} {{ data.lastName }}
+</h2>
+<mat-dialog-content class="detail-body">
+  <div class="grid">
+    <div class="field"><span class="label">Código</span><span class="value">{{ data.patientCode }}</span></div>
+    <div class="field"><span class="label">DPI / NIT</span><span class="value">{{ data.dpiNit }}</span></div>
+    <div class="field"><span class="label">Nacimiento</span><span class="value">{{ data.birthDate | date: 'mediumDate' }}</span></div>
+    <div class="field"><span class="label">Sexo</span><span class="value">{{ data.sex ?? '—' }}</span></div>
+    <div class="field"><span class="label">Teléfono</span><span class="value">{{ data.phone ?? '—' }}</span></div>
+    <div class="field"><span class="label">Correo</span><span class="value">{{ data.email ?? '—' }}</span></div>
+    <div class="field full"><span class="label">Dirección</span><span class="value">{{ data.address ?? '—' }}</span></div>
+    <div class="field"><span class="label">Contacto emergencia</span><span class="value">{{ data.emergencyContactName ?? '—' }}</span></div>
+    <div class="field"><span class="label">Tel. emergencia</span><span class="value">{{ data.emergencyContactPhone ?? '—' }}</span></div>
+    <div class="field"><span class="label">Privacidad aceptada</span><span class="value">{{ data.privacyAccepted ? 'Sí' : 'No' }}</span></div>
+    <div class="field"><span class="label">Activo</span><span class="value">{{ data.active ? 'Sí' : 'No' }}</span></div>
+  </div>
+  <mat-divider />
+  <h3 class="sub">Antecedentes y notas</h3>
+  <div class="grid">
+    <div class="field full"><span class="label">Alergias</span><span class="value pre">{{ data.allergies ?? '—' }}</span></div>
+    <div class="field full"><span class="label">Condiciones</span><span class="value pre">{{ data.conditions ?? '—' }}</span></div>
+    <div class="field full"><span class="label">Historia</span><span class="value pre">{{ data.medicalHistory ?? '—' }}</span></div>
+    <div class="field full"><span class="label">Medicación actual</span><span class="value pre">{{ data.currentMedications ?? '—' }}</span></div>
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-stroked-button mat-dialog-close type="button">Cerrar</button>
+</mat-dialog-actions>

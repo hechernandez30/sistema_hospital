@@ -1,0 +1,22 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">history</mat-icon>
+  Bitácora #{{ data.id }}
+</h2>
+<mat-dialog-content class="detail">
+  <div class="meta">
+    <div class="field"><span class="label">Fecha</span><span class="value">{{ data.occurredAt | date: 'medium' }}</span></div>
+    <div class="field"><span class="label">Usuario</span><span class="value">{{ data.userLabel }}</span></div>
+    <div class="field"><span class="label">Módulo</span><span class="value">{{ data.module }}</span></div>
+    <div class="field"><span class="label">Entidad</span><span class="value">{{ data.entityType }}</span></div>
+    <div class="field"><span class="label">Registro</span><span class="value">{{ data.recordId }}</span></div>
+    <div class="field"><span class="label">Acción</span><span class="value">{{ data.action }}</span></div>
+    <div class="field full"><span class="label">IP cliente</span><span class="value">{{ data.clientIp ?? '—' }}</span></div>
+  </div>
+  <h3 class="json-title">Datos anteriores</h3>
+  <pre class="json-block">{{ formatJson(data.previousData) }}</pre>
+  <h3 class="json-title">Datos nuevos</h3>
+  <pre class="json-block">{{ formatJson(data.newData) }}</pre>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>
+</mat-dialog-actions>

@@ -50,8 +50,11 @@ public class AuditLogService {
                 .orElseThrow(() -> new ResourceNotFoundException("Audit log not found: " + id)));
     }
 
+    /**
+     * Registro interno de auditoría (no expuesto como flujo principal vía HTTP).
+     */
     @Transactional
-    public AuditLogResponse create(AuditLogCreateRequest request) {
+    public void recordEvent(AuditLogCreateRequest request) {
         AuditLog log = new AuditLog();
         log.setUser(resolveUser(request.userId()));
         log.setModule(request.module().trim());
@@ -61,7 +64,7 @@ public class AuditLogService {
         log.setPreviousData(request.previousData());
         log.setNewData(request.newData());
         log.setClientAddress(parseClientIp(request.clientIp()));
-        return toResponse(auditLogRepository.save(log));
+        auditLogRepository.save(log);
     }
 
     private User resolveUser(Long userId) {

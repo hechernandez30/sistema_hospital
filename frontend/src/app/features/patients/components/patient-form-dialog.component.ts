@@ -1,0 +1,203 @@
+import { Component, OnInit, inject } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { PatientApiService } from '../services/patient-api.service';
+import { PatientCreatePayload, PatientResponse, PatientUpdatePayload } from '../models/patient.models';
+import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
+import {
+  birthDatePastValidator,
+  DPI_NIT_PATTERN,
+  optionalEmail,
+  optionalPhoneBackendPattern,
+  requiredPhoneBackendPattern,
+} from '../../shared/form-validators';
+
+export interface PatientFormDialogData {
+  mode: 'create' | 'edit';
+  patientId?: number;
+}
+
+@Component({
+  selector: 'app-patient-form-dialog',
+  standalone: true,
+  imports: [
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatSelectModule,
+    MatCheckboxModule,
+    MatDividerModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule,
+  ],
+  templateUrl: './patient-form-dialog.component.html',
+  styleUrl: './patient-form-dialog.component.scss',
+})
+export class PatientFormDialogComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly api = inject(PatientApiService);
+  private readonly dialogRef = inject(MatDialogRef<PatientFormDialogComponent, boolean>);
+  private readonly snackBar = inject(MatSnackBar);
+  readonly dialogData = inject<PatientFormDialogData>(MAT_DIALOG_DATA);
+
+  loading = false;
+  saving = false;
+
+  readonly form = this.fb.nonNullable.group({
+    patientCode: ['', [Validators.required, Validators.maxLength(30)]],
+    firstName: ['', [Validators.required, Validators.maxLength(100)]],
+    lastName: ['', [Validators.required, Validators.maxLength(100)]],
+    dpiNit: ['', [Validators.required, Validators.maxLength(30), Validators.pattern(DPI_NIT_PATTERN)]],
+    birthDate: ['', [Validators.required, birthDatePastValidator()]],
+    sex: ['M' as string | null, [Validators.required, Validators.pattern(/^(M|F|OTRO)$/)]],
+    phone: ['', [optionalPhoneBackendPattern()]],
+    email: ['', [optionalEmail(), Validators.maxLength(150)]],
+    address: [''],
+    emergencyContactName: ['', [Validators.maxLength(150)]],
+    emergencyContactPhone: ['', [optionalPhoneBackendPattern()]],
+    privacyAccepted: [false, [Validators.requiredTrue]],
+    allergies: [''],
+    conditions: [''],
+    medicalHistory: [''],
+    currentMedications: [''],
+    active: [true],
+  });
+
+  ngOnInit(): void {
+    if (this.dialogData.mode === 'edit' && this.dialogData.patientId != null) {
+      this.loading = true;
+      this.api.getById(this.dialogData.patientId).subscribe({
+        next: (p) => this.patchFromPatient(p),
+        error: (err: unknown) => {
+          this.loading = false;
+          this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar el paciente.'), 'Cerrar', { duration: 6000 });
+          this.dialogRef.close(false);
+        },
+      });
+    }
+  }
+
+  private patchFromPatient(p: PatientResponse): void {
+    this.loading = false;
+    this.form.controls.phone.setValidators([requiredPhoneBackendPattern()]);
+    this.form.controls.phone.updateValueAndValidity();
+    this.form.patchValue({
+      patientCode: p.patientCode,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      dpiNit: p.dpiNit,
+      birthDate: p.birthDate?.substring(0, 10) ?? '',
+      sex: (p.sex as 'M' | 'F' | 'OTRO') ?? 'M',
+      phone: p.phone ?? '',
+      email: p.email ?? '',
+      address: p.address ?? '',
+      emergencyContactName: p.emergencyContactName ?? '',
+      emergencyContactPhone: p.emergencyContactPhone ?? '',
+      privacyAccepted: p.privacyAccepted,
+      allergies: p.allergies ?? '',
+      conditions: p.conditions ?? '',
+      medicalHistory: p.medicalHistory ?? '',
+      currentMedications: p.currentMedications ?? '',
+      active: p.active,
+    });
+    this.form.controls.privacyAccepted.clearValidators();
+    this.form.controls.privacyAccepted.updateValueAndValidity();
+  }
+
+  submit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.snackBar.open('Revise los campos marcados: hay datos inválidos o incompletos.', 'Cerrar', { duration: 6000 });
+      return;
+    }
+    const raw = this.form.getRawValue();
+    const phone = this.dialogData.mode === 'create' ? emptyToNull(raw.phone) : raw.phone.trim();
+    const email = emptyToNull(raw.email);
+    const em = raw.emergencyContactPhone?.trim() ?? '';
+
+    this.saving = true;
+    if (this.dialogData.mode === 'create') {
+      const body: PatientCreatePayload = {
+        patientCode: raw.patientCode.trim(),
+        firstName: raw.firstName.trim(),
+        lastName: raw.lastName.trim(),
+        dpiNit: raw.dpiNit.trim(),
+        birthDate: raw.birthDate,
+        sex: raw.sex,
+        phone: phone as string | null,
+        email,
+        address: emptyToNull(raw.address),
+        emergencyContactName: emptyToNull(raw.emergencyContactName),
+        emergencyContactPhone: em ? em : null,
+        privacyAccepted: true,
+        allergies: emptyToNull(raw.allergies),
+        conditions: emptyToNull(raw.conditions),
+        medicalHistory: emptyToNull(raw.medicalHistory),
+        currentMedications: emptyToNull(raw.currentMedications),
+        active: raw.active,
+      };
+      this.api.create(body).subscribe({
+        next: () => this.closeOk(),
+        error: (err: unknown) => this.onSaveError(err),
+      });
+    } else if (this.dialogData.patientId != null) {
+      const body: PatientUpdatePayload = {
+        patientCode: raw.patientCode.trim(),
+        firstName: raw.firstName.trim(),
+        lastName: raw.lastName.trim(),
+        dpiNit: raw.dpiNit.trim(),
+        birthDate: raw.birthDate,
+        sex: raw.sex,
+        phone: phone as string,
+        email: email ?? '',
+        address: emptyToNull(raw.address),
+        emergencyContactName: emptyToNull(raw.emergencyContactName),
+        emergencyContactPhone: em ? em : '',
+        privacyAccepted: raw.privacyAccepted,
+        allergies: emptyToNull(raw.allergies),
+        conditions: emptyToNull(raw.conditions),
+        medicalHistory: emptyToNull(raw.medicalHistory),
+        currentMedications: emptyToNull(raw.currentMedications),
+        active: raw.active,
+      };
+      this.api.update(this.dialogData.patientId, body).subscribe({
+        next: () => this.closeOk(),
+        error: (err: unknown) => this.onSaveError(err),
+      });
+    }
+  }
+
+  private closeOk(): void {
+    this.saving = false;
+    this.snackBar.open('Paciente guardado correctamente.', 'Cerrar', { duration: 4000 });
+    this.dialogRef.close(true);
+  }
+
+  private onSaveError(err: unknown): void {
+    this.saving = false;
+    this.snackBar.open(getHttpErrorMessage(err, 'No se pudo guardar el paciente.'), 'Cerrar', { duration: 7000 });
+  }
+
+  cancel(): void {
+    this.dialogRef.close(false);
+  }
+
+  readonly isEdit = this.dialogData.mode === 'edit';
+}
+
+function emptyToNull(s: string | null | undefined): string | null {
+  const t = s?.trim();
+  return t ? t : null;
+}

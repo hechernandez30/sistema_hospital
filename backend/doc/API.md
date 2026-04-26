@@ -3,11 +3,44 @@
 Base URL por defecto: `http://localhost:8080`  
 Todas las rutas bajo el prefijo documentado devuelven JSON salvo `204 No Content` en borrados.
 
-## Salud
+## Seguridad (S2 JWT + S3 endurecimiento)
+
+- Con `app.security.enabled=true` (por defecto), toda petición bajo `/api/**` **excepto** las rutas públicas listadas abajo exige cabecera **`Authorization: Bearer <accessToken>`** con JWT válido (modo **stateless** en todo momento, incluido dev/test abierto).
+- Login: `POST /api/auth/login` con `{"username":"...","password":"..."}` → respuesta JSON con `userId`, `username`, `roles` y **`accessToken`** (JWT).
+- Configuración JWT: `app.jwt.secret` (UTF-8, mínimo 32 bytes para HS256) y `app.jwt.expiration-minutes` en `application.yml` (sustituir secreto en producción).
+- Con perfil `dev` y `application-dev.yml`, `app.security.enabled=false` deja la API abierta para desarrollo local (sin Bearer).
+- Swagger solo en perfil `dev` (`springdoc.*.enabled=true`); en OpenAPI use **Authorize** con el valor `Bearer <accessToken>` del login.
+- **401 y 403** (filtro de seguridad y login fallido vía `GlobalExceptionHandler`) usan el mismo formato **`ApiErrorResponse`** que el resto de la API (`timestamp`, `status`, `error`, `message`, `path`, `fieldErrors`). Para JWT inválido/expirado el mensaje de 401 es `Invalid or expired token`.
+- **Auditoría de seguridad** (solo interna, sin POST de bitácora): eventos `LOGIN_SUCCESS`, `LOGIN_FAILURE`, `ACCESS_DENIED`, `JWT_INVALID` en módulo `security` vía `SecurityAuditService` → `AuditLogService.recordEvent`.
+
+### Rutas públicas (`app.security.enabled=true`)
+
+Definidas de forma centralizada en `HospitalPublicEndpointMatcher` (misma fuente que el filtro JWT).
 
 | Método | Ruta | Descripción |
-|--------|------|---------------|
-| GET | `/actuator/health` | Estado de la aplicación |
+|--------|------|-------------|
+| OPTIONS | `/**` | Preflight CORS |
+| * | `/error` | Error dispatcher Spring |
+| GET | `/actuator/health` | Salud |
+| POST | `/api/auth/login` | Login (emite JWT) |
+| (solo perfil `dev`) | `/swagger-ui/**`, `/v3/api-docs/**`, `/swagger-ui.html` | OpenAPI |
+
+### Autorización por rol (prefijos en `SecurityConfig`)
+
+Los roles en token coinciden con BD (`ROLE_<NOMBRE>`). Resumen:
+
+| Rol | Acceso principal |
+|-----|------------------|
+| **ADMINISTRADOR** | Todo `/api/**` no cubierto por reglas más específicas (acceso total efectivo). |
+| **AUDITOR** | Solo `/api/audit-logs/**` (la API solo expone GET en bitácora). |
+| **MEDICO** | `/api/patients/**`, `/api/appointments/**`, `/api/medical-cares/**`, `/api/medical-orders/**`, `/api/laboratory/**`, `/api/imaging/**` |
+| **RECEPCIONISTA** | `/api/patients/**` (sin crear/editar solo CAJERO), `/api/appointments/**`, `/api/admissions/**`, `/api/triage/**` |
+| **CAJERO** | `/api/payments/**` y **solo GET** sobre `/api/patients/**` (incl. seguros anidados bajo paciente). |
+| **FARMACIA** | `/api/medications/**`, `/api/medical-orders/**` |
+| **LABORATORIO** | `/api/laboratory/**` |
+| **RRHH** | `/api/staff/**`, `/api/specialties/**` |
+
+Reglas adicionales: **`/api/users/**` y `/api/roles/**`** solo **ADMINISTRADOR**. **`/api/audit-logs/**`** solo **ADMINISTRADOR** y **AUDITOR**.
 
 ---
 
@@ -167,13 +200,14 @@ Todas las rutas bajo el prefijo documentado devuelven JSON salvo `204 No Content
 |--------|------|-------------|
 | GET | `/api/audit-logs` | Listar (opcional `?module=` o `?userId=`; si hay `module` tiene prioridad) |
 | GET | `/api/audit-logs/{id}` | Obtener |
-| POST | `/api/audit-logs` | Registrar evento (solo alta) |
+
+Los eventos se registran **solo por vía interna** (`AuditLogService.recordEvent(...)`); no hay endpoint HTTP de alta. La auditoría de seguridad usa `SecurityAuditService` → `recordEvent` (módulo `security`).
 
 ---
 
 ## Errores
 
-Las respuestas de error siguen el formato definido en el manejador global (`timestamp`, `status`, `error`, `message`, `path`, `fieldErrors` opcional).
+Las respuestas de error usan **`ApiErrorResponse`** (`timestamp`, `status`, `error`, `message`, `path`, `fieldErrors` opcional), incluidos **401** (filtro de seguridad, JWT inválido y login fallido) y **403** (acceso denegado).
 
 ## Pruebas automatizadas
 

@@ -1,0 +1,99 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+<mat-dialog-content>
+  @if (loading) {
+    <div class="loading">
+      <mat-progress-spinner diameter="36" mode="indeterminate" />
+    </div>
+  } @else {
+    <form [formGroup]="form" class="form">
+      @if (isEdit) {
+        <div class="readonly-user">
+          <span class="ro-label">Nombre de usuario</span>
+          <span class="ro-value">{{ viewUsername }}</span>
+          <p class="ro-hint">El nombre de usuario no se puede cambiar desde esta pantalla.</p>
+        </div>
+      } @else {
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Nombre de usuario</mat-label>
+          <input matInput formControlName="username" maxlength="100" autocomplete="username" />
+          @if (form.controls.username.hasError('required') && form.controls.username.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Rol</mat-label>
+        <mat-select formControlName="roleId" placeholder="Seleccione">
+          @for (r of roles; track r.id) {
+            <mat-option [value]="r.id">{{ r.name }} (#{{ r.id }})</mat-option>
+          }
+        </mat-select>
+        @if (form.controls.roleId.hasError('required') && form.controls.roleId.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Correo</mat-label>
+        <input matInput type="email" formControlName="email" maxlength="150" autocomplete="email" />
+        @if (form.controls.email.hasError('required') && form.controls.email.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+        @if (form.controls.email.hasError('email') && form.controls.email.touched) {
+          <mat-error>Correo no válido</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>{{ isEdit ? 'Nueva contraseña (opcional)' : 'Contraseña' }}</mat-label>
+        <input matInput type="password" formControlName="password" autocomplete="new-password" />
+        @if (!isEdit && form.controls.password.hasError('required') && form.controls.password.touched) {
+          <mat-error>Requerida (mín. 8 caracteres)</mat-error>
+        }
+        @if (form.controls.password.hasError('minlength') && form.controls.password.touched) {
+          <mat-error>Mínimo 8 caracteres</mat-error>
+        }
+        @if (isEdit && form.controls.password.hasError('passwordLength') && form.controls.password.touched) {
+          <mat-error>Si indica contraseña, entre 8 y 255 caracteres</mat-error>
+        }
+      </mat-form-field>
+
+      <div class="row-2">
+        <mat-form-field appearance="outline" class="half">
+          <mat-label>Nombres</mat-label>
+          <input matInput formControlName="firstName" maxlength="100" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="half">
+          <mat-label>Apellidos</mat-label>
+          <input matInput formControlName="lastName" maxlength="100" />
+        </mat-form-field>
+      </div>
+
+      @if (isEdit) {
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Estado</mat-label>
+          <mat-select formControlName="state">
+            @for (s of userStates; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      } @else {
+        <div class="toggle-row">
+          <mat-slide-toggle formControlName="mfaEnabled">Autenticación MFA</mat-slide-toggle>
+        </div>
+      }
+    </form>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>
+  <button mat-flat-button color="primary" type="button" (click)="submit()" [disabled]="loading || saving">
+    @if (saving) {
+      <span>Guardando…</span>
+    } @else {
+      Guardar
+    }
+  </button>
+</mat-dialog-actions>

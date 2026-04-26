@@ -1,0 +1,19 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">visibility</mat-icon>
+  Atención #{{ data.id }}
+</h2>
+<mat-dialog-content class="detail">
+  <div class="field"><span class="label">Paciente</span><span class="value">{{ data.patientLabel }}</span></div>
+  <div class="field"><span class="label">Médico / personal</span><span class="value">{{ data.doctorLabel }}</span></div>
+  <div class="field"><span class="label">Admisión</span><span class="value">{{ data.admissionId != null ? 'Admisión #' + data.admissionId : '—' }}</span></div>
+  <div class="field"><span class="label">Cita</span><span class="value">{{ data.appointmentId != null ? 'Cita #' + data.appointmentId : '—' }}</span></div>
+  <div class="field full"><span class="label">Fecha</span><span class="value">{{ data.careDate ? (data.careDate | date: 'medium') : '—' }}</span></div>
+  <div class="field full"><span class="label">Motivo</span><span class="value pre">{{ data.consultationReason }}</span></div>
+  <div class="field full"><span class="label">Evaluación</span><span class="value pre">{{ data.clinicalEvaluation }}</span></div>
+  <div class="field full"><span class="label">Diagnóstico</span><span class="value pre">{{ data.diagnosis }}</span></div>
+  <div class="field full"><span class="label">Plan</span><span class="value pre">{{ data.treatmentPlan ?? '—' }}</span></div>
+  <div class="field"><span class="label">Hospitalización</span><span class="value">{{ data.requiresHospitalization ? 'Sí' : 'No' }}</span></div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>
+</mat-dialog-actions>

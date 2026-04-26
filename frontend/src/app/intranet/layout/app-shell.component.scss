@@ -1,0 +1,211 @@
+.shell-container {
+  height: 100vh;
+}
+
+/* Sidebar: más oscuro que el área de contenido */
+.shell-sidenav {
+  width: 278px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--hh-border-strong, #b8c5d6);
+  background: linear-gradient(180deg, #d4deeb 0%, #c9d6e6 48%, #c5d2e4 100%);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.35);
+}
+
+.sidenav-divider {
+  border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.sidenav-brand {
+  padding: 1.35rem 1.1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidenav-brand-title {
+  font-weight: 800;
+  font-size: 1.08rem;
+  color: var(--hh-navy, #0a2840);
+  letter-spacing: 0.02em;
+}
+
+.sidenav-brand-sub {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--hh-blue-muted, #3d5a73);
+}
+
+.sidenav-list {
+  padding: 0.5rem 0.35rem;
+}
+
+.sidenav-link {
+  margin: 3px 6px;
+  border-radius: 10px !important;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sidenav-link:hover {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.sidenav-link mat-icon {
+  color: var(--hh-primary, #1565c0);
+}
+
+.sidenav-link-muted mat-icon {
+  color: var(--hh-blue-muted, #3d5a73);
+}
+
+.sidenav-footer {
+  margin-top: auto;
+  padding-bottom: 0.65rem;
+}
+
+/* Contenido: gris muy claro, distinto del sidebar */
+.shell-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--hh-bg-content, #f2f6fb);
+}
+
+/* Header: superficie blanca separada del fondo */
+.shell-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  min-height: 64px;
+  padding-inline: 0.65rem 1.1rem;
+  background: #fff !important;
+  color: var(--hh-navy, #0a2840) !important;
+  box-shadow: 0 2px 12px rgba(15, 40, 70, 0.08);
+  border-bottom: 1px solid var(--hh-border, #cfd8e3);
+}
+
+.toolbar-icon-btn {
+  color: var(--hh-navy) !important;
+  margin-right: 0.15rem;
+}
+
+.toolbar-brand-icon {
+  margin-right: 0.4rem;
+  color: var(--hh-primary, #1565c0);
+  font-size: 1.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.toolbar-title {
+  font-weight: 700;
+  font-size: 1.06rem;
+  letter-spacing: 0.01em;
+  color: var(--hh-navy);
+}
+
+.toolbar-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--hh-border);
+  margin: 0 0.7rem;
+}
+
+.toolbar-scope {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--hh-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.user-block {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-right: 0.85rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 12px;
+  background: var(--hh-bg-page, #eef2f8);
+  border: 1px solid var(--hh-border);
+  max-width: min(360px, 44vw);
+}
+
+.user-block-icon {
+  font-size: 1.35rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  color: var(--hh-primary);
+}
+
+.user-block-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.user-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--hh-navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-roles {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--hh-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-btn {
+  font-weight: 600;
+}
+
+.logout-btn mat-icon {
+  margin-right: 0.3rem;
+  font-size: 1.125rem;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.shell-outlet {
+  flex: 1;
+  padding: 1.75rem clamp(1rem, 2.5vw, 2.25rem) 2.5rem;
+}
+
+/* Ítem activo: barra primaria + fondo claro */
+a.active-link {
+  background: linear-gradient(90deg, rgba(21, 101, 192, 0.18) 0%, rgba(255, 255, 255, 0.85) 100%) !important;
+  color: var(--hh-navy) !important;
+  box-shadow: inset 4px 0 0 var(--hh-primary, #1565c0);
+  font-weight: 600;
+}
+
+a.active-link mat-icon {
+  color: var(--hh-primary-dark, #0d47a1) !important;
+}
+
+@media (max-width: 600px) {
+  .toolbar-scope,
+  .toolbar-sep {
+    display: none;
+  }
+
+  .user-block {
+    max-width: 160px;
+  }
+}

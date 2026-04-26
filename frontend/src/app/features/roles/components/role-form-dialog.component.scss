@@ -1,0 +1,16 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.full {
+  width: 100%;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}

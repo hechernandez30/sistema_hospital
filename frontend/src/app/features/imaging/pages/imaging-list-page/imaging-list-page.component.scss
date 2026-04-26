@@ -1,0 +1,50 @@
+.page-card mat-card-header {
+  margin-bottom: 0.5rem;
+}
+
+.page-avatar {
+  background: rgba(21, 101, 192, 0.1) !important;
+  color: var(--hh-primary) !important;
+  border-radius: 12px !important;
+}
+
+.toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.adm-field {
+  width: 220px;
+}
+
+.filter-field {
+  width: min(100%, 280px);
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 2.5rem;
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--hh-border, #cfd8e3);
+  border-radius: var(--hh-radius-md, 10px);
+}
+
+table {
+  width: 100%;
+}
+
+.col-actions {
+  text-align: right;
+  white-space: nowrap;
+}

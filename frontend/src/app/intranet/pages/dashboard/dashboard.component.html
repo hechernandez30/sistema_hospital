@@ -1,0 +1,127 @@
+<div class="dash-page">
+  <div class="dash-kicker-row">
+    <span class="dash-kicker">Panel general</span>
+    <span class="dash-kicker-sep" aria-hidden="true"></span>
+    <span class="dash-kicker-muted">Hospital H&amp;H · intranet</span>
+  </div>
+
+  <mat-card class="dash-hero">
+    <mat-card-content class="dash-hero-card-content">
+      <div class="dash-hero-inner">
+        <div class="dash-hero-icon-wrap" aria-hidden="true">
+          <mat-icon class="dash-hero-icon">waving_hand</mat-icon>
+        </div>
+        <div class="dash-hero-text">
+          <h2 class="dash-hero-title">Bienvenido{{ user ? ', ' + user : '' }}</h2>
+          <p class="dash-hero-lead">
+            Resumen operativo según su perfil. Las cifras se obtienen en tiempo real de los módulos a los que tiene
+            acceso. Use el menú lateral o los accesos directos para trabajar en cada área.
+          </p>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  @if (loading) {
+    <div class="dash-loading">
+      <mat-progress-spinner diameter="44" mode="indeterminate" />
+      <span>Cargando resumen…</span>
+    </div>
+  } @else if (loadError) {
+    <mat-card class="dash-error-card">
+      <mat-card-content>
+        <mat-icon color="warn">error_outline</mat-icon>
+        <p>{{ loadError }}</p>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    @if (statCards.length) {
+      <div class="dash-stats-grid">
+        @for (c of statCards; track c.id) {
+          <mat-card class="dash-stat-card">
+            <mat-card-content>
+              <div class="dash-stat-top">
+                <mat-icon class="dash-stat-icon">{{ c.icon }}</mat-icon>
+                <span class="dash-stat-value">{{ c.value }}</span>
+              </div>
+              <h3 class="dash-stat-title">{{ c.title }}</h3>
+              @if (c.hint) {
+                <p class="dash-stat-hint">{{ c.hint }}</p>
+              }
+              <a mat-stroked-button color="primary" [routerLink]="c.link">{{ c.linkLabel }}</a>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    }
+
+    @if (recentAudit.length) {
+      <mat-card class="dash-panel dash-audit-card">
+        <mat-card-header>
+          <mat-icon mat-card-avatar class="dash-avatar">history</mat-icon>
+          <mat-card-title>Actividad reciente en bitácora</mat-card-title>
+          <mat-card-subtitle>Últimos movimientos registrados (máx. 5)</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-list class="dash-list">
+            @for (a of recentAudit; track a.id) {
+              <mat-list-item>
+                <mat-icon matListItemIcon class="dash-list-icon">chevron_right</mat-icon>
+                <span matListItemTitle
+                  >{{ a.occurredAt | date: 'short' }} — {{ a.module }} · {{ a.action }}
+                  <span class="dash-audit-meta">({{ a.entityType }})</span></span
+                >
+              </mat-list-item>
+            }
+          </mat-list>
+          <div class="dash-audit-actions">
+            <a mat-button color="primary" routerLink="/app/bitacora">Ver bitácora completa</a>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  }
+
+  <div class="dash-columns">
+    <mat-card class="dash-panel">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="dash-avatar">verified_user</mat-icon>
+        <mat-card-title>Roles en su sesión</mat-card-title>
+        <mat-card-subtitle>Según el token actual</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-list class="dash-list">
+          @for (r of roles; track r) {
+            <mat-list-item>
+              <mat-icon matListItemIcon class="dash-list-icon">verified_user</mat-icon>
+              <span matListItemTitle>{{ roleLabel(r) }}</span>
+            </mat-list-item>
+          } @empty {
+            <mat-list-item>
+              <mat-icon matListItemIcon>info</mat-icon>
+              <span matListItemTitle>No hay roles en el token.</span>
+            </mat-list-item>
+          }
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="dash-panel">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="dash-avatar">menu_open</mat-icon>
+        <mat-card-title>Módulos en el menú</mat-card-title>
+        <mat-card-subtitle>Visibles con su perfil</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-list class="dash-list">
+          @for (m of menuPreview; track m.path) {
+            <mat-list-item>
+              <mat-icon matListItemIcon class="dash-list-icon">{{ m.icon }}</mat-icon>
+              <span matListItemTitle>{{ m.label }}</span>
+            </mat-list-item>
+          }
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

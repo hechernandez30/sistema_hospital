@@ -1,0 +1,16 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">visibility</mat-icon>
+  Orden #{{ data.id }}
+</h2>
+<mat-dialog-content class="detail">
+  <div class="field"><span class="label">Atención médica</span><span class="value">#{{ data.medicalCareId }}</span></div>
+  <div class="field"><span class="label">Tipo</span><span class="value">{{ data.orderType }}</span></div>
+  <div class="field"><span class="label">Estado</span><span class="value">{{ data.status }}</span></div>
+  <div class="field"><span class="label">Prioridad</span><span class="value">{{ data.priority ?? '—' }}</span></div>
+  <div class="field full"><span class="label">Fecha orden</span><span class="value">{{ data.orderDate ? (data.orderDate | date: 'medium') : '—' }}</span></div>
+  <div class="field full"><span class="label">Descripción</span><span class="value pre">{{ data.description }}</span></div>
+  <div class="field full"><span class="label">Observaciones</span><span class="value pre">{{ data.observations ?? '—' }}</span></div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>
+</mat-dialog-actions>

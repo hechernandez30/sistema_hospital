@@ -1,0 +1,55 @@
+.specialties-page {
+  padding-bottom: 0.5rem;
+}
+
+.page-title {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-weight: 600;
+  color: var(--hh-navy, #0c3554);
+  letter-spacing: -0.02em;
+}
+
+.page-lead {
+  margin: 0 0 1.75rem;
+  color: var(--hh-text-muted, #546e7a);
+  max-width: 42rem;
+  line-height: 1.55;
+  font-size: 1.02rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--hh-border, #d8e0ea);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 1.35rem;
+}
+
+.spec-card {
+  height: 100%;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.spec-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--hh-shadow-soft, 0 4px 24px rgba(12, 53, 84, 0.1)) !important;
+}
+
+.spec-card mat-card-title {
+  font-weight: 600;
+  color: var(--hh-navy, #0c3554);
+}
+
+p {
+  color: var(--hh-text-muted, #546e7a);
+  line-height: 1.55;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 3rem;
+}

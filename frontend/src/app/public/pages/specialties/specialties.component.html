@@ -1,0 +1,31 @@
+<section class="specialties-page">
+<h1 class="page-title">Especialidades</h1>
+<p class="page-lead">
+  Información institucional. Los tiempos de consulta son referenciales; la agenda operativa se gestiona en el sistema
+  interno.
+</p>
+
+@if (specialties$ | async; as list) {
+  @if (list.length === 0) {
+    <mat-card><mat-card-content>No se pudo cargar el listado estático.</mat-card-content></mat-card>
+  } @else {
+    <div class="grid">
+      @for (e of list; track e.id) {
+        <mat-card class="spec-card">
+          <mat-card-header>
+            <mat-card-title>{{ e.nombre }}</mat-card-title>
+            <mat-card-subtitle>Duración referencial: {{ e.duracionMinutos }} minutos</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>{{ e.descripcion }}</p>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+} @else {
+  <div class="loading">
+    <mat-progress-spinner diameter="40" mode="indeterminate" />
+  </div>
+}
+</section>

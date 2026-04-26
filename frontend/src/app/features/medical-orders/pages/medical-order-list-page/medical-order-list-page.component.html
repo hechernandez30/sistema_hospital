@@ -1,0 +1,99 @@
+<mat-card class="page-card">
+  <mat-card-header>
+    <mat-icon mat-card-avatar class="page-avatar">assignment</mat-icon>
+    <mat-card-title>Órdenes médicas</mat-card-title>
+    <mat-card-subtitle>Laboratorio, imagen, farmacia u hospitalización — Hospital H&amp;H</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="toolbar-row">
+      @if (canMutate) {
+        <button mat-flat-button color="primary" type="button" (click)="openCreate()">
+          <mat-icon>add</mat-icon>
+          Nueva orden
+        </button>
+      }
+      <mat-form-field appearance="outline" class="adm-field" subscriptSizing="dynamic">
+        <mat-label>Filtrar por ID atención</mat-label>
+        <input matInput [(ngModel)]="filterCareId" inputmode="numeric" placeholder="Opcional" />
+      </mat-form-field>
+      <button mat-stroked-button type="button" (click)="applyCareFilter()">Aplicar</button>
+      <button mat-button type="button" (click)="clearCareFilter()">Limpiar filtro</button>
+      <span class="spacer"></span>
+      <mat-form-field appearance="outline" class="filter-field" subscriptSizing="dynamic">
+        <mat-label>Buscar en tabla</mat-label>
+        <input matInput (keyup)="applyTextFilter($any($event.target).value)" placeholder="Texto libre" />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+
+    @if (loading) {
+      <div class="loading">
+        <mat-progress-spinner diameter="40" mode="indeterminate" />
+      </div>
+    } @else if (dataSource.data.length === 0) {
+      <div class="hh-table-empty">
+        <mat-icon>assignment</mat-icon>
+        <p class="hh-table-empty-title">No hay órdenes médicas</p>
+        <p class="hh-table-empty-sub">
+          @if (canMutate) {
+            Cree una orden o ajuste el filtro por atención médica.
+          } @else {
+            No hay resultados con los filtros actuales.
+          }
+        </p>
+      </div>
+    } @else {
+      <div class="table-wrap mat-elevation-z0">
+        <table mat-table [dataSource]="dataSource" matSort>
+          <ng-container matColumnDef="id">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="id">ID</th>
+            <td mat-cell *matCellDef="let row">{{ row.id }}</td>
+          </ng-container>
+          <ng-container matColumnDef="orderDate">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="orderDate">Fecha</th>
+            <td mat-cell *matCellDef="let row">{{ row.orderDate ? (row.orderDate | date: 'short') : '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="medicalCareId">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="medicalCareId">Atención médica</th>
+            <td mat-cell *matCellDef="let row">Atención médica #{{ row.medicalCareId }}</td>
+          </ng-container>
+          <ng-container matColumnDef="orderType">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="orderType">Tipo</th>
+            <td mat-cell *matCellDef="let row">{{ row.orderType }}</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="status">Estado</th>
+            <td mat-cell *matCellDef="let row">{{ row.status }}</td>
+          </ng-container>
+          <ng-container matColumnDef="priority">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="priority">Prioridad</th>
+            <td mat-cell *matCellDef="let row">{{ row.priority ?? '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="description">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="description">Descripción</th>
+            <td mat-cell *matCellDef="let row">{{ clip(row.description, 60) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="col-actions">Acciones</th>
+            <td mat-cell *matCellDef="let row" class="col-actions">
+              <button mat-icon-button type="button" (click)="openDetail(row)" matTooltip="Ver detalle">
+                <mat-icon>visibility</mat-icon>
+              </button>
+              @if (canMutate) {
+                <button mat-icon-button type="button" (click)="openEdit(row)" matTooltip="Editar">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button type="button" color="warn" (click)="confirmDelete(row)" matTooltip="Eliminar">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+        <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

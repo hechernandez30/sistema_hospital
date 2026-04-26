@@ -1,0 +1,31 @@
+<div class="public-root">
+  <mat-toolbar class="public-toolbar">
+    <a routerLink="/p/inicio" class="brand-block">
+      <span class="brand-name">Hospital H&amp;H</span>
+      <span class="brand-tagline">Salud privada de excelencia</span>
+    </a>
+    <span class="spacer"></span>
+    <nav class="public-nav" aria-label="Navegación principal">
+      <a mat-button class="nav-link" routerLink="/p/inicio" routerLinkActive="nav-active" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
+      <a mat-button class="nav-link" routerLink="/p/nosotros" routerLinkActive="nav-active">Quiénes somos</a>
+      <a mat-button class="nav-link" routerLink="/p/servicios" routerLinkActive="nav-active">Servicios</a>
+      <a mat-button class="nav-link" routerLink="/p/especialidades" routerLinkActive="nav-active">Especialidades</a>
+      <a mat-stroked-button color="primary" class="nav-cta-contact" routerLink="/p/contacto" routerLinkActive="nav-cta-contact-active">
+        <mat-icon>mail</mat-icon>
+        Contacto
+      </a>
+      <a mat-raised-button color="primary" class="nav-cta-acceso" routerLink="/p/acceso" routerLinkActive="nav-cta-acceso-active">
+        <mat-icon>login</mat-icon>
+        Acceso personal
+      </a>
+    </nav>
+  </mat-toolbar>
+
+  <main class="public-main">
+    <router-outlet />
+  </main>
+
+  <footer class="public-footer">
+    <p>© {{ year }} Hospital H&amp;H. Todos los derechos reservados.</p>
+  </footer>
+</div>

@@ -2,6 +2,8 @@ package com.hospital.payment.controller;
 
 import com.hospital.payment.dto.PaymentResponse;
 import com.hospital.payment.service.PaymentService;
+import com.hospital.security.HospitalUserDetailsService;
+import com.hospital.testsupport.HospitalWebMvcSecurity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -18,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = PaymentController.class)
+@HospitalWebMvcSecurity
 class PaymentControllerWebMvcTest {
 
     @Autowired
@@ -25,6 +28,9 @@ class PaymentControllerWebMvcTest {
 
     @MockBean
     private PaymentService paymentService;
+
+    @MockBean
+    private HospitalUserDetailsService hospitalUserDetailsService;
 
     @Test
     void listPaymentsReturnsOk() throws Exception {

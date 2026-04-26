@@ -1,0 +1,25 @@
+<section class="services-page">
+  <header class="page-header">
+    <div class="page-header-text">
+      <h1 class="page-title">Servicios</h1>
+      <p class="page-lead">Soluciones integrales para su salud y la de su familia, con procesos claros y acompañamiento profesional.</p>
+    </div>
+  </header>
+
+  <div class="services-grid">
+    @for (s of services; track s.title) {
+      <mat-card class="svc-card">
+        <mat-card-header>
+          <div mat-card-avatar class="svc-avatar">
+            <mat-icon>{{ s.icon }}</mat-icon>
+          </div>
+          <mat-card-title>{{ s.title }}</mat-card-title>
+          <mat-card-subtitle>{{ s.subtitle }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p>{{ s.description }}</p>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+</section>

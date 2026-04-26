@@ -1,0 +1,96 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">{{ isEdit ? 'edit_calendar' : 'event' }}</mat-icon>
+  {{ isEdit ? 'Editar cita' : 'Nueva cita' }}
+</h2>
+
+@if (loading) {
+  <mat-dialog-content class="loading-wrap">
+    <mat-progress-spinner diameter="40" mode="indeterminate" />
+  </mat-dialog-content>
+} @else {
+  <form [formGroup]="form" novalidate (ngSubmit)="submit()">
+    <mat-dialog-content class="form-scroll">
+      <p class="hint">
+        <mat-icon>info</mat-icon>
+        Use el <strong>ID numérico</strong> del paciente y del médico (tabla <em>staff</em>). Especialidad opcional (ID).
+        El backend valida horarios y reglas de negocio.
+      </p>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>ID paciente</mat-label>
+          <input matInput formControlName="patientId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.patientId.hasError('required') && form.controls.patientId.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.patientId.hasError('positiveInteger') && form.controls.patientId.touched) {
+            <mat-error>Solo dígitos, ID entero positivo</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>ID médico (staff)</mat-label>
+          <input matInput formControlName="doctorId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.doctorId.hasError('required') && form.controls.doctorId.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.doctorId.hasError('positiveInteger') && form.controls.doctorId.touched) {
+            <mat-error>Solo dígitos, ID entero positivo</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>ID especialidad (opcional)</mat-label>
+        <input matInput formControlName="specialtyId" inputmode="numeric" autocomplete="off" />
+        @if (form.controls.specialtyId.hasError('positiveInteger') && form.controls.specialtyId.touched) {
+          <mat-error>ID entero positivo o vacío</mat-error>
+        }
+      </mat-form-field>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>Inicio</mat-label>
+          <input matInput type="datetime-local" formControlName="startAt" />
+          @if (form.controls.startAt.invalid && form.controls.startAt.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Fin</mat-label>
+          <input matInput type="datetime-local" formControlName="endAt" />
+          @if (form.controls.endAt.invalid && form.controls.endAt.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      @if (form.hasError('range') && form.touched) {
+        <p class="error-text">La fecha/hora de fin debe ser posterior al inicio.</p>
+      }
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Motivo</mat-label>
+        <textarea matInput rows="2" formControlName="reason" maxlength="250"></textarea>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Estado</mat-label>
+        <mat-select formControlName="status">
+          @for (s of statuses; track s) {
+            <mat-option [value]="s">{{ s }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <div class="checks">
+        <mat-checkbox formControlName="notifyEmail">Notificar correo</mat-checkbox>
+        <mat-checkbox formControlName="notifySms">Notificar SMS</mat-checkbox>
+        <mat-checkbox formControlName="notifyWhatsapp">Notificar WhatsApp</mat-checkbox>
+      </div>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>ID usuario creador (opcional)</mat-label>
+        <input matInput formControlName="createdByUserId" inputmode="numeric" autocomplete="off" />
+        @if (form.controls.createdByUserId.hasError('positiveInteger') && form.controls.createdByUserId.touched) {
+          <mat-error>ID entero positivo o vacío</mat-error>
+        }
+      </mat-form-field>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>
+      <button mat-flat-button color="primary" type="button" [disabled]="saving" (click)="submit()">Guardar</button>
+    </mat-dialog-actions>
+  </form>
+}

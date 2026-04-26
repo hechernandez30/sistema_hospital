@@ -1,0 +1,114 @@
+.login-page {
+  position: relative;
+  min-height: calc(100vh - 180px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 0 2rem;
+}
+
+.login-backdrop {
+  position: absolute;
+  inset: -1.5rem -1rem 0;
+  border-radius: var(--hh-radius-lg, 14px);
+  background:
+    radial-gradient(ellipse 120% 80% at 20% 0%, rgba(21, 101, 192, 0.14), transparent 55%),
+    radial-gradient(ellipse 100% 60% at 100% 100%, rgba(10, 40, 64, 0.09), transparent 50%),
+    linear-gradient(180deg, var(--hh-bg-page, #eef2f8) 0%, var(--hh-bg-content, #f2f6fb) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.login-brand {
+  text-align: center;
+}
+
+.login-brand-mark {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 0.75rem;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #1565c0, #0c3554);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(12, 53, 84, 0.25);
+}
+
+.login-brand-mark mat-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+.login-brand-title {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--hh-navy, #0a2840);
+  letter-spacing: 0.02em;
+}
+
+.login-brand-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--hh-text-muted, #475569);
+}
+
+.login-card {
+  width: 100%;
+  overflow: hidden;
+}
+
+.login-card-header {
+  padding-bottom: 0.5rem !important;
+}
+
+.login-card mat-divider {
+  margin: 0 -16px 0;
+}
+
+.login-card mat-card-content {
+  padding-top: 1.25rem !important;
+}
+
+.full {
+  width: 100%;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.actions a[mat-stroked-button] {
+  font-weight: 600;
+}
+
+.submit-btn {
+  min-width: 9rem;
+  font-weight: 700;
+}
+
+.submit-btn .btn-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}

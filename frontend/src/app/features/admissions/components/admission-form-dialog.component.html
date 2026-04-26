@@ -1,0 +1,105 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">{{ isEdit ? 'edit' : 'local_hospital' }}</mat-icon>
+  {{ isEdit ? 'Editar admisión' : 'Nueva admisión' }}
+</h2>
+
+@if (loading) {
+  <mat-dialog-content class="loading-wrap">
+    <mat-progress-spinner diameter="40" mode="indeterminate" />
+  </mat-dialog-content>
+} @else {
+  <form [formGroup]="form" novalidate (ngSubmit)="submit()">
+    <mat-dialog-content class="form-scroll">
+      <p class="hint">
+        <mat-icon>info</mat-icon>
+        ID de paciente obligatorio. Cita opcional (ID). Valores de tipo y estado deben coincidir con el backend.
+      </p>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>ID paciente</mat-label>
+          <input matInput formControlName="patientId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.patientId.hasError('required') && form.controls.patientId.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.patientId.hasError('positiveInteger') && form.controls.patientId.touched) {
+            <mat-error>ID entero positivo</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>ID cita (opcional)</mat-label>
+          <input matInput formControlName="appointmentId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.appointmentId.hasError('positiveInteger') && form.controls.appointmentId.touched) {
+            <mat-error>ID entero positivo o vacío</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de admisión</mat-label>
+          <mat-select formControlName="admissionType">
+            @for (t of types; track t) {
+              <mat-option [value]="t">{{ t }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Estado</mat-label>
+          <mat-select formControlName="status">
+            @if (!isEdit) {
+              <mat-option value="">Predeterminado (ADMITIDO)</mat-option>
+            }
+            @for (s of statuses; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+          @if (isEdit && form.controls.status.invalid && form.controls.status.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>Área actual</mat-label>
+          <input matInput formControlName="currentArea" maxlength="100" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Habitación</mat-label>
+          <input matInput formControlName="room" maxlength="30" />
+        </mat-form-field>
+      </div>
+      <mat-checkbox formControlName="financialValidationOk">Validación financiera OK</mat-checkbox>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Origen validación</mat-label>
+        <mat-select formControlName="validationSource">
+          <mat-option value="">—</mat-option>
+          @for (x of validationSources; track x) {
+            <mat-option [value]="x">{{ x }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Observaciones</mat-label>
+        <textarea matInput rows="2" formControlName="observations"></textarea>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Fecha/hora egreso (opcional)</mat-label>
+        <input matInput type="datetime-local" formControlName="dischargeDate" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Área transferencia</mat-label>
+        <input matInput formControlName="transferredArea" maxlength="100" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>ID usuario admisor (opcional)</mat-label>
+        <input matInput formControlName="admittedByUserId" inputmode="numeric" autocomplete="off" />
+        @if (form.controls.admittedByUserId.hasError('positiveInteger') && form.controls.admittedByUserId.touched) {
+          <mat-error>ID entero positivo o vacío</mat-error>
+        }
+      </mat-form-field>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>
+      <button mat-flat-button color="primary" type="button" [disabled]="saving" (click)="submit()">Guardar</button>
+    </mat-dialog-actions>
+  </form>
+}

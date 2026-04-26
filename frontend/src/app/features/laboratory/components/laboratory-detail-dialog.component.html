@@ -1,0 +1,23 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">visibility</mat-icon>
+  Laboratorio #{{ data.id }}
+</h2>
+<mat-dialog-content class="detail">
+  <div class="field"><span class="label">Orden médica</span><span class="value">#{{ data.medicalOrderId }}</span></div>
+  <div class="field"><span class="label">Estado</span><span class="value">{{ data.status }}</span></div>
+  <div class="field"><span class="label">Solicitante</span><span class="value">{{ data.requesterType ?? '—' }}</span></div>
+  <div class="field"><span class="label">Tipo solicitud</span><span class="value">{{ data.requestType ?? '—' }}</span></div>
+  <div class="field full"><span class="label">Registro</span><span class="value">{{ data.recordNumber ?? '—' }}</span></div>
+  <div class="field full"><span class="label">Muestra</span><span class="value pre">{{ data.sampleDescription ?? '—' }}</span></div>
+  <div class="field"><span class="label">Recibida</span><span class="value">{{ data.sampleReceived ? 'Sí' : 'No' }}</span></div>
+  <div class="field"><span class="label">Válida</span><span class="value">{{ data.sampleValid == null ? '—' : data.sampleValid ? 'Sí' : 'No' }}</span></div>
+  <div class="field full"><span class="label">Recepción</span><span class="value">{{ data.receptionAt ? (data.receptionAt | date: 'medium') : '—' }}</span></div>
+  <div class="field full"><span class="label">Resultado (fecha)</span><span class="value">{{ data.resultAt ? (data.resultAt | date: 'medium') : '—' }}</span></div>
+  <div class="field full"><span class="label">Incidente</span><span class="value pre">{{ data.incident ?? '—' }}</span></div>
+  <div class="field full"><span class="label">Resultado</span><span class="value pre">{{ data.result ?? '—' }}</span></div>
+  <div class="field full"><span class="label">Adjunto</span><span class="value">{{ data.attachment ?? '—' }}</span></div>
+  <div class="field"><span class="label">Staff</span><span class="value">{{ data.responsibleStaffId ?? '—' }}</span></div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>
+</mat-dialog-actions>

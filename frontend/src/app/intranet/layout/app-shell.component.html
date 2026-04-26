@@ -1,0 +1,67 @@
+<mat-sidenav-container class="shell-container" [hasBackdrop]="isHandset()">
+  <mat-sidenav
+    #sidenav
+    [mode]="isHandset() ? 'over' : 'side'"
+    [opened]="!isHandset()"
+    class="shell-sidenav"
+    [fixedInViewport]="true"
+  >
+    <div class="sidenav-brand">
+      <span class="sidenav-brand-title">Hospital H&amp;H</span>
+      <span class="sidenav-brand-sub">Sistema interno</span>
+    </div>
+    <mat-divider class="sidenav-divider" />
+    <mat-nav-list class="sidenav-list">
+      @for (item of menuItems; track item.path) {
+        <a
+          mat-list-item
+          class="sidenav-link"
+          [routerLink]="item.path"
+          routerLinkActive="active-link"
+          (click)="closeNavIfMobile()"
+        >
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+    <div class="sidenav-footer">
+      <mat-divider class="sidenav-divider" />
+      <a mat-list-item class="sidenav-link sidenav-link-muted" routerLink="/p/inicio" (click)="closeNavIfMobile()">
+        <mat-icon matListItemIcon>public</mat-icon>
+        <span matListItemTitle>Portal público</span>
+      </a>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="shell-content">
+    <mat-toolbar class="shell-toolbar">
+      @if (isHandset()) {
+        <button mat-icon-button type="button" class="toolbar-icon-btn" (click)="sidenav.toggle()" aria-label="Abrir menú">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <mat-icon class="toolbar-brand-icon" aria-hidden="true">local_hospital</mat-icon>
+      <span class="toolbar-title">Hospital H&amp;H</span>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <span class="toolbar-scope">Intranet</span>
+      <span class="spacer"></span>
+      <div class="user-block">
+        <mat-icon class="user-block-icon" aria-hidden="true">person</mat-icon>
+        <div class="user-block-text">
+          <span class="user-name">{{ userName }}</span>
+          @if (rolesLine) {
+            <span class="user-roles">{{ rolesLine }}</span>
+          }
+        </div>
+      </div>
+      <button mat-stroked-button color="primary" class="logout-btn" type="button" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Salir
+      </button>
+    </mat-toolbar>
+    <div class="shell-outlet">
+      <router-outlet />
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

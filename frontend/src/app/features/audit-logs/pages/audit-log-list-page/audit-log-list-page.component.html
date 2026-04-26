@@ -1,0 +1,83 @@
+<mat-card class="page-card">
+  <mat-card-header>
+    <mat-icon mat-card-avatar class="page-avatar">history</mat-icon>
+    <mat-card-title>Bitácora</mat-card-title>
+    <mat-card-subtitle>Registro de auditoría — solo lectura — Hospital H&amp;H</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="toolbar-row">
+      <mat-form-field appearance="outline" class="mod-field" subscriptSizing="dynamic">
+        <mat-label>Módulo (filtro)</mat-label>
+        <input matInput [(ngModel)]="filterModule" placeholder="Texto exacto query" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="uid-field" subscriptSizing="dynamic">
+        <mat-label>ID usuario</mat-label>
+        <input matInput [(ngModel)]="filterUserId" inputmode="numeric" placeholder="Opcional" />
+      </mat-form-field>
+      <button mat-stroked-button color="primary" type="button" (click)="applyFilters()">Aplicar filtros</button>
+      <button mat-button type="button" (click)="clearFilters()">Limpiar</button>
+      <span class="spacer"></span>
+      <mat-form-field appearance="outline" class="filter-field" subscriptSizing="dynamic">
+        <mat-label>Buscar en tabla</mat-label>
+        <input matInput (keyup)="applyTextFilter($any($event.target).value)" />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+
+    @if (loading) {
+      <div class="loading">
+        <mat-progress-spinner diameter="40" mode="indeterminate" />
+      </div>
+    } @else if (dataSource.data.length === 0) {
+      <div class="hh-table-empty">
+        <mat-icon>history</mat-icon>
+        <p class="hh-table-empty-title">No hay eventos en la bitácora</p>
+        <p class="hh-table-empty-sub">Ajuste los filtros por módulo o usuario, o amplíe la búsqueda en tabla.</p>
+      </div>
+    } @else {
+      <div class="table-wrap mat-elevation-z0">
+        <table mat-table [dataSource]="dataSource" matSort>
+          <ng-container matColumnDef="id">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="id">ID</th>
+            <td mat-cell *matCellDef="let row">{{ row.id }}</td>
+          </ng-container>
+          <ng-container matColumnDef="occurredAt">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="occurredAt">Fecha</th>
+            <td mat-cell *matCellDef="let row">{{ row.occurredAt | date: 'medium' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="userLabel">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="userLabel">Usuario</th>
+            <td mat-cell *matCellDef="let row">{{ row.userLabel }}</td>
+          </ng-container>
+          <ng-container matColumnDef="module">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="module">Módulo</th>
+            <td mat-cell *matCellDef="let row">{{ row.module }}</td>
+          </ng-container>
+          <ng-container matColumnDef="entityType">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="entityType">Entidad</th>
+            <td mat-cell *matCellDef="let row">{{ row.entityType }}</td>
+          </ng-container>
+          <ng-container matColumnDef="action">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="action">Acción</th>
+            <td mat-cell *matCellDef="let row">{{ row.action }}</td>
+          </ng-container>
+          <ng-container matColumnDef="recordId">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="recordId">Registro</th>
+            <td mat-cell *matCellDef="let row">{{ row.recordId }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="col-actions">Acciones</th>
+            <td mat-cell *matCellDef="let row" class="col-actions">
+              <button mat-icon-button type="button" (click)="openDetail(row)" matTooltip="Ver detalle JSON">
+                <mat-icon>visibility</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+        <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

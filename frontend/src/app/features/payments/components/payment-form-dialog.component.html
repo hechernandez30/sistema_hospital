@@ -1,0 +1,133 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">{{ isEdit ? 'edit' : 'payments' }}</mat-icon>
+  {{ isEdit ? 'Editar pago' : 'Registrar pago' }}
+</h2>
+
+@if (loading) {
+  <mat-dialog-content class="loading-wrap">
+    <mat-progress-spinner diameter="40" mode="indeterminate" />
+  </mat-dialog-content>
+} @else {
+  <form [formGroup]="form" novalidate (ngSubmit)="submit()">
+    <mat-dialog-content class="form-scroll">
+      <p class="hint">
+        <mat-icon>info</mat-icon>
+        Los totales mostrados en listas y detalle provienen del backend. Aquí solo se capturan los datos del comprobante
+        según el API.
+      </p>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>ID paciente</mat-label>
+          <input matInput formControlName="patientId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.patientId.hasError('required') && form.controls.patientId.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.patientId.hasError('positiveInteger') && form.controls.patientId.touched) {
+            <mat-error>Entero positivo</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Estado</mat-label>
+          <mat-select formControlName="status">
+            @for (s of statuses; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+          @if (form.controls.status.invalid && form.controls.status.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>ID admisión (opcional)</mat-label>
+          <input matInput formControlName="admissionId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.admissionId.hasError('positiveInteger') && form.controls.admissionId.touched) {
+            <mat-error>ID válido o vacío</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>ID orden médica (opcional)</mat-label>
+          <input matInput formControlName="medicalOrderId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.medicalOrderId.hasError('positiveInteger') && form.controls.medicalOrderId.touched) {
+            <mat-error>ID válido o vacío</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Concepto</mat-label>
+        <input matInput formControlName="concept" maxlength="200" />
+        @if (form.controls.concept.hasError('required') && form.controls.concept.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+      </mat-form-field>
+      <div class="row three">
+        <mat-form-field appearance="outline">
+          <mat-label>Subtotal</mat-label>
+          <input matInput formControlName="subtotal" inputmode="decimal" autocomplete="off" placeholder="0 o 0.00" />
+          @if (form.controls.subtotal.hasError('required') && form.controls.subtotal.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.subtotal.hasError('decimal') && form.controls.subtotal.touched) {
+            <mat-error>Número decimal válido</mat-error>
+          }
+          @if (form.controls.subtotal.hasError('range') && form.controls.subtotal.touched) {
+            <mat-error>≥ 0</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>% seguro (0–100)</mat-label>
+          <input matInput formControlName="insurancePercent" inputmode="decimal" autocomplete="off" />
+          @if (form.controls.insurancePercent.hasError('required') && form.controls.insurancePercent.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.insurancePercent.hasError('decimal') && form.controls.insurancePercent.touched) {
+            <mat-error>Número decimal válido</mat-error>
+          }
+          @if (form.controls.insurancePercent.hasError('range') && form.controls.insurancePercent.touched) {
+            <mat-error>Entre 0 y 100</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Copago</mat-label>
+          <input matInput formControlName="copay" inputmode="decimal" autocomplete="off" />
+          @if (form.controls.copay.hasError('required') && form.controls.copay.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.copay.hasError('decimal') && form.controls.copay.touched) {
+            <mat-error>Número decimal válido</mat-error>
+          }
+          @if (form.controls.copay.hasError('range') && form.controls.copay.touched) {
+            <mat-error>≥ 0</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>Método de pago</mat-label>
+          <mat-select formControlName="paymentMethod">
+            <mat-option value="">— Sin especificar —</mat-option>
+            @for (m of methodOptions; track m) {
+              <mat-option [value]="m">{{ m }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Nº recibo (opcional)</mat-label>
+          <input matInput formControlName="receiptNumber" maxlength="50" />
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>ID usuario registro (opcional)</mat-label>
+        <input matInput formControlName="registeredByUserId" inputmode="numeric" autocomplete="off" />
+        @if (form.controls.registeredByUserId.hasError('positiveInteger') && form.controls.registeredByUserId.touched) {
+          <mat-error>ID válido o vacío</mat-error>
+        }
+      </mat-form-field>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>
+      <button mat-flat-button color="primary" type="button" [disabled]="saving" (click)="submit()">Guardar</button>
+    </mat-dialog-actions>
+  </form>
+}

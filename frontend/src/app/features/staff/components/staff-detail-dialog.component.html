@@ -1,0 +1,18 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">badge</mat-icon>
+  Personal #{{ data.id }}
+</h2>
+<mat-dialog-content class="detail">
+  <div class="field"><span class="label">Código</span><span class="value">{{ data.employeeCode }}</span></div>
+  <div class="field"><span class="label">Tipo</span><span class="value">{{ data.staffType }}</span></div>
+  <div class="field"><span class="label">Usuario (id)</span><span class="value">{{ data.userId != null ? '#' + data.userId : '—' }}</span></div>
+  <div class="field"><span class="label">Especialidad (id)</span><span class="value">{{ data.specialtyId != null ? '#' + data.specialtyId : '—' }}</span></div>
+  <div class="field"><span class="label">Colegiado</span><span class="value">{{ data.licenseNumber ?? '—' }}</span></div>
+  <div class="field"><span class="label">Horario</span><span class="value">{{ data.schedule ?? '—' }}</span></div>
+  <div class="field"><span class="label">Asistencia</span><span class="value">{{ data.attendance ?? '—' }}</span></div>
+  <div class="field"><span class="label">Activo</span><span class="value">{{ data.active ? 'Sí' : 'No' }}</span></div>
+  <div class="field"><span class="label">Contratación</span><span class="value">{{ data.hireDate ? (data.hireDate | date: 'mediumDate') : '—' }}</span></div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>
+</mat-dialog-actions>

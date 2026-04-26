@@ -1,0 +1,68 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">{{ isEdit ? 'edit' : 'healing' }}</mat-icon>
+  {{ isEdit ? 'Editar medicamento' : 'Nuevo medicamento' }}
+</h2>
+
+@if (loading) {
+  <mat-dialog-content class="loading-wrap">
+    <mat-progress-spinner diameter="40" mode="indeterminate" />
+  </mat-dialog-content>
+} @else {
+  <form [formGroup]="form" novalidate (ngSubmit)="submit()">
+    <mat-dialog-content class="form-scroll">
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="name" maxlength="150" />
+        @if (form.controls.name.hasError('required') && form.controls.name.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+      </mat-form-field>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>Presentación</mat-label>
+          <input matInput formControlName="presentation" maxlength="100" />
+          @if (form.controls.presentation.hasError('maxlength') && form.controls.presentation.touched) {
+            <mat-error>Máx. 100</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Unidad</mat-label>
+          <input matInput formControlName="unit" maxlength="30" />
+        </mat-form-field>
+      </div>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>Stock actual</mat-label>
+          <input matInput formControlName="currentStock" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.currentStock.hasError('required') && form.controls.currentStock.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.currentStock.hasError('integer') && form.controls.currentStock.touched) {
+            <mat-error>Solo números enteros ≥ 0</mat-error>
+          }
+          @if (form.controls.currentStock.hasError('min') && form.controls.currentStock.touched) {
+            <mat-error>No negativo</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Stock mínimo</mat-label>
+          <input matInput formControlName="minimumStock" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.minimumStock.hasError('required') && form.controls.minimumStock.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.minimumStock.hasError('integer') && form.controls.minimumStock.touched) {
+            <mat-error>Solo números enteros ≥ 0</mat-error>
+          }
+          @if (form.controls.minimumStock.hasError('min') && form.controls.minimumStock.touched) {
+            <mat-error>No negativo</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <mat-checkbox formControlName="active">Activo en catálogo</mat-checkbox>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>
+      <button mat-flat-button color="primary" type="button" [disabled]="saving" (click)="submit()">Guardar</button>
+    </mat-dialog-actions>
+  </form>
+}

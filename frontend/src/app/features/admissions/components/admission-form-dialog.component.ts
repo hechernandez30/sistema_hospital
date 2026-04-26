@@ -1,0 +1,189 @@
+import { Component, OnInit, inject } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { AdmissionApiService } from '../services/admission-api.service';
+import {
+  ADMISSION_STATUSES,
+  ADMISSION_TYPES,
+  AdmissionCreatePayload,
+  AdmissionUpdatePayload,
+  VALIDATION_SOURCES,
+} from '../models/admission.models';
+import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
+import { datetimeLocalToApi } from '../../shared/datetime-local';
+import { optionalPositiveInteger, parsePositiveInt, requiredPositiveInteger } from '../../shared/form-validators';
+
+export interface AdmissionFormDialogData {
+  mode: 'create' | 'edit';
+  admissionId?: number;
+}
+
+@Component({
+  selector: 'app-admission-form-dialog',
+  standalone: true,
+  imports: [
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatSelectModule,
+    MatCheckboxModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule,
+  ],
+  templateUrl: './admission-form-dialog.component.html',
+  styleUrl: './admission-form-dialog.component.scss',
+})
+export class AdmissionFormDialogComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly api = inject(AdmissionApiService);
+  private readonly dialogRef = inject(MatDialogRef<AdmissionFormDialogComponent, boolean>);
+  private readonly snackBar = inject(MatSnackBar);
+  readonly dialogData = inject<AdmissionFormDialogData>(MAT_DIALOG_DATA);
+
+  readonly types = [...ADMISSION_TYPES];
+  readonly statuses = [...ADMISSION_STATUSES];
+  readonly validationSources = [...VALIDATION_SOURCES];
+
+  loading = false;
+  saving = false;
+
+  readonly form = this.fb.group({
+    patientId: ['', [requiredPositiveInteger()]],
+    appointmentId: ['', [optionalPositiveInteger()]],
+    admissionType: ['CONSULTA', [Validators.required]],
+    status: ['' as string],
+    currentArea: ['', [Validators.maxLength(100)]],
+    room: ['', [Validators.maxLength(30)]],
+    financialValidationOk: [false],
+    validationSource: ['' as string],
+    observations: [''],
+    dischargeDate: [''],
+    transferredArea: ['', [Validators.maxLength(100)]],
+    admittedByUserId: ['', [optionalPositiveInteger()]],
+  });
+
+  ngOnInit(): void {
+    if (this.dialogData.mode === 'edit' && this.dialogData.admissionId != null) {
+      this.loading = true;
+      this.api.getById(this.dialogData.admissionId).subscribe({
+        next: (a) => {
+          this.loading = false;
+          this.form.patchValue({
+            patientId: String(a.patientId),
+            appointmentId: a.appointmentId != null ? String(a.appointmentId) : '',
+            admissionType: a.admissionType,
+            status: a.status,
+            currentArea: a.currentArea ?? '',
+            room: a.room ?? '',
+            financialValidationOk: a.financialValidationOk,
+            validationSource: a.validationSource ?? '',
+            observations: a.observations ?? '',
+            dischargeDate: a.dischargeDate ? a.dischargeDate.slice(0, 16) : '',
+            transferredArea: a.transferredArea ?? '',
+            admittedByUserId: a.admittedByUserId != null ? String(a.admittedByUserId) : '',
+          });
+          this.form.controls.status.setValidators([Validators.required]);
+          this.form.controls.status.updateValueAndValidity();
+        },
+        error: (err: unknown) => {
+          this.loading = false;
+          this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar la admisión.'), 'Cerrar', { duration: 6000 });
+          this.dialogRef.close(false);
+        },
+      });
+    } else {
+      this.form.controls.status.clearValidators();
+      this.form.controls.status.updateValueAndValidity();
+    }
+  }
+
+  submit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.snackBar.open('Revise los campos marcados: hay datos inválidos o incompletos.', 'Cerrar', { duration: 6000 });
+      return;
+    }
+    const v = this.form.getRawValue();
+    const patientId = parsePositiveInt(v.patientId);
+    if (patientId == null) {
+      this.snackBar.open('ID de paciente no válido.', 'Cerrar', { duration: 5000 });
+      return;
+    }
+    this.saving = true;
+    const appointmentId = parsePositiveInt(v.appointmentId);
+    const admittedByUserId = parsePositiveInt(v.admittedByUserId);
+    const discharge = v.dischargeDate?.trim() ? datetimeLocalToApi(v.dischargeDate.trim()) : null;
+    const vs = v.validationSource?.trim();
+    const validationSource = vs ? vs : null;
+    if (this.dialogData.mode === 'create') {
+      const body: AdmissionCreatePayload = {
+        patientId,
+        appointmentId,
+        admissionType: v.admissionType as string,
+        status: v.status?.trim() ? v.status.trim() : null,
+        currentArea: v.currentArea?.trim() || null,
+        room: v.room?.trim() || null,
+        financialValidationOk: v.financialValidationOk ?? null,
+        validationSource,
+        observations: v.observations?.trim() || null,
+        dischargeDate: discharge,
+        transferredArea: v.transferredArea?.trim() || null,
+        admittedByUserId,
+      };
+      this.api.create(body).subscribe({
+        next: () => this.ok(),
+        error: (e) => this.err(e),
+      });
+    } else if (this.dialogData.admissionId != null) {
+      const body: AdmissionUpdatePayload = {
+        patientId,
+        appointmentId,
+        admissionType: v.admissionType as string,
+        status: (v.status ?? '').trim(),
+        currentArea: v.currentArea?.trim() || null,
+        room: v.room?.trim() || null,
+        financialValidationOk: !!v.financialValidationOk,
+        validationSource: validationSource ?? '',
+        observations: v.observations?.trim() || null,
+        dischargeDate: discharge,
+        transferredArea: v.transferredArea?.trim() || null,
+        admittedByUserId,
+      };
+      this.api.update(this.dialogData.admissionId, body).subscribe({
+        next: () => this.ok(),
+        error: (e) => this.err(e),
+      });
+    } else {
+      this.saving = false;
+      this.snackBar.open('No se pudo guardar: falta el identificador de la admisión.', 'Cerrar', { duration: 6000 });
+    }
+  }
+
+  private ok(): void {
+    this.saving = false;
+    this.snackBar.open('Admisión guardada correctamente.', 'Cerrar', { duration: 4000 });
+    this.dialogRef.close(true);
+  }
+
+  private err(err: unknown): void {
+    this.saving = false;
+    this.snackBar.open(getHttpErrorMessage(err, 'No se pudo guardar la admisión.'), 'Cerrar', { duration: 7000 });
+  }
+
+  cancel(): void {
+    this.dialogRef.close(false);
+  }
+
+  readonly isEdit = this.dialogData.mode === 'edit';
+}

@@ -20,6 +20,23 @@ spring:
 server:
   port: 8080
 
+app:
+  security:
+    enabled: true
+  jwt:
+    # Mínimo 32 bytes UTF-8 para HS256; sustituir en producción (variable de entorno recomendada).
+    secret: "desarrollo-local-clave-muy-larga-de-al-menos-32-bytes!!"
+    expiration-minutes: 120
+  cors:
+    allowed-origins:
+      - http://localhost:4200
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 management:
   endpoints:
     web:

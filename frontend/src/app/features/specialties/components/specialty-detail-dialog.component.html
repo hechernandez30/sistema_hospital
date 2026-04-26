@@ -1,0 +1,11 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">category</mat-icon>
+  Especialidad #{{ data.id }}
+</h2>
+<mat-dialog-content class="detail">
+  <div class="field"><span class="label">Nombre</span><span class="value">{{ data.name }}</span></div>
+  <div class="field"><span class="label">Duración (min)</span><span class="value">{{ data.durationMinutes }}</span></div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>
+</mat-dialog-actions>

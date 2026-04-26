@@ -1,0 +1,15 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">visibility</mat-icon>
+  {{ data.name }}
+</h2>
+<mat-dialog-content class="detail">
+  <div class="field"><span class="label">ID</span><span class="value">{{ data.id }}</span></div>
+  <div class="field full"><span class="label">Presentación</span><span class="value">{{ data.presentation ?? '—' }}</span></div>
+  <div class="field"><span class="label">Unidad</span><span class="value">{{ data.unit ?? '—' }}</span></div>
+  <div class="field"><span class="label">Stock actual</span><span class="value">{{ data.currentStock }}</span></div>
+  <div class="field"><span class="label">Stock mínimo</span><span class="value">{{ data.minimumStock }}</span></div>
+  <div class="field"><span class="label">Activo</span><span class="value">{{ data.active ? 'Sí' : 'No' }}</span></div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>
+</mat-dialog-actions>

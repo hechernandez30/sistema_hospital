@@ -1,0 +1,26 @@
+.title-icon {
+  vertical-align: middle;
+  margin-right: 0.35rem;
+  color: var(--hh-primary, #1565c0);
+}
+
+.detail {
+  min-width: min(92vw, 440px);
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.875rem;
+}
+
+.label {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.value {
+  word-break: break-word;
+}

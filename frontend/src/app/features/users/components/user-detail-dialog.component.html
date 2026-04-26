@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">person</mat-icon>
+  Usuario #{{ data.id }}
+</h2>
+<mat-dialog-content class="detail">
+  <div class="field"><span class="label">Usuario</span><span class="value">{{ data.username }}</span></div>
+  <div class="field"><span class="label">Correo</span><span class="value">{{ data.email }}</span></div>
+  <div class="field"><span class="label">Nombre</span><span class="value">{{ data.firstName }} {{ data.lastName }}</span></div>
+  <div class="field"><span class="label">Rol (id)</span><span class="value">#{{ data.roleId }}</span></div>
+  <div class="field"><span class="label">Estado</span><span class="value">{{ data.state }}</span></div>
+  <div class="field"><span class="label">MFA</span><span class="value">{{ data.mfaEnabled ? 'Activado' : 'Desactivado' }}</span></div>
+  <div class="field"><span class="label">Creado</span><span class="value">{{ data.createdAt | date: 'medium' }}</span></div>
+  <div class="field"><span class="label">Actualizado</span><span class="value">{{ data.updatedAt | date: 'medium' }}</span></div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>
+</mat-dialog-actions>

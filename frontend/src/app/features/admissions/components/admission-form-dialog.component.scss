@@ -1,0 +1,49 @@
+.title-icon {
+  vertical-align: middle;
+  margin-right: 0.35rem;
+  color: var(--hh-primary);
+}
+
+.loading-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.form-scroll {
+  min-width: min(92vw, 520px);
+  max-height: 70vh;
+}
+
+.hint {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.85rem;
+  color: var(--hh-text-muted);
+  margin: 0 0 1rem;
+  line-height: 1.45;
+}
+
+.hint mat-icon {
+  color: var(--hh-primary);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.row.two > mat-form-field {
+  flex: 1 1 200px;
+}
+
+.full {
+  width: 100%;
+}
+
+mat-checkbox {
+  display: block;
+  margin-bottom: 0.75rem;
+}

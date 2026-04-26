@@ -1,0 +1,39 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Editar especialidad' : 'Nueva especialidad' }}</h2>
+<mat-dialog-content>
+  @if (loading) {
+    <div class="loading">
+      <mat-progress-spinner diameter="36" mode="indeterminate" />
+    </div>
+  } @else {
+    <form [formGroup]="form" class="form">
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="name" maxlength="100" />
+        @if (form.controls.name.hasError('required') && form.controls.name.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Duración (minutos)</mat-label>
+        <input matInput formControlName="durationMinutes" inputmode="numeric" placeholder="20–60" />
+        <mat-hint>Entre 20 y 60 (validación del servidor)</mat-hint>
+        @if (form.controls.durationMinutes.hasError('required') && form.controls.durationMinutes.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+        @if (form.controls.durationMinutes.hasError('range') && form.controls.durationMinutes.touched) {
+          <mat-error>Debe estar entre 20 y 60</mat-error>
+        }
+      </mat-form-field>
+    </form>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>
+  <button mat-flat-button color="primary" type="button" (click)="submit()" [disabled]="loading || saving">
+    @if (saving) {
+      <span>Guardando…</span>
+    } @else {
+      Guardar
+    }
+  </button>
+</mat-dialog-actions>

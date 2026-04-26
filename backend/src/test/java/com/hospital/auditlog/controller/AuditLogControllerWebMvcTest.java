@@ -2,6 +2,8 @@ package com.hospital.auditlog.controller;
 
 import com.hospital.auditlog.dto.AuditLogResponse;
 import com.hospital.auditlog.service.AuditLogService;
+import com.hospital.security.HospitalUserDetailsService;
+import com.hospital.testsupport.HospitalWebMvcSecurity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -20,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = AuditLogController.class)
+@HospitalWebMvcSecurity
 class AuditLogControllerWebMvcTest {
 
     @Autowired
@@ -27,6 +30,9 @@ class AuditLogControllerWebMvcTest {
 
     @MockBean
     private AuditLogService auditLogService;
+
+    @MockBean
+    private HospitalUserDetailsService hospitalUserDetailsService;
 
     @Test
     void listAuditLogsReturnsOk() throws Exception {

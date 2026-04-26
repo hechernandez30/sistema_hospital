@@ -1,0 +1,78 @@
+<mat-card class="page-card">
+  <mat-card-header>
+    <mat-icon mat-card-avatar class="page-avatar">emergency</mat-icon>
+    <mat-card-title>Triage</mat-card-title>
+    <mat-card-subtitle>Clasificación inicial — Hospital H&amp;H</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="toolbar-row">
+      <button mat-flat-button color="primary" type="button" (click)="openCreate()">
+        <mat-icon>add</mat-icon>
+        Nuevo triage
+      </button>
+      <span class="spacer"></span>
+      <mat-form-field appearance="outline" class="adm-field" subscriptSizing="dynamic">
+        <mat-label>Filtrar por admisión (ID)</mat-label>
+        <input matInput type="number" [(ngModel)]="filterAdmissionId" />
+      </mat-form-field>
+      <button mat-stroked-button type="button" (click)="applyAdmissionFilter()">Aplicar</button>
+      <button mat-button type="button" (click)="clearAdmissionFilter()">Limpiar</button>
+    </div>
+    <div class="toolbar-row second">
+      <mat-form-field appearance="outline" class="filter-field" subscriptSizing="dynamic">
+        <mat-label>Buscar en tabla</mat-label>
+        <input matInput (keyup)="applyTextFilter($any($event.target).value)" />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+    @if (loading) {
+      <div class="loading">
+        <mat-progress-spinner diameter="40" mode="indeterminate" />
+      </div>
+    } @else if (dataSource.data.length === 0) {
+      <div class="hh-table-empty">
+        <mat-icon>emergency</mat-icon>
+        <p class="hh-table-empty-title">No hay registros de triage</p>
+        <p class="hh-table-empty-sub">Cree un triage o ajuste el filtro por admisión y la búsqueda.</p>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="dataSource" matSort>
+          <ng-container matColumnDef="id">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="id">ID</th>
+            <td mat-cell *matCellDef="let row">{{ row.id }}</td>
+          </ng-container>
+          <ng-container matColumnDef="admissionLabel">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="admissionLabel">Admisión / paciente</th>
+            <td mat-cell *matCellDef="let row">{{ row.admissionLabel }}</td>
+          </ng-container>
+          <ng-container matColumnDef="priority">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="priority">Prioridad</th>
+            <td mat-cell *matCellDef="let row">{{ row.priority }}</td>
+          </ng-container>
+          <ng-container matColumnDef="registeredAt">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="registeredAt">Registrado</th>
+            <td mat-cell *matCellDef="let row">{{ row.registeredAt | date: 'short' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="col-actions">Acciones</th>
+            <td mat-cell *matCellDef="let row" class="col-actions">
+              <button mat-icon-button type="button" (click)="openDetail(row)" matTooltip="Ver">
+                <mat-icon>visibility</mat-icon>
+              </button>
+              <button mat-icon-button type="button" (click)="openEdit(row)" matTooltip="Editar">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button type="button" color="warn" (click)="confirmDelete(row)" matTooltip="Eliminar">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+        <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

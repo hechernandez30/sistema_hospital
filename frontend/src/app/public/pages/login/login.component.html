@@ -1,0 +1,51 @@
+<div class="login-page">
+  <div class="login-backdrop" aria-hidden="true"></div>
+  <div class="login-wrap">
+    <div class="login-brand" aria-hidden="true">
+      <div class="login-brand-mark">
+        <mat-icon>local_hospital</mat-icon>
+      </div>
+      <h1 class="login-brand-title">Hospital H&amp;H</h1>
+      <p class="login-brand-sub">Portal institucional</p>
+    </div>
+
+    <mat-card class="login-card">
+      <mat-card-header class="login-card-header">
+        <mat-card-title>Acceso personal</mat-card-title>
+        <mat-card-subtitle>Personal autorizado — sistema interno</mat-card-subtitle>
+      </mat-card-header>
+      <mat-divider />
+      <mat-card-content>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Usuario</mat-label>
+            <input matInput formControlName="username" autocomplete="username" />
+            @if (form.controls.username.invalid && form.controls.username.touched) {
+              <mat-error>Usuario requerido</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Contraseña</mat-label>
+            <input matInput type="password" formControlName="password" autocomplete="current-password" />
+            @if (form.controls.password.invalid && form.controls.password.touched) {
+              <mat-error>Contraseña requerida</mat-error>
+            }
+          </mat-form-field>
+          <div class="actions">
+            <button mat-raised-button color="primary" type="submit" [disabled]="submitting" class="submit-btn">
+              @if (submitting) {
+                <span class="btn-inner">
+                  <mat-progress-spinner diameter="20" mode="indeterminate" />
+                  <span>Ingresando…</span>
+                </span>
+              } @else {
+                Ingresar
+              }
+            </button>
+            <a mat-stroked-button color="primary" routerLink="/p/inicio">Volver al inicio</a>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

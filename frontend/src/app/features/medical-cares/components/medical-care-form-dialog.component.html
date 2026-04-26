@@ -1,0 +1,87 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">{{ isEdit ? 'edit' : 'medical_services' }}</mat-icon>
+  {{ isEdit ? 'Editar atención médica' : 'Nueva atención médica' }}
+</h2>
+
+@if (loading) {
+  <mat-dialog-content class="loading-wrap">
+    <mat-progress-spinner diameter="40" mode="indeterminate" />
+  </mat-dialog-content>
+} @else {
+  <form [formGroup]="form" novalidate (ngSubmit)="submit()">
+    <mat-dialog-content class="form-scroll">
+      <p class="hint">
+        <mat-icon>info</mat-icon>
+        IDs numéricos (paciente, médico staff, admisión y cita opcionales). El backend valida existencia y reglas de negocio.
+      </p>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>ID paciente</mat-label>
+          <input matInput formControlName="patientId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.patientId.hasError('required') && form.controls.patientId.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.patientId.hasError('positiveInteger') && form.controls.patientId.touched) {
+            <mat-error>ID entero positivo</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>ID médico (staff)</mat-label>
+          <input matInput formControlName="doctorId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.doctorId.hasError('required') && form.controls.doctorId.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.doctorId.hasError('positiveInteger') && form.controls.doctorId.touched) {
+            <mat-error>ID entero positivo</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="row two">
+        <mat-form-field appearance="outline">
+          <mat-label>ID admisión (opcional)</mat-label>
+          <input matInput formControlName="admissionId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.admissionId.hasError('positiveInteger') && form.controls.admissionId.touched) {
+            <mat-error>ID válido o vacío</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>ID cita (opcional)</mat-label>
+          <input matInput formControlName="appointmentId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.appointmentId.hasError('positiveInteger') && form.controls.appointmentId.touched) {
+            <mat-error>ID válido o vacío</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Motivo consulta</mat-label>
+        <textarea matInput rows="2" formControlName="consultationReason"></textarea>
+        @if (form.controls.consultationReason.invalid && form.controls.consultationReason.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Evaluación clínica</mat-label>
+        <textarea matInput rows="3" formControlName="clinicalEvaluation"></textarea>
+        @if (form.controls.clinicalEvaluation.invalid && form.controls.clinicalEvaluation.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Diagnóstico</mat-label>
+        <textarea matInput rows="2" formControlName="diagnosis"></textarea>
+        @if (form.controls.diagnosis.invalid && form.controls.diagnosis.touched) {
+          <mat-error>Requerido</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Plan de tratamiento (opcional)</mat-label>
+        <textarea matInput rows="2" formControlName="treatmentPlan"></textarea>
+      </mat-form-field>
+      <mat-checkbox formControlName="requiresHospitalization">Requiere hospitalización</mat-checkbox>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>
+      <button mat-flat-button color="primary" type="button" [disabled]="saving" (click)="submit()">Guardar</button>
+    </mat-dialog-actions>
+  </form>
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "nombre": "Medicina General",
+    "descripcion": "Atención integral y seguimiento de salud familiar.",
+    "duracionMinutos": 30
+  },
+  {
+    "id": 2,
+    "nombre": "Pediatría",
+    "descripcion": "Cuidado especializado de la salud infantil.",
+    "duracionMinutos": 30
+  },
+  {
+    "id": 3,
+    "nombre": "Cardiología",
+    "descripcion": "Evaluación y tratamiento de enfermedades del corazón y sistema circulatorio.",
+    "duracionMinutos": 45
+  },
+  {
+    "id": 4,
+    "nombre": "Ginecología",
+    "descripcion": "Salud de la mujer y acompañamiento en cada etapa.",
+    "duracionMinutos": 40
+  },
+  {
+    "id": 5,
+    "nombre": "Radiología",
+    "descripcion": "Estudios de imagen con equipamiento moderno.",
+    "duracionMinutos": 30
+  }
+]

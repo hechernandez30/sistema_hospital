@@ -1,0 +1,25 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">event</mat-icon>
+  Cita #{{ data.id }}
+</h2>
+<mat-dialog-content class="detail-body">
+  <div class="grid">
+    <div class="field"><span class="label">Paciente</span><span class="value">{{ data.patientLabel }}</span></div>
+    <div class="field"><span class="label">Médico / personal</span><span class="value">{{ data.doctorLabel }}</span></div>
+    <div class="field"><span class="label">Especialidad</span><span class="value">{{ data.specialtyLabel }}</span></div>
+    <div class="field"><span class="label">Estado</span><span class="value">{{ data.status }}</span></div>
+    <div class="field full"><span class="label">Inicio</span><span class="value">{{ data.startAt | date: 'medium' }}</span></div>
+    <div class="field full"><span class="label">Fin</span><span class="value">{{ data.endAt | date: 'medium' }}</span></div>
+    <div class="field full"><span class="label">Motivo</span><span class="value pre">{{ data.reason ?? '—' }}</span></div>
+    <div class="field"><span class="label">Correo</span><span class="value">{{ data.notifyEmail ? 'Sí' : 'No' }}</span></div>
+    <div class="field"><span class="label">SMS</span><span class="value">{{ data.notifySms ? 'Sí' : 'No' }}</span></div>
+    <div class="field"><span class="label">WhatsApp</span><span class="value">{{ data.notifyWhatsapp ? 'Sí' : 'No' }}</span></div>
+    <div class="field">
+      <span class="label">Usuario que registró</span>
+      <span class="value">{{ data.createdByUserId != null ? 'Usuario #' + data.createdByUserId : '—' }}</span>
+    </div>
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-stroked-button mat-dialog-close type="button">Cerrar</button>
+</mat-dialog-actions>

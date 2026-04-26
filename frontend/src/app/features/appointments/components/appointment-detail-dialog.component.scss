@@ -1,0 +1,43 @@
+.title-icon {
+  vertical-align: middle;
+  margin-right: 0.35rem;
+  color: var(--hh-primary);
+}
+
+.detail-body {
+  min-width: min(92vw, 480px);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.field.full {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hh-text-muted);
+}
+
+.value {
+  color: var(--hh-navy);
+  font-weight: 500;
+}
+
+.value.pre {
+  white-space: pre-wrap;
+  font-weight: 400;
+}

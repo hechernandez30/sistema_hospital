@@ -1,0 +1,42 @@
+.about-page {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.page-card {
+  overflow: hidden;
+}
+
+.about-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(21, 101, 192, 0.1) !important;
+  color: var(--hh-blue, #1565c0) !important;
+  border-radius: 12px !important;
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.about-avatar mat-icon {
+  font-size: 26px;
+  width: 26px;
+  height: 26px;
+}
+
+.about-lead {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--hh-text, #263238);
+  margin: 0 0 1rem;
+}
+
+.about-divider {
+  margin: 1rem 0;
+}
+
+.about-body {
+  line-height: 1.65;
+  color: var(--hh-text-muted, #546e7a);
+  margin: 0;
+}

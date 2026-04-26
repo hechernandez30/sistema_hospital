@@ -1,0 +1,100 @@
+/* Hospital H&H — paleta y capas visuales (complementa tema Material azure-blue). */
+
+:root {
+  /* Primario institucional (acciones, activo, iconos clave) */
+  --hh-primary: #1565c0;
+  --hh-primary-dark: #0d47a1;
+  --hh-primary-soft: rgba(21, 101, 192, 0.1);
+
+  --hh-navy: #0a2840;
+  --hh-navy-soft: #123d5c;
+  --hh-blue-muted: #3d5a73;
+
+  /* Fondos: capas distintas */
+  --hh-bg-page: #eef2f8;
+  --hh-bg-nav: #e4ebf4;
+  --hh-bg-sidebar: #d9e3ef;
+  --hh-bg-content: #f2f6fb;
+
+  /* Tarjetas y superficies elevadas */
+  --hh-card-bg: #ffffff;
+  --hh-border: #cfd8e3;
+  --hh-border-strong: #b8c5d6;
+
+  --hh-text: #1e293b;
+  --hh-text-muted: #475569;
+
+  --hh-radius-lg: 14px;
+  --hh-radius-md: 10px;
+
+  --hh-shadow-card: 0 2px 10px rgba(15, 40, 70, 0.07), 0 1px 3px rgba(15, 40, 70, 0.05);
+  --hh-shadow-card-hover: 0 8px 28px rgba(15, 40, 70, 0.1), 0 2px 8px rgba(15, 40, 70, 0.06);
+  --hh-shadow-nav: 0 2px 10px rgba(15, 40, 70, 0.08);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  background-color: var(--hh-bg-page);
+  color: var(--hh-text);
+}
+
+/* Tarjetas: blanco, elevación clara, separación respecto al fondo */
+.mat-mdc-card {
+  background-color: var(--hh-card-bg) !important;
+  color: var(--hh-text);
+  border-radius: var(--hh-radius-lg) !important;
+  border: 1px solid var(--hh-border) !important;
+  box-shadow: var(--hh-shadow-card) !important;
+}
+
+.mat-mdc-card .mat-mdc-card-content {
+  padding: 1.125rem 1.4rem 1.4rem !important;
+}
+
+.mat-mdc-card .mat-mdc-card-header {
+  padding: 1.1rem 1.4rem 0 !important;
+}
+
+/* Estado vacío en listas (F6) */
+.hh-table-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2.75rem 1.25rem;
+  margin-top: 0.25rem;
+  border: 1px dashed var(--hh-border-strong);
+  border-radius: var(--hh-radius-md);
+  background: rgba(241, 245, 249, 0.65);
+  color: var(--hh-text-muted);
+  text-align: center;
+}
+
+.hh-table-empty mat-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: var(--hh-primary);
+  opacity: 0.65;
+}
+
+.hh-table-empty .hh-table-empty-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--hh-navy);
+}
+
+.hh-table-empty .hh-table-empty-sub {
+  margin: 0;
+  font-size: 0.875rem;
+  max-width: 28rem;
+  line-height: 1.45;
+}

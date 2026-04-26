@@ -1,0 +1,41 @@
+.contact-page {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.intro {
+  color: var(--hh-text-muted, #546e7a);
+  line-height: 1.55;
+  margin: 0 0 1rem;
+  font-size: 1.02rem;
+}
+
+.contact-divider {
+  margin: 0.5rem 0 0.25rem;
+}
+
+.contact-list mat-icon.contact-list-icon {
+  color: var(--hh-blue-muted, #3d6d8c);
+}
+
+a {
+  color: var(--hh-blue, #1565c0);
+  font-weight: 500;
+}
+
+.contact-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(21, 101, 192, 0.1) !important;
+  color: var(--hh-blue, #1565c0) !important;
+  border-radius: 12px !important;
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.contact-avatar mat-icon {
+  font-size: 26px;
+  width: 26px;
+  height: 26px;
+}

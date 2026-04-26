@@ -1,0 +1,55 @@
+.title-icon {
+  vertical-align: middle;
+  margin-right: 0.35rem;
+  color: var(--hh-primary, #1565c0);
+}
+
+.loading-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.form-scroll {
+  min-width: min(92vw, 560px);
+  max-height: 70vh;
+  padding-top: 0.5rem !important;
+}
+
+.section {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hh-navy, #0a2840);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.row.two > mat-form-field {
+  flex: 1 1 200px;
+}
+
+.full {
+  width: 100%;
+}
+
+mat-dialog-actions mat-progress-spinner {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.privacy-row {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.field-error {
+  margin: 0.35rem 0 0 2.5rem;
+  font-size: 0.75rem;
+  color: var(--mat-form-field-error-text-color, #b3261e);
+}

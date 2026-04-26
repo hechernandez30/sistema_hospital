@@ -1,0 +1,90 @@
+<section class="hero" [style.backgroundImage]="'url(' + slides[active].image + ')'">
+  <div class="hero-overlay">
+    <div class="hero-top">
+      <span class="hero-eyebrow">Hospital H&amp;H</span>
+      <div class="hero-progress" aria-hidden="true">
+        @for (s of slides; track $index) {
+          <span class="hero-progress-seg" [class.filled]="$index <= active"></span>
+        }
+      </div>
+    </div>
+    <div class="hero-body">
+      <div class="hero-text">
+        <h1>{{ slides[active].title }}</h1>
+        <p class="hero-subtitle">{{ slides[active].subtitle }}</p>
+        <div class="hero-actions">
+          <a mat-stroked-button class="hero-btn-contact" routerLink="/p/contacto">
+            <mat-icon>mail_outline</mat-icon>
+            Contacto
+          </a>
+          <a mat-raised-button color="primary" class="hero-btn-acceso" routerLink="/p/acceso">
+            <mat-icon>login</mat-icon>
+            Acceso personal
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="hero-footer">
+      <div class="carousel-controls">
+        <button mat-mini-fab type="button" class="carousel-fab" (click)="prev()" aria-label="Anterior">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <div class="dots" role="tablist" [attr.aria-label]="'Carrusel, diapositiva ' + (active + 1) + ' de ' + slides.length">
+          @for (s of slides; track $index) {
+            <button
+              type="button"
+              class="dot"
+              [class.active]="$index === active"
+              (click)="active = $index"
+              [attr.aria-label]="'Ir a diapositiva ' + ($index + 1)"
+              [attr.aria-selected]="$index === active"
+              role="tab"
+            ></button>
+          }
+        </div>
+        <button mat-mini-fab type="button" class="carousel-fab" (click)="next()" aria-label="Siguiente">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="below-hero">
+  <div class="section-head">
+    <h2 class="section-title">Por qué elegirnos</h2>
+    <p class="section-lead">Compromiso con la calidad asistencial y una experiencia clara para pacientes y familias.</p>
+  </div>
+  <div class="intro-grid">
+    <mat-card class="intro-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="intro-avatar">verified</mat-icon>
+        <mat-card-title>Compromiso clínico</mat-card-title>
+        <mat-card-subtitle>Protocolos y trazabilidad</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <p>Seguimos estándares de calidad para brindar diagnósticos y tratamientos seguros.</p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="intro-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="intro-avatar">hotel_class</mat-icon>
+        <mat-card-title>Entorno cálido</mat-card-title>
+        <mat-card-subtitle>Hospital privado</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <p>Instalaciones pensadas para la comodidad del paciente y su acompañante.</p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="intro-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="intro-avatar">groups</mat-icon>
+        <mat-card-title>Equipo multidisciplinario</mat-card-title>
+        <mat-card-subtitle>Medicina coordinada</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <p>Coordinación entre especialidades para una atención integral.</p>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</section>

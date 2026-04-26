@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">visibility</mat-icon>
+  Imagen #{{ data.id }}
+</h2>
+<mat-dialog-content class="detail">
+  <div class="field"><span class="label">Orden médica</span><span class="value">#{{ data.medicalOrderId }}</span></div>
+  <div class="field"><span class="label">Tipo</span><span class="value">{{ data.studyType }}</span></div>
+  <div class="field"><span class="label">Estado</span><span class="value">{{ data.status }}</span></div>
+  <div class="field full"><span class="label">Programado</span><span class="value">{{ data.scheduledAt ? (data.scheduledAt | date: 'medium') : '—' }}</span></div>
+  <div class="field full"><span class="label">Realizado</span><span class="value">{{ data.performedAt ? (data.performedAt | date: 'medium') : '—' }}</span></div>
+  <div class="field full"><span class="label">Informe</span><span class="value pre">{{ data.reportResult ?? '—' }}</span></div>
+  <div class="field full"><span class="label">Archivo</span><span class="value">{{ data.resultFile ?? '—' }}</span></div>
+  <div class="field"><span class="label">Staff</span><span class="value">{{ data.responsibleStaffId ?? '—' }}</span></div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>
+</mat-dialog-actions>

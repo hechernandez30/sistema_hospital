@@ -1,0 +1,23 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">emergency</mat-icon>
+  Triage #{{ data.id }}
+</h2>
+<mat-dialog-content class="detail-body">
+  <div class="grid">
+    <div class="field"><span class="label">Admisión (ID)</span><span class="value">{{ data.admissionId }}</span></div>
+    <div class="field"><span class="label">Prioridad</span><span class="value">{{ data.priority }}</span></div>
+    <div class="field"><span class="label">FC</span><span class="value">{{ data.heartRate ?? '—' }}</span></div>
+    <div class="field"><span class="label">FR</span><span class="value">{{ data.respiratoryRate ?? '—' }}</span></div>
+    <div class="field"><span class="label">TA</span><span class="value">{{ ta(data) }}</span></div>
+    <div class="field"><span class="label">SpO₂</span><span class="value">{{ data.oxygenSaturation ?? '—' }}</span></div>
+    <div class="field"><span class="label">Temp.</span><span class="value">{{ data.temperature ?? '—' }}</span></div>
+    <div class="field"><span class="label">Dolor</span><span class="value">{{ data.pain ?? '—' }}</span></div>
+    <div class="field"><span class="label">Meta (min)</span><span class="value">{{ data.targetMinutes ?? '—' }}</span></div>
+    <div class="field"><span class="label">Staff (ID)</span><span class="value">{{ data.responsibleStaffId ?? '—' }}</span></div>
+    <div class="field full"><span class="label">Registrado</span><span class="value">{{ data.registeredAt | date: 'medium' }}</span></div>
+    <div class="field full"><span class="label">Síntomas</span><span class="value pre">{{ data.symptoms ?? '—' }}</span></div>
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-stroked-button mat-dialog-close type="button">Cerrar</button>
+</mat-dialog-actions>
