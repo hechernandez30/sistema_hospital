@@ -13,6 +13,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PatientApiService } from '../services/patient-api.service';
 import { PatientCreatePayload, PatientResponse, PatientUpdatePayload } from '../models/patient.models';
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
+import { nextPatientCodeFromExistingCodes } from '../../../core/utils/next-sequential-code';
 import {
   birthDatePastValidator,
   DPI_NIT_PATTERN,
@@ -24,6 +25,8 @@ import {
 export interface PatientFormDialogData {
   mode: 'create' | 'edit';
   patientId?: number;
+  /** Solo alta: códigos de la lista cargada para sugerir el siguiente PAC-nnnn. */
+  existingPatientCodes?: readonly string[];
 }
 
 @Component({
@@ -86,6 +89,9 @@ export class PatientFormDialogComponent implements OnInit {
           this.dialogRef.close(false);
         },
       });
+    } else if (this.dialogData.mode === 'create') {
+      const suggested = nextPatientCodeFromExistingCodes(this.dialogData.existingPatientCodes ?? []);
+      this.form.patchValue({ patientCode: suggested });
     }
   }
 

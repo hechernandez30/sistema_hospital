@@ -174,7 +174,10 @@ export class StaffListPageComponent implements OnInit, AfterViewInit {
       .open<StaffFormDialogComponent, StaffFormDialogData, boolean>(StaffFormDialogComponent, {
         width: '520px',
         maxWidth: '95vw',
-        data: { mode: 'create' },
+        data: {
+          mode: 'create',
+          existingEmployeeCodes: this.dataSource.data.map((s) => s.employeeCode),
+        },
       })
       .afterClosed()
       .subscribe((ok) => ok && this.reload());

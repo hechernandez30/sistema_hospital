@@ -49,7 +49,10 @@
 
       <mat-form-field appearance="outline" class="full">
         <mat-label>Código de empleado</mat-label>
-        <input matInput formControlName="employeeCode" maxlength="30" />
+        <input matInput formControlName="employeeCode" maxlength="30" autocomplete="off" />
+        @if (!isEdit) {
+          <mat-hint>Sugerido según la lista actual.</mat-hint>
+        }
         @if (form.controls.employeeCode.hasError('required') && form.controls.employeeCode.touched) {
           <mat-error>Requerido</mat-error>
         }

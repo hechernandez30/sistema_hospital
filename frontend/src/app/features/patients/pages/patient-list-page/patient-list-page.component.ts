@@ -124,7 +124,10 @@ export class PatientListPageComponent implements OnInit, AfterViewInit {
       .open<PatientFormDialogComponent, PatientFormDialogData, boolean>(PatientFormDialogComponent, {
         width: '640px',
         maxWidth: '95vw',
-        data: { mode: 'create' },
+        data: {
+          mode: 'create',
+          existingPatientCodes: this.dataSource.data.map((p) => p.patientCode),
+        },
       })
       .afterClosed()
       .subscribe((ok) => {

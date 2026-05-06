@@ -20,10 +20,13 @@ import { UserResponse } from '../../users/models/user.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { ROLE_ADMIN } from '../../../core/constants/role-routes';
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
+import { nextEmployeeCodeFromExistingCodes } from '../../../core/utils/next-sequential-code';
 
 export interface StaffFormDialogData {
   mode: 'create' | 'edit';
   staffId?: number;
+  /** Solo alta: códigos de la lista cargada para sugerir el siguiente EMP-nnnn. */
+  existingEmployeeCodes?: readonly string[];
 }
 
 function optionalPositiveInt(): ValidatorFn {
@@ -113,6 +116,8 @@ export class StaffFormDialogComponent implements OnInit {
           });
         } else {
           this.loading = false;
+          const suggested = nextEmployeeCodeFromExistingCodes(this.dialogData.existingEmployeeCodes ?? []);
+          this.form.patchValue({ employeeCode: suggested });
         }
       },
       error: (err: unknown) => {

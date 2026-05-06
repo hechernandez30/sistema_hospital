@@ -14,7 +14,10 @@
       <div class="row two">
         <mat-form-field appearance="outline">
           <mat-label>Código paciente</mat-label>
-          <input matInput formControlName="patientCode" maxlength="30" />
+          <input matInput formControlName="patientCode" maxlength="30" autocomplete="off" />
+          @if (!isEdit) {
+            <mat-hint>Sugerido según la lista actual.</mat-hint>
+          }
           @if (form.controls.patientCode.invalid && form.controls.patientCode.touched) {
             <mat-error>Requerido (máx. 30)</mat-error>
           }

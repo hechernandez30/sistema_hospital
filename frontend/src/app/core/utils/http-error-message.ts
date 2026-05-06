@@ -15,6 +15,7 @@ function translateKnownMessage(raw: string): string {
     Unauthorized: 'No autorizado. Inicie sesión nuevamente.',
     Forbidden: 'No tiene permiso para realizar esta acción.',
     'Unexpected error': 'Error inesperado en el servidor. Intente más tarde.',
+    'Patient code already exists': 'Ese código de paciente ya está registrado. Modifique el código e intente de nuevo.',
   };
   if (exact[msg]) {
     return exact[msg];
@@ -31,8 +32,11 @@ function translateKnownMessage(raw: string): string {
     if (lower.includes('email')) {
       return 'Ese correo electrónico ya está registrado.';
     }
-    if (lower.includes('employee')) {
-      return 'Ese código de empleado ya existe.';
+    if (lower.includes('employee') && lower.includes('code')) {
+      return 'Ese código de empleado ya está registrado. Modifique el código e intente de nuevo.';
+    }
+    if (lower.includes('patient') && lower.includes('code')) {
+      return 'Ese código de paciente ya está registrado. Modifique el código e intente de nuevo.';
     }
     return 'Ya existe un registro con esos datos.';
   }
