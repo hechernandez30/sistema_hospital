@@ -10,17 +10,43 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 public record PatientUpdateRequest(
-        @NotBlank @Size(max = 30) String patientCode,
-        @NotBlank @Size(max = 100) String firstName,
-        @NotBlank @Size(max = 100) String lastName,
-        @NotBlank @Size(max = 30) String dpiNit,
-        @NotNull @Past LocalDate birthDate,
-        @Pattern(regexp = "M|F|OTRO", message = "sex must be M, F or OTRO") String sex,
-        @Pattern(regexp = "^\\+?[0-9]{8,15}$", message = "Invalid phone format") String phone,
-        @Email @Size(max = 150) String email,
+        @NotBlank(message = "El código de paciente es obligatorio")
+        @Size(max = 30, message = "El código de paciente no debe superar 30 caracteres")
+        String patientCode,
+        @NotBlank(message = "El nombre es obligatorio")
+        @Size(min = 2, max = 100, message = "El nombre debe tener entre 2 y 100 caracteres")
+        @Pattern(
+                regexp = "^(?=.*\\p{L})[\\p{L} ]{2,100}$",
+                message =
+                        "El nombre debe contener solo letras (incluye acentos) y espacios, entre 2 y 100 caracteres, con al menos una letra")
+        String firstName,
+        @NotBlank(message = "El apellido es obligatorio")
+        @Size(min = 2, max = 100, message = "El apellido debe tener entre 2 y 100 caracteres")
+        @Pattern(
+                regexp = "^(?=.*\\p{L})[\\p{L} ]{2,100}$",
+                message =
+                        "El apellido debe contener solo letras (incluye acentos) y espacios, entre 2 y 100 caracteres, con al menos una letra")
+        String lastName,
+        @NotBlank(message = "El DPI/NIT es obligatorio")
+        @Size(max = 30, message = "El DPI/NIT no debe superar 30 caracteres")
+        String dpiNit,
+        @NotNull(message = "La fecha de nacimiento es obligatoria")
+        @Past(message = "La fecha de nacimiento debe estar en el pasado")
+        LocalDate birthDate,
+        @Pattern(regexp = "M|F|OTRO", message = "El sexo debe ser M, F u OTRO")
+        String sex,
+        @Pattern(regexp = "^\\+?[0-9]{8,15}$", message = "El teléfono debe tener entre 8 y 15 dígitos; opcionalmente puede iniciar con +")
+        String phone,
+        @Email(message = "Debe ingresar un correo electrónico válido")
+        @Size(max = 150, message = "El correo no debe superar 150 caracteres")
+        String email,
         String address,
-        @Size(max = 150) String emergencyContactName,
-        @Pattern(regexp = "^$|^\\+?[0-9]{8,15}$", message = "Invalid emergency phone format") String emergencyContactPhone,
+        @Size(max = 150, message = "El nombre del contacto de emergencia no debe superar 150 caracteres")
+        String emergencyContactName,
+        @Pattern(
+                regexp = "^$|^\\+?[0-9]{8,15}$",
+                message = "El teléfono de emergencia debe tener entre 8 y 15 dígitos; opcionalmente puede iniciar con +")
+        String emergencyContactPhone,
         boolean privacyAccepted,
         String allergies,
         String conditions,

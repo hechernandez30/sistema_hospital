@@ -30,8 +30,8 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
             AuthenticationException ignored) throws IOException {
         String failure = (String) request.getAttribute(SecurityRequestAttributes.AUTH_FAILURE);
         String message = SecurityRequestAttributes.FAILURE_JWT_INVALID.equals(failure)
-                ? "Invalid or expired token"
-                : "Unauthorized";
+                ? "Token inválido o expirado"
+                : "No autorizado";
 
         ApiErrorResponse body = new ApiErrorResponse(
                 Instant.now(),

@@ -48,3 +48,47 @@ table {
   text-align: right;
   white-space: nowrap;
 }
+
+.mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+
+.sub {
+  font-size: 0.75rem;
+  color: var(--hh-text-muted, #64748b);
+  margin-top: 0.1rem;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.status-pill.st-pend {
+  background: rgba(100, 116, 139, 0.15);
+  color: #475569;
+}
+
+.status-pill.st-wip {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.status-pill.st-partial {
+  background: rgba(245, 124, 0, 0.12);
+  color: #e65100;
+}
+
+.status-pill.st-done {
+  background: rgba(46, 125, 50, 0.12);
+  color: #2e7d32;
+}
+
+.status-pill.st-bad {
+  background: rgba(183, 28, 28, 0.12);
+  color: #b71c1c;
+}

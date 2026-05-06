@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "nombre": "Consulta externa",
+    "descripcion": "Atención médica programada con enfoque integral y seguimiento.",
+    "tags": ["citas", "consulta", "control"]
+  },
+  {
+    "id": 2,
+    "nombre": "Urgencias",
+    "descripcion": "Atención inmediata y clasificación por prioridad (triage) según protocolos.",
+    "tags": ["emergencia", "triage", "prioridad"]
+  },
+  {
+    "id": 3,
+    "nombre": "Laboratorio clínico",
+    "descripcion": "Apoyo diagnóstico con trazabilidad y control de muestras.",
+    "tags": ["muestras", "resultados", "diagnóstico"]
+  },
+  {
+    "id": 4,
+    "nombre": "Imágenes médicas",
+    "descripcion": "Estudios de imagen para diagnóstico con infraestructura moderna.",
+    "tags": ["radiología", "imagen", "diagnóstico"]
+  },
+  {
+    "id": 5,
+    "nombre": "Farmacia",
+    "descripcion": "Inventario básico y atención de medicamentos en sitio (sin despacho público).",
+    "tags": ["medicamentos", "stock", "inventario"]
+  }
+]

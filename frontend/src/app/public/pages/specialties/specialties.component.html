@@ -11,7 +11,7 @@
   } @else {
     <div class="grid">
       @for (e of list; track e.id) {
-        <mat-card class="spec-card">
+        <mat-card class="spec-card" [id]="e.slug" [class.highlight]="highlightedId === e.slug">
           <mat-card-header>
             <mat-card-title>{{ e.nombre }}</mat-card-title>
             <mat-card-subtitle>Duración referencial: {{ e.duracionMinutos }} minutos</mat-card-subtitle>

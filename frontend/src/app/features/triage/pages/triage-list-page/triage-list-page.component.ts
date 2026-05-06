@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
@@ -15,7 +16,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { TriageApiService } from '../../services/triage-api.service';
-import { TriageResponse } from '../../models/triage.models';
+import { triagePriorityLabel, TriageResponse } from '../../models/triage.models';
 import { AdmissionApiService } from '../../../admissions/services/admission-api.service';
 import { AdmissionResponse } from '../../../admissions/models/admission.models';
 import { PatientApiService } from '../../../patients/services/patient-api.service';
@@ -47,6 +48,7 @@ export interface TriageRow extends TriageResponse {
     MatInputModule,
     FormsModule,
     DatePipe,
+    NgClass,
   ],
   templateUrl: './triage-list-page.component.html',
   styleUrl: './triage-list-page.component.scss',
@@ -63,16 +65,21 @@ export class TriageListPageComponent implements OnInit, AfterViewInit {
   dataSource = new MatTableDataSource<TriageRow>([]);
   loading = false;
 
+  /** Expuesto para plantilla — etiquetas de prioridad CU10 */
+  readonly triagePriorityLabel = triagePriorityLabel;
+
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
   ngOnInit(): void {
     this.dataSource.filterPredicate = (data, filter) => {
       const f = filter.trim().toLowerCase();
+      const priLabel = triagePriorityLabel(data.priority).toLowerCase();
       return (
         String(data.id).includes(f) ||
         data.admissionLabel.toLowerCase().includes(f) ||
-        data.priority.toLowerCase().includes(f)
+        data.priority.toLowerCase().includes(f) ||
+        priLabel.includes(f)
       );
     };
     this.reload();
@@ -81,6 +88,22 @@ export class TriageListPageComponent implements OnInit, AfterViewInit {
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
+    this.dataSource.sortingDataAccessor = triageSortingAccessor;
+  }
+
+  priorityCssClass(code: string): string {
+    switch (code) {
+      case 'I_CRITICO':
+        return 'prio-i';
+      case 'II_URGENTE':
+        return 'prio-ii';
+      case 'III_PRIORITARIO':
+        return 'prio-iii';
+      case 'IV_NO_URGENTE':
+        return 'prio-iv';
+      default:
+        return 'prio-unknown';
+    }
   }
 
   applyAdmissionFilter(): void {
@@ -181,4 +204,27 @@ function labelAdmission(a: AdmissionResponse | undefined, pmap: Map<number, Pati
   const p = pmap.get(a.patientId);
   const pname = p ? `${p.firstName} ${p.lastName}` : `paciente #${a.patientId}`;
   return `Adm. #${a.id} · ${pname}`;
+}
+
+function triageSortingAccessor(data: TriageRow, sortHeaderId: string): string | number {
+  switch (sortHeaderId) {
+    case 'priority': {
+      const order = ['I_CRITICO', 'II_URGENTE', 'III_PRIORITARIO', 'IV_NO_URGENTE'];
+      const i = order.indexOf(data.priority);
+      return i >= 0 ? i : 99;
+    }
+    case 'registeredAt': {
+      if (!data.registeredAt) {
+        return 0;
+      }
+      const t = Date.parse(data.registeredAt);
+      return Number.isFinite(t) ? t : 0;
+    }
+    case 'id':
+      return data.id;
+    case 'admissionLabel':
+      return data.admissionLabel ?? '';
+    default:
+      return '';
+  }
 }

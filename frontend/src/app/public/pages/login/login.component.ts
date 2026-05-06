@@ -9,9 +9,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
-import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
-import { ApiErrorResponse } from '../../../core/models/api-error-response.model';
+import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
 
 @Component({
   selector: 'app-login',
@@ -60,22 +59,9 @@ export class LoginComponent {
       },
       error: (err: unknown) => {
         this.submitting = false;
-        const msg = this.extractMessage(err);
+        const msg = getHttpErrorMessage(err, 'No se pudo iniciar sesión. Verifique sus credenciales.');
         this.snackBar.open(msg, 'Cerrar', { duration: 6000 });
       },
     });
-  }
-
-  private extractMessage(err: unknown): string {
-    if (err instanceof HttpErrorResponse) {
-      const body = err.error as ApiErrorResponse | string | null;
-      if (body && typeof body === 'object' && 'message' in body) {
-        return String((body as ApiErrorResponse).message);
-      }
-      if (typeof body === 'string' && body.length) {
-        return body;
-      }
-    }
-    return 'No se pudo iniciar sesión. Verifique sus credenciales.';
   }
 }

@@ -10,9 +10,16 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record InsuranceRequest(
-        @NotBlank @Size(max = 150) String insurerName,
-        @NotBlank @Size(max = 50) String policyNumber,
-        @NotNull @DecimalMin("0.0") @DecimalMax("100.0") BigDecimal coveragePercent,
+        @NotBlank(message = "El nombre de la aseguradora es obligatorio")
+        @Size(max = 150, message = "El nombre de la aseguradora no debe superar 150 caracteres")
+        String insurerName,
+        @NotBlank(message = "El número de póliza es obligatorio")
+        @Size(max = 50, message = "El número de póliza no debe superar 50 caracteres")
+        String policyNumber,
+        @NotNull(message = "El porcentaje de cobertura es obligatorio")
+        @DecimalMin(value = "0.0", message = "El porcentaje de cobertura debe ser al menos 0,0")
+        @DecimalMax(value = "100.0", message = "El porcentaje de cobertura no debe superar 100,0")
+        BigDecimal coveragePercent,
         LocalDate startDate,
         LocalDate endDate,
         Boolean active

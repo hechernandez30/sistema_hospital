@@ -12,7 +12,9 @@
     <mat-dialog-content class="form-scroll">
       <p class="hint">
         <mat-icon>info</mat-icon>
-        Tipo y estado son valores cerrados del sistema. En edición, la prioridad es obligatoria (requisito del backend).
+        <strong>Flujo (CU12):</strong> toda orden queda enlazada a un ID de atención médica existente. Para laboratorio:
+        después cree el registro en el módulo <strong>Laboratorio</strong> usando el ID de una orden tipo
+        <strong>LABORATORIO</strong>. Tipos de orden y estado son valores cerrados. Prioridad habitual: NORMAL o URGENTE.
       </p>
       <mat-form-field appearance="outline" class="full">
         <mat-label>ID atención médica</mat-label>
@@ -29,7 +31,7 @@
           <mat-label>Tipo de orden</mat-label>
           <mat-select formControlName="orderType">
             @for (t of orderTypes; track t) {
-              <mat-option [value]="t">{{ t }}</mat-option>
+              <mat-option [value]="t">{{ t }} — {{ orderTypeLabel(t) }}</mat-option>
             }
           </mat-select>
           @if (form.controls.orderType.invalid && form.controls.orderType.touched) {
@@ -59,11 +61,19 @@
         }
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
-        <mat-label>Prioridad @if (isEdit) {<span class="req">*</span>} @else {(opcional en alta)}</mat-label>
-        <input matInput formControlName="priority" maxlength="120" />
+        <mat-label>Prioridad <span class="req">*</span></mat-label>
+        <mat-select formControlName="priority">
+          @for (p of priorityPresets; track p) {
+            <mat-option [value]="p">{{ p }}</mat-option>
+          }
+          @for (p of extraPriorities; track p) {
+            <mat-option [value]="p">{{ p }} (valor existente)</mat-option>
+          }
+        </mat-select>
         @if (form.controls.priority.hasError('required') && form.controls.priority.touched) {
-          <mat-error>Requerida en edición</mat-error>
+          <mat-error>Requerida</mat-error>
         }
+        <mat-hint>Máx. 20 caracteres en base de datos; catálogo sugerido arriba.</mat-hint>
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Observaciones (opcional)</mat-label>

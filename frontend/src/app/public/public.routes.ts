@@ -27,6 +27,11 @@ export const publicRoutes: Routes = [
         title: 'Especialidades — Hospital H&H',
       },
       {
+        path: 'medicos',
+        loadComponent: () => import('./pages/doctors/doctors.component').then((m) => m.DoctorsComponent),
+        title: 'Médicos — Hospital H&H',
+      },
+      {
         path: 'contacto',
         loadComponent: () => import('./pages/contact/contact.component').then((m) => m.ContactComponent),
         title: 'Contacto — Hospital H&H',

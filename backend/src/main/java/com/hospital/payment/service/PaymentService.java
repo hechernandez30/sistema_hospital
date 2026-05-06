@@ -2,6 +2,8 @@ package com.hospital.payment.service;
 
 import com.hospital.admission.entity.Admission;
 import com.hospital.admission.repository.AdmissionRepository;
+import com.hospital.auditlog.BusinessAuditActions;
+import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.medicalorder.entity.MedicalOrder;
@@ -20,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PaymentService {
@@ -30,18 +34,21 @@ public class PaymentService {
     private final AdmissionRepository admissionRepository;
     private final MedicalOrderRepository medicalOrderRepository;
     private final UserRepository userRepository;
+    private final BusinessAuditRecorder businessAuditRecorder;
 
     public PaymentService(
             PaymentRepository paymentRepository,
             PatientRepository patientRepository,
             AdmissionRepository admissionRepository,
             MedicalOrderRepository medicalOrderRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            BusinessAuditRecorder businessAuditRecorder) {
         this.paymentRepository = paymentRepository;
         this.patientRepository = patientRepository;
         this.admissionRepository = admissionRepository;
         this.medicalOrderRepository = medicalOrderRepository;
         this.userRepository = userRepository;
+        this.businessAuditRecorder = businessAuditRecorder;
     }
 
     @Transactional(readOnly = true)
@@ -52,7 +59,7 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public PaymentResponse findById(Long id) {
         return toResponse(paymentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el pago: " + id)));
     }
 
     @Transactional(readOnly = true)
@@ -63,7 +70,7 @@ public class PaymentService {
     @Transactional
     public PaymentResponse create(PaymentCreateRequest request) {
         Patient patient = patientRepository.findById(request.patientId())
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found: " + request.patientId()));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el paciente: " + request.patientId()));
         Admission admission = resolveAdmission(request.admissionId());
         MedicalOrder order = resolveOrder(request.medicalOrderId());
         validateOwnership(patient.getId(), admission, order);
@@ -86,15 +93,24 @@ public class PaymentService {
         payment.setStatus(request.status());
         payment.setReceiptNumber(blankToNull(request.receiptNumber()));
         payment.setRegisteredBy(resolveUser(request.registeredByUserId()));
-        return toResponse(paymentRepository.save(payment));
+        PaymentResponse created = toResponse(paymentRepository.save(payment));
+        businessAuditRecorder.safeRecord(
+                "payments",
+                "Payment",
+                String.valueOf(created.id()),
+                BusinessAuditActions.CREATE,
+                null,
+                summaryPaymentAudit(created));
+        return created;
     }
 
     @Transactional
     public PaymentResponse update(Long id, PaymentUpdateRequest request) {
         Payment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el pago: " + id));
+        PaymentResponse priorSnap = toResponse(payment);
         Patient patient = patientRepository.findById(request.patientId())
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found: " + request.patientId()));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el paciente: " + request.patientId()));
         Admission admission = resolveAdmission(request.admissionId());
         MedicalOrder order = resolveOrder(request.medicalOrderId());
         validateOwnership(patient.getId(), admission, order);
@@ -116,15 +132,52 @@ public class PaymentService {
         payment.setStatus(request.status());
         payment.setReceiptNumber(blankToNull(request.receiptNumber()));
         payment.setRegisteredBy(resolveUser(request.registeredByUserId()));
-        return toResponse(paymentRepository.save(payment));
+        PaymentResponse updated = toResponse(paymentRepository.save(payment));
+        businessAuditRecorder.safeRecord(
+                "payments",
+                "Payment",
+                String.valueOf(id),
+                BusinessAuditActions.UPDATE,
+                summaryPaymentAudit(priorSnap),
+                summaryPaymentAudit(updated));
+        return updated;
     }
 
     @Transactional
     public void delete(Long id) {
-        if (!paymentRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Payment not found: " + id);
+        Payment payment = paymentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el pago: " + id));
+        PaymentResponse priorSnap = toResponse(payment);
+        paymentRepository.delete(payment);
+        businessAuditRecorder.safeRecord(
+                "payments",
+                "Payment",
+                String.valueOf(id),
+                BusinessAuditActions.DELETE,
+                summaryPaymentAudit(priorSnap),
+                null);
+    }
+
+    private static Map<String, Object> summaryPaymentAudit(PaymentResponse r) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        if (r.id() != null) {
+            m.put("paymentId", r.id());
         }
-        paymentRepository.deleteById(id);
+        m.put("patientId", r.patientId());
+        if (r.admissionId() != null) {
+            m.put("admissionId", r.admissionId());
+        }
+        if (r.medicalOrderId() != null) {
+            m.put("medicalOrderId", r.medicalOrderId());
+        }
+        if (r.insurancePercent() != null) {
+            m.put("insurancePercent", r.insurancePercent().toPlainString());
+        }
+        m.put("status", r.status());
+        if (r.totalToPay() != null) {
+            m.put("totalToPay", r.totalToPay().toPlainString());
+        }
+        return m;
     }
 
     /**
@@ -144,7 +197,9 @@ public class PaymentService {
         BigDecimal disc = insuranceDiscount != null ? insuranceDiscount : BigDecimal.ZERO;
         BigDecimal total = subtotal.subtract(disc).add(cop);
         if (total.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BusinessRuleException("Total to pay cannot be negative");
+            throw new BusinessRuleException(
+                    "El total a pagar no puede ser negativo. Se calcula como subtotal − descuento por seguro "
+                            + "(subtotal × % seguro ÷ 100) + copago. Con cobertura 100% y sin copago, el total puede ser 0,00.");
         }
         return total.setScale(2, RoundingMode.HALF_UP);
     }
@@ -152,17 +207,18 @@ public class PaymentService {
     private void validatePaymentMethodForStatus(String status, String paymentMethod) {
         if ("PAGADO".equals(status)) {
             if (paymentMethod == null || paymentMethod.isBlank()) {
-                throw new BusinessRuleException("Payment method is required when status is PAGADO");
+                throw new BusinessRuleException(
+                        "Cuando el estado es PAGADO debe indicar el método de pago (EFECTIVO, TARJETA o TRANSFERENCIA).");
             }
         }
     }
 
     private void validateOwnership(Long patientId, Admission admission, MedicalOrder order) {
         if (admission != null && !admission.getPatient().getId().equals(patientId)) {
-            throw new BusinessRuleException("Admission does not belong to the selected patient");
+            throw new BusinessRuleException("La admisión no pertenece al paciente seleccionado");
         }
         if (order != null && !order.getMedicalCare().getPatient().getId().equals(patientId)) {
-            throw new BusinessRuleException("Medical order does not belong to the selected patient");
+            throw new BusinessRuleException("La orden médica no pertenece al paciente seleccionado");
         }
     }
 
@@ -171,7 +227,7 @@ public class PaymentService {
             return null;
         }
         return admissionRepository.findById(admissionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Admission not found: " + admissionId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la admisión: " + admissionId));
     }
 
     private MedicalOrder resolveOrder(Long orderId) {
@@ -179,7 +235,7 @@ public class PaymentService {
             return null;
         }
         return medicalOrderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Medical order not found: " + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la orden médica: " + orderId));
     }
 
     private User resolveUser(Long userId) {
@@ -187,7 +243,7 @@ public class PaymentService {
             return null;
         }
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario: " + userId));
     }
 
     private static String blankToNull(String s) {

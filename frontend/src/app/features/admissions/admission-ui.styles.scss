@@ -1,0 +1,39 @@
+/* CU11 chips — tipo ingreso / estado admisión */
+
+.adm-chip {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.adm-type {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.adm-status-pendiente {
+  background: rgba(234, 179, 8, 0.2);
+  color: #a16207;
+}
+
+.adm-status-admitido {
+  background: rgba(37, 99, 235, 0.14);
+  color: #1d4ed8;
+}
+
+.adm-status-alta {
+  background: rgba(22, 163, 74, 0.16);
+  color: #15803d;
+}
+
+.adm-status-transferido {
+  background: rgba(124, 58, 237, 0.14);
+  color: #6d28d9;
+}
+
+.adm-status-rechazado {
+  background: rgba(71, 85, 105, 0.25);
+  color: #475569;
+}

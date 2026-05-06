@@ -1,5 +1,7 @@
 package com.hospital.laboratory.service;
 
+import com.hospital.auditlog.BusinessAuditActions;
+import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.laboratory.dto.LaboratoryCreateRequest;
@@ -14,24 +16,31 @@ import com.hospital.staff.repository.StaffRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 public class LaboratoryService {
 
     private static final String ORDER_TYPE_LAB = "LABORATORIO";
+    private static final Set<String> ALLOWED_LAB_STATUS = Set.of("PENDIENTE", "EN_PROCESO", "COMPLETADO", "RECHAZADO");
 
     private final LaboratoryRepository laboratoryRepository;
     private final MedicalOrderRepository medicalOrderRepository;
     private final StaffRepository staffRepository;
+    private final BusinessAuditRecorder businessAuditRecorder;
 
     public LaboratoryService(
             LaboratoryRepository laboratoryRepository,
             MedicalOrderRepository medicalOrderRepository,
-            StaffRepository staffRepository) {
+            StaffRepository staffRepository,
+            BusinessAuditRecorder businessAuditRecorder) {
         this.laboratoryRepository = laboratoryRepository;
         this.medicalOrderRepository = medicalOrderRepository;
         this.staffRepository = staffRepository;
+        this.businessAuditRecorder = businessAuditRecorder;
     }
 
     @Transactional(readOnly = true)
@@ -42,45 +51,77 @@ public class LaboratoryService {
     @Transactional(readOnly = true)
     public LaboratoryResponse findById(Long id) {
         return toResponse(laboratoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Laboratory record not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el registro de laboratorio: " + id)));
     }
 
     @Transactional(readOnly = true)
     public LaboratoryResponse findByMedicalOrderId(Long medicalOrderId) {
         return toResponse(laboratoryRepository.findByMedicalOrder_Id(medicalOrderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Laboratory record not found for order: " + medicalOrderId)));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No hay registro de laboratorio para la orden médica " + medicalOrderId + ".")));
     }
 
     @Transactional
     public LaboratoryResponse create(LaboratoryCreateRequest request) {
         MedicalOrder order = medicalOrderRepository.findById(request.medicalOrderId())
-                .orElseThrow(() -> new ResourceNotFoundException("Medical order not found: " + request.medicalOrderId()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró la orden médica con ID "
+                                + request.medicalOrderId()
+                                + ". Registre primero la orden desde Atención médica (tipo LABORATORIO)."));
         if (!ORDER_TYPE_LAB.equals(order.getOrderType())) {
-            throw new BusinessRuleException("Medical order must be of type LABORATORIO");
+            throw new BusinessRuleException(
+                    "Solo se vincula laboratorio a órdenes de tipo LABORATORIO. La orden indicada es de tipo "
+                            + order.getOrderType()
+                            + ".");
         }
         if (laboratoryRepository.existsByMedicalOrder_Id(order.getId())) {
-            throw new BusinessRuleException("A laboratory record already exists for this order");
+            throw new BusinessRuleException(
+                    "Ya existe un registro de laboratorio para esta orden médica; edite el registro existente.");
         }
         Laboratory lab = new Laboratory();
         lab.setMedicalOrder(order);
         applyCreate(lab, request);
-        return toResponse(laboratoryRepository.save(lab));
+        Laboratory saved = laboratoryRepository.save(lab);
+        businessAuditRecorder.safeRecord(
+                "laboratory",
+                "Laboratory",
+                String.valueOf(saved.getId()),
+                BusinessAuditActions.CREATE,
+                null,
+                snapshotLaboratoryMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
     public LaboratoryResponse update(Long id, LaboratoryUpdateRequest request) {
         Laboratory lab = laboratoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Laboratory record not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el registro de laboratorio: " + id));
+        Map<String, Object> prior = snapshotLaboratoryMinimal(lab);
         applyUpdate(lab, request);
-        return toResponse(laboratoryRepository.save(lab));
+        Laboratory saved = laboratoryRepository.save(lab);
+        businessAuditRecorder.safeRecord(
+                "laboratory",
+                "Laboratory",
+                String.valueOf(id),
+                BusinessAuditActions.UPDATE,
+                prior,
+                snapshotLaboratoryMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
     public void delete(Long id) {
-        if (!laboratoryRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Laboratory record not found: " + id);
-        }
+        Laboratory lab = laboratoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el registro de laboratorio: " + id));
+        Map<String, Object> prior = snapshotLaboratoryMinimal(lab);
         laboratoryRepository.deleteById(id);
+        businessAuditRecorder.safeRecord(
+                "laboratory",
+                "Laboratory",
+                String.valueOf(id),
+                BusinessAuditActions.DELETE,
+                prior,
+                null);
     }
 
     private void applyCreate(Laboratory lab, LaboratoryCreateRequest request) {
@@ -93,7 +134,9 @@ public class LaboratoryService {
         lab.setIncident(request.incident());
         lab.setResult(request.result());
         lab.setAttachment(request.attachment());
-        lab.setStatus(request.status() != null && !request.status().isBlank() ? request.status() : "PENDIENTE");
+        String createStatus = request.status() != null && !request.status().isBlank() ? request.status() : "PENDIENTE";
+        ensureLaboratoryStatus(createStatus);
+        lab.setStatus(createStatus);
         lab.setResponsibleStaff(resolveStaff(request.responsibleStaffId()));
     }
 
@@ -107,10 +150,31 @@ public class LaboratoryService {
         lab.setIncident(request.incident());
         lab.setResult(request.result());
         lab.setAttachment(request.attachment());
+        ensureLaboratoryStatus(request.status());
         lab.setStatus(request.status());
         lab.setReceptionAt(request.receptionAt());
         lab.setResultAt(request.resultAt());
         lab.setResponsibleStaff(resolveStaff(request.responsibleStaffId()));
+    }
+
+    private static void ensureLaboratoryStatus(String status) {
+        if (!ALLOWED_LAB_STATUS.contains(status)) {
+            throw new BusinessRuleException(
+                    "Estado de laboratorio no válido: use PENDIENTE, EN_PROCESO, COMPLETADO o RECHAZADO.");
+        }
+    }
+
+    private Map<String, Object> snapshotLaboratoryMinimal(Laboratory lab) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        if (lab.getId() != null) {
+            m.put("laboratoryId", lab.getId());
+        }
+        m.put("medicalOrderId", lab.getMedicalOrder().getId());
+        m.put("status", lab.getStatus());
+        if (lab.getRequestType() != null) {
+            m.put("requestType", lab.getRequestType());
+        }
+        return m;
     }
 
     private static String blankToNull(String s) {
@@ -125,7 +189,7 @@ public class LaboratoryService {
             return null;
         }
         return staffRepository.findById(staffId)
-                .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + staffId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el personal: " + staffId));
     }
 
     private LaboratoryResponse toResponse(Laboratory lab) {

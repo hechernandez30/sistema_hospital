@@ -32,6 +32,17 @@
   color: var(--hh-primary, #1565c0);
 }
 
+.context-error {
+  margin: 0 0 0.85rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(183, 28, 28, 0.08);
+  border: 1px solid rgba(183, 28, 28, 0.25);
+  color: #b71c1c;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
 .row {
   display: flex;
   flex-wrap: wrap;

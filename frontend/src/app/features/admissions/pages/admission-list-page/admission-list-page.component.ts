@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
@@ -14,7 +14,13 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { AdmissionApiService } from '../../services/admission-api.service';
-import { AdmissionResponse } from '../../models/admission.models';
+import {
+  ADMISSION_STATUS_LABELS,
+  ADMISSION_TYPE_LABELS,
+  AdmissionDetailData,
+  AdmissionResponse,
+} from '../../models/admission.models';
+import { admissionStatusChipClass as resolveAdmissionStatusChip } from '../../admission-chip-class';
 import { PatientApiService } from '../../../patients/services/patient-api.service';
 import { PatientResponse } from '../../../patients/models/patient.models';
 import { AdmissionFormDialogComponent, AdmissionFormDialogData } from '../../components/admission-form-dialog.component';
@@ -43,6 +49,7 @@ export interface AdmissionRow extends AdmissionResponse {
     MatFormFieldModule,
     MatInputModule,
     DatePipe,
+    NgClass,
   ],
   templateUrl: './admission-list-page.component.html',
   styleUrl: './admission-list-page.component.scss',
@@ -53,7 +60,15 @@ export class AdmissionListPageComponent implements OnInit, AfterViewInit {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
-  displayedColumns = ['id', 'patientLabel', 'admissionType', 'status', 'admissionDate', 'actions'];
+  displayedColumns = [
+    'id',
+    'patientLabel',
+    'admissionType',
+    'status',
+    'financeBrief',
+    'admissionDate',
+    'actions',
+  ];
   dataSource = new MatTableDataSource<AdmissionRow>([]);
   loading = false;
 
@@ -61,16 +76,58 @@ export class AdmissionListPageComponent implements OnInit, AfterViewInit {
   @ViewChild(MatSort) sort!: MatSort;
 
   ngOnInit(): void {
+    this.dataSource.sortingDataAccessor = (data: AdmissionRow, sortHeaderId: string) => {
+      if (sortHeaderId === 'admissionDate') {
+        const t = data.admissionDate ? new Date(data.admissionDate).getTime() : NaN;
+        return Number.isNaN(t) ? '' : t;
+      }
+      if (sortHeaderId === 'financeBrief') {
+        return financeBrief(data).toLowerCase();
+      }
+      const v = (data as unknown as Record<string, unknown>)[sortHeaderId];
+      if (typeof v === 'string') {
+        return v.toLowerCase();
+      }
+      if (typeof v === 'number') {
+        return v;
+      }
+      return v == null ? '' : String(v);
+    };
     this.dataSource.filterPredicate = (data, filter) => {
       const f = filter.trim().toLowerCase();
-      return (
-        String(data.id).includes(f) ||
-        data.patientLabel.toLowerCase().includes(f) ||
-        data.admissionType.toLowerCase().includes(f) ||
-        data.status.toLowerCase().includes(f)
-      );
+      const blob = [
+        String(data.id),
+        data.patientLabel,
+        data.patientId,
+        String(data.appointmentId ?? ''),
+        typeDisplay(data.admissionType),
+        data.admissionType,
+        data.status,
+        statusDisplay(data.status),
+        financeBrief(data),
+        data.validationSource ?? '',
+      ]
+        .join(' ')
+        .toLowerCase();
+      return blob.includes(f);
     };
     this.reload();
+  }
+
+  admissionStatusChipClass(status: string): string {
+    return resolveAdmissionStatusChip(status);
+  }
+
+  admissionTypeDisplay(code: string): string {
+    return typeDisplay(code);
+  }
+
+  statusDisplay(code: string): string {
+    return statusDisplay(code);
+  }
+
+  financeBriefRow(row: AdmissionRow): string {
+    return financeBrief(row);
   }
 
   ngAfterViewInit(): void {
@@ -86,7 +143,7 @@ export class AdmissionListPageComponent implements OnInit, AfterViewInit {
         const pmap = new Map(patients.map((p) => [p.id, p] as const));
         this.dataSource.data = admissions.map((a) => ({
           ...a,
-          patientLabel: labelPatient(pmap.get(a.patientId)),
+          patientLabel: labelPatient(pmap.get(a.patientId), a.patientId),
         }));
       },
       error: (err: unknown) => {
@@ -126,7 +183,8 @@ export class AdmissionListPageComponent implements OnInit, AfterViewInit {
   }
 
   openDetail(row: AdmissionRow): void {
-    this.dialog.open(AdmissionDetailDialogComponent, { width: '520px', maxWidth: '95vw', data: row });
+    const data: AdmissionDetailData = row;
+    this.dialog.open(AdmissionDetailDialogComponent, { width: '520px', maxWidth: '95vw', data });
   }
 
   confirmDelete(row: AdmissionRow): void {
@@ -157,9 +215,36 @@ export class AdmissionListPageComponent implements OnInit, AfterViewInit {
   }
 }
 
-function labelPatient(p: PatientResponse | undefined): string {
+function labelPatient(p: PatientResponse | undefined, patientId?: number): string {
+  if (!p && patientId != null) {
+    return `Paciente #${patientId}`;
+  }
   if (!p) {
     return '—';
   }
   return `${p.firstName} ${p.lastName} (#${p.id})`;
+}
+
+function statusDisplay(code: string): string {
+  return ADMISSION_STATUS_LABELS[code as keyof typeof ADMISSION_STATUS_LABELS] ?? code;
+}
+
+function typeDisplay(code: string): string {
+  return ADMISSION_TYPE_LABELS[code as keyof typeof ADMISSION_TYPE_LABELS] ?? code;
+}
+
+function financeBrief(row: AdmissionResponse): string {
+  if (row.status === 'RECHAZADO') {
+    return 'Rechazado';
+  }
+  if (!row.financialValidationOk) {
+    return 'Sin validar';
+  }
+  if (row.validationSource === 'SEGURO') {
+    return 'Seguro';
+  }
+  if (row.validationSource === 'PAGO_SITIO') {
+    return 'Pago sitio';
+  }
+  return '—';
 }

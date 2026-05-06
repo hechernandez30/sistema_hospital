@@ -69,6 +69,7 @@ public class SecurityConfig {
             auth.requestMatchers("/api/users/**").hasRole("ADMINISTRADOR");
             auth.requestMatchers("/api/roles/**").hasRole("ADMINISTRADOR");
             auth.requestMatchers("/api/audit-logs/**").hasAnyRole("ADMINISTRADOR", "AUDITOR");
+            auth.requestMatchers("/api/reports/**").hasAnyRole("ADMINISTRADOR", "AUDITOR");
 
             auth.requestMatchers("/api/payments/**").hasAnyRole("ADMINISTRADOR", "CAJERO");
             auth.requestMatchers("/api/medications/**").hasAnyRole("ADMINISTRADOR", "FARMACIA");

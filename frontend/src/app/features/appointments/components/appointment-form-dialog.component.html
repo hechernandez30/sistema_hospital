@@ -12,8 +12,8 @@
     <mat-dialog-content class="form-scroll">
       <p class="hint">
         <mat-icon>info</mat-icon>
-        Use el <strong>ID numérico</strong> del paciente y del médico (tabla <em>staff</em>). Especialidad opcional (ID).
-        El backend valida horarios y reglas de negocio.
+        Use el <strong>ID numérico</strong> del paciente y del médico (staff). Especialidad opcional.
+        Estados: <strong>PROGRAMADA · REPROGRAMADA · CANCELADA · ATENDIDA · NO_ASISTIO</strong>. El servidor evita traslapamiento de agenda en citas activas del mismo médico.
       </p>
       <div class="row two">
         <mat-form-field appearance="outline">
@@ -37,13 +37,34 @@
           }
         </mat-form-field>
       </div>
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>ID especialidad (opcional)</mat-label>
-        <input matInput formControlName="specialtyId" inputmode="numeric" autocomplete="off" />
-        @if (form.controls.specialtyId.hasError('positiveInteger') && form.controls.specialtyId.touched) {
-          <mat-error>ID entero positivo o vacío</mat-error>
-        }
-      </mat-form-field>
+      @if (canPickSpecialtyCatalog) {
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Especialidad (opcional)</mat-label>
+          <mat-select formControlName="specialtyId">
+            <mat-option value="">Sin especialidad</mat-option>
+            @for (sp of specialties; track sp.id) {
+              <mat-option [value]="'' + sp.id">{{ sp.name }} ({{ sp.durationMinutes }} min)</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Administrador / RRHH: puede calcular hora fin con la duración del catálogo.</mat-hint>
+        </mat-form-field>
+      } @else {
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>ID especialidad (opcional)</mat-label>
+          <input matInput formControlName="specialtyId" inputmode="numeric" autocomplete="off" />
+          @if (form.controls.specialtyId.hasError('positiveInteger') && form.controls.specialtyId.touched) {
+            <mat-error>ID entero positivo o vacío</mat-error>
+          }
+        </mat-form-field>
+      }
+      @if (canPickSpecialtyCatalog) {
+        <div class="suggest-row">
+          <button mat-stroked-button type="button" (click)="suggestEndFromSpecialtyDuration()" [disabled]="saving">
+            <mat-icon>tune</mat-icon>
+            Calcular hora fin (duración de especialidad)
+          </button>
+        </div>
+      }
       <div class="row two">
         <mat-form-field appearance="outline">
           <mat-label>Inicio</mat-label>
@@ -61,7 +82,7 @@
         </mat-form-field>
       </div>
       @if (form.hasError('range') && form.touched) {
-        <p class="error-text">La fecha/hora de fin debe ser posterior al inicio.</p>
+        <p class="error-text">La fecha/hora de fin debe ser estrictamente posterior al inicio (no igual).</p>
       }
       <mat-form-field appearance="outline" class="full">
         <mat-label>Motivo</mat-label>
@@ -71,7 +92,9 @@
         <mat-label>Estado</mat-label>
         <mat-select formControlName="status">
           @for (s of statuses; track s) {
-            <mat-option [value]="s">{{ s }}</mat-option>
+            <mat-option [value]="s">
+              <span class="apt-status-chip" [ngClass]="statusChip(s)">{{ s }}</span>
+            </mat-option>
           }
         </mat-select>
       </mat-form-field>

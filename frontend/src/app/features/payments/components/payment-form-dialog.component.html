@@ -12,8 +12,10 @@
     <mat-dialog-content class="form-scroll">
       <p class="hint">
         <mat-icon>info</mat-icon>
-        Los totales mostrados en listas y detalle provienen del backend. Aquí solo se capturan los datos del comprobante
-        según el API.
+        El <strong>total a pagar</strong> lo calcula el servidor como: subtotal − (subtotal × % seguro ÷ 100) + copago.
+        Si no aplica cobertura, use <strong>0%</strong>. El botón inferior precarga desde una <strong>póliza activa y vigente</strong>
+        según fecha (CU02/RN07); puede corregir el % manualmente. Con cobertura 100% sin copago, el total puede ser
+        <strong>0,00</strong> (FA02). En estado <strong>PAGADO</strong> debe indicarse método de pago.
       </p>
       <div class="row two">
         <mat-form-field appearance="outline">
@@ -30,7 +32,7 @@
           <mat-label>Estado</mat-label>
           <mat-select formControlName="status">
             @for (s of statuses; track s) {
-              <mat-option [value]="s">{{ s }}</mat-option>
+              <mat-option [value]="s">{{ s }} — {{ paymentStatusCaption(s) }}</mat-option>
             }
           </mat-select>
           @if (form.controls.status.invalid && form.controls.status.touched) {
@@ -76,8 +78,9 @@
           }
         </mat-form-field>
         <mat-form-field appearance="outline">
-          <mat-label>% seguro (0–100)</mat-label>
+          <mat-label>% seguro aplicado al pago (0–100)</mat-label>
           <input matInput formControlName="insurancePercent" inputmode="decimal" autocomplete="off" />
+          <mat-hint>Manual; no se guarda vínculo a id de seguro.</mat-hint>
           @if (form.controls.insurancePercent.hasError('required') && form.controls.insurancePercent.touched) {
             <mat-error>Requerido</mat-error>
           }
@@ -102,15 +105,41 @@
           }
         </mat-form-field>
       </div>
+      <div class="suggest-row">
+        <button
+          mat-stroked-button
+          type="button"
+          color="primary"
+          (click)="applySuggestedInsurancePercent()"
+          [disabled]="suggestLoading">
+          Sugerir % desde seguro activo / vigente
+        </button>
+      </div>
+      @let pv = paymentPreview();
+      @if (pv !== null) {
+        <div class="preview-box" [class.preview-bad]="pv.negative">
+          <strong>Vista previa (no guardada)</strong>
+          Descuento aprox.: {{ pv.discount | number: '1.2-2' }} · Total aprox.: {{ pv.total | number: '1.2-2' }}
+          @if (pv.negative) {
+            <span class="bad-note">Revise valores: el servidor no aceptará total negativo.</span>
+          }
+        </div>
+      }
       <div class="row two">
         <mat-form-field appearance="outline">
           <mat-label>Método de pago</mat-label>
           <mat-select formControlName="paymentMethod">
             <mat-option value="">— Sin especificar —</mat-option>
             @for (m of methodOptions; track m) {
-              <mat-option [value]="m">{{ m }}</mat-option>
+              <mat-option [value]="m">{{ m }} — {{ paymentMethodCaption(m) }}</mat-option>
             }
           </mat-select>
+          @if (form.controls.status.value === 'PAGADO') {
+            <mat-hint>Obligatorio si el estado es PAGADO.</mat-hint>
+          }
+          @if (form.controls.paymentMethod.invalid && form.controls.paymentMethod.touched) {
+            <mat-error>Obligatorio cuando el estado es PAGADO</mat-error>
+          }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Nº recibo (opcional)</mat-label>

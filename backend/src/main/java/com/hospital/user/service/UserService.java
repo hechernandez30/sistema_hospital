@@ -1,5 +1,7 @@
 package com.hospital.user.service;
 
+import com.hospital.auditlog.BusinessAuditActions;
+import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.role.entity.Role;
@@ -13,7 +15,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UserService {
@@ -21,11 +25,17 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final BusinessAuditRecorder businessAuditRecorder;
 
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserService(
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder,
+            BusinessAuditRecorder businessAuditRecorder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.businessAuditRecorder = businessAuditRecorder;
     }
 
     @Transactional(readOnly = true)
@@ -36,19 +46,21 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserResponse findById(Long id) {
         return toResponse(userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario: " + id)));
     }
 
     @Transactional
     public UserResponse create(UserCreateRequest request) {
         if (userRepository.existsByUsername(request.username().trim())) {
-            throw new BusinessRuleException("Username already exists");
+            throw new BusinessRuleException(
+                    "Ese nombre de usuario ya está registrado. Elija otro distinto.");
         }
         if (userRepository.existsByEmail(request.email().trim())) {
-            throw new BusinessRuleException("Email already exists");
+            throw new BusinessRuleException(
+                    "Ese correo electrónico ya está asociado a otro usuario. Use otro correo o recupere la cuenta existente.");
         }
         Role role = roleRepository.findById(request.roleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + request.roleId()));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el rol: " + request.roleId()));
         User user = new User();
         user.setRole(role);
         user.setUsername(request.username().trim());
@@ -57,19 +69,29 @@ public class UserService {
         user.setFirstName(request.firstName().trim());
         user.setLastName(request.lastName().trim());
         user.setMfaEnabled(request.mfaEnabled() != null && request.mfaEnabled());
-        return toResponse(userRepository.save(user));
+        UserResponse created = toResponse(userRepository.save(user));
+        businessAuditRecorder.safeRecord(
+                "users",
+                "User",
+                String.valueOf(created.id()),
+                BusinessAuditActions.CREATE,
+                null,
+                summaryUserAudit(created));
+        return created;
     }
 
     @Transactional
     public UserResponse update(Long id, UserUpdateRequest request) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario: " + id));
+        UserResponse prior = toResponse(user);
         String email = request.email().trim();
         if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(email)) {
-            throw new BusinessRuleException("Email already exists");
+            throw new BusinessRuleException(
+                    "Ese correo electrónico ya está asociado a otro usuario. Use otro correo.");
         }
         Role role = roleRepository.findById(request.roleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + request.roleId()));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el rol: " + request.roleId()));
         user.setRole(role);
         user.setEmail(email);
         user.setFirstName(request.firstName().trim());
@@ -78,15 +100,44 @@ public class UserService {
         if (request.password() != null && !request.password().isBlank()) {
             user.setPasswordHash(passwordEncoder.encode(request.password()));
         }
-        return toResponse(userRepository.save(user));
+        UserResponse updated = toResponse(userRepository.save(user));
+        Map<String, Object> neu = new LinkedHashMap<>(summaryUserAudit(updated));
+        if (request.password() != null && !request.password().isBlank()) {
+            neu.put("passwordRotated", Boolean.TRUE);
+        }
+        businessAuditRecorder.safeRecord(
+                "users",
+                "User",
+                String.valueOf(id),
+                BusinessAuditActions.UPDATE,
+                summaryUserAudit(prior),
+                neu);
+        return updated;
     }
 
     @Transactional
     public void delete(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("User not found: " + id);
-        }
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario: " + id));
+        UserResponse prior = toResponse(user);
+        userRepository.delete(user);
+        businessAuditRecorder.safeRecord(
+                "users",
+                "User",
+                String.valueOf(id),
+                BusinessAuditActions.DELETE,
+                summaryUserAudit(prior),
+                null);
+    }
+
+    /** Sin correo ni contraseña — solo datos mínimos para trazabilidad. */
+    private static Map<String, Object> summaryUserAudit(UserResponse r) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("userId", r.id());
+        row.put("username", r.username());
+        row.put("roleId", r.roleId());
+        row.put("state", r.state());
+        return row;
     }
 
     private UserResponse toResponse(User user) {

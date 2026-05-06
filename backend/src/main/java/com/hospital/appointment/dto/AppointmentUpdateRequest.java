@@ -8,13 +8,21 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 public record AppointmentUpdateRequest(
-        @NotNull Long patientId,
-        @NotNull Long doctorId,
+        @NotNull(message = "El paciente es obligatorio")
+        Long patientId,
+        @NotNull(message = "El médico es obligatorio")
+        Long doctorId,
         Long specialtyId,
-        @NotNull @Future LocalDateTime startAt,
-        @NotNull @Future LocalDateTime endAt,
-        @Size(max = 250) String reason,
-        @NotBlank String status,
+        @NotNull(message = "La fecha y hora de inicio son obligatorias")
+        @Future(message = "La fecha y hora de inicio deben ser futuras")
+        LocalDateTime startAt,
+        @NotNull(message = "La fecha y hora de fin son obligatorias")
+        @Future(message = "La fecha y hora de fin deben ser futuras")
+        LocalDateTime endAt,
+        @Size(max = 250, message = "El motivo no debe superar 250 caracteres")
+        String reason,
+        @NotBlank(message = "El estado de la cita es obligatorio")
+        String status,
         boolean notifyEmail,
         boolean notifySms,
         boolean notifyWhatsapp,

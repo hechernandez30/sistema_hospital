@@ -44,6 +44,11 @@
   box-shadow: var(--hh-shadow-soft, 0 4px 24px rgba(12, 53, 84, 0.12)) !important;
 }
 
+.svc-card.highlight {
+  outline: 3px solid rgba(21, 101, 192, 0.35);
+  box-shadow: 0 0 0 6px rgba(21, 101, 192, 0.12) !important;
+}
+
 .svc-avatar {
   display: flex;
   align-items: center;

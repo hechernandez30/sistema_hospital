@@ -38,6 +38,11 @@
   box-shadow: var(--hh-shadow-soft, 0 4px 24px rgba(12, 53, 84, 0.1)) !important;
 }
 
+.spec-card.highlight {
+  outline: 3px solid rgba(21, 101, 192, 0.35);
+  box-shadow: 0 0 0 6px rgba(21, 101, 192, 0.12) !important;
+}
+
 .spec-card mat-card-title {
   font-weight: 600;
   color: var(--hh-navy, #0c3554);

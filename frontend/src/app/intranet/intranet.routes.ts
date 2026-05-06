@@ -13,6 +13,7 @@ import {
   ROLES_MEDICATIONS,
   ROLES_PATIENTS,
   ROLES_PAYMENTS,
+  ROLES_REPORTS,
   ROLES_RRHH_SPECIALTIES,
 } from '../core/constants/role-routes';
 
@@ -117,6 +118,13 @@ export const intranetRoutes: Routes = [
           import('../features/payments/pages/payment-list-page/payment-list-page.component').then(
             (m) => m.PaymentListPageComponent,
           ),
+      },
+      {
+        path: 'reportes',
+        canActivate: [roleGuard],
+        data: { title: 'Reportes', roles: [...ROLES_REPORTS] },
+        loadComponent: () =>
+          import('../features/reports/pages/reports-page/reports-page.component').then((m) => m.ReportsPageComponent),
       },
       {
         path: 'bitacora',

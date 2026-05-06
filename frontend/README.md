@@ -2,6 +2,10 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.24.
 
+## Errores HTTP (intranet)
+
+Las peticiones autenticadas muestran fallos mediante **MatSnackBar** usando `getHttpErrorMessage` (`src/app/core/utils/http-error-message.ts`): se prioriza el campo **`message`** del JSON `ApiErrorResponse` devuelto por el backend y, si existen, se concatenan hasta 8 entradas de **`fieldErrors`**. Ejemplos de contrato en **`../backend/doc/API.md`** (sección Errores).
+
 ## Development server
 
 To start a local development server, run:

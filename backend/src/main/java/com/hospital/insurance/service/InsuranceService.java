@@ -1,5 +1,8 @@
 package com.hospital.insurance.service;
 
+import com.hospital.auditlog.AuditPayloadMask;
+import com.hospital.auditlog.BusinessAuditActions;
+import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.insurance.dto.InsuranceRequest;
 import com.hospital.insurance.dto.InsuranceResponse;
@@ -10,17 +13,24 @@ import com.hospital.patient.repository.PatientRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class InsuranceService {
 
     private final InsuranceRepository insuranceRepository;
     private final PatientRepository patientRepository;
+    private final BusinessAuditRecorder businessAuditRecorder;
 
-    public InsuranceService(InsuranceRepository insuranceRepository, PatientRepository patientRepository) {
+    public InsuranceService(
+            InsuranceRepository insuranceRepository,
+            PatientRepository patientRepository,
+            BusinessAuditRecorder businessAuditRecorder) {
         this.insuranceRepository = insuranceRepository;
         this.patientRepository = patientRepository;
+        this.businessAuditRecorder = businessAuditRecorder;
     }
 
     @Transactional(readOnly = true)
@@ -33,7 +43,7 @@ public class InsuranceService {
     public InsuranceResponse findByPatientAndId(Long patientId, Long insuranceId) {
         return toResponse(insuranceRepository
                 .findByIdAndPatient_Id(insuranceId, patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Insurance not found: " + insuranceId)));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el seguro: " + insuranceId)));
     }
 
     @Transactional
@@ -42,29 +52,49 @@ public class InsuranceService {
         Insurance i = new Insurance();
         i.setPatient(patient);
         map(i, request);
-        return toResponse(insuranceRepository.save(i));
+        Insurance saved = insuranceRepository.save(i);
+        businessAuditRecorder.safeRecord(
+                "insurances",
+                "Insurance",
+                String.valueOf(saved.getId()),
+                BusinessAuditActions.CREATE,
+                null,
+                snapshotInsuranceMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
     public InsuranceResponse update(Long patientId, Long insuranceId, InsuranceRequest request) {
         Insurance i = insuranceRepository
                 .findByIdAndPatient_Id(insuranceId, patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Insurance not found: " + insuranceId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el seguro: " + insuranceId));
+        Map<String, Object> prior = snapshotInsuranceMinimal(i);
         map(i, request);
-        return toResponse(insuranceRepository.save(i));
+        Insurance saved = insuranceRepository.save(i);
+        businessAuditRecorder.safeRecord(
+                "insurances",
+                "Insurance",
+                String.valueOf(insuranceId),
+                BusinessAuditActions.UPDATE,
+                prior,
+                snapshotInsuranceMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
     public void delete(Long patientId, Long insuranceId) {
         Insurance i = insuranceRepository
                 .findByIdAndPatient_Id(insuranceId, patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Insurance not found: " + insuranceId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el seguro: " + insuranceId));
+        Map<String, Object> prior = snapshotInsuranceMinimal(i);
         insuranceRepository.delete(i);
+        businessAuditRecorder.safeRecord(
+                "insurances", "Insurance", String.valueOf(insuranceId), BusinessAuditActions.DELETE, prior, null);
     }
 
     private Patient ensurePatient(Long patientId) {
         return patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found: " + patientId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el paciente: " + patientId));
     }
 
     private void map(Insurance i, InsuranceRequest request) {
@@ -86,5 +116,20 @@ public class InsuranceService {
                 i.getStartDate(),
                 i.getEndDate(),
                 i.isActive());
+    }
+
+    private static Map<String, Object> snapshotInsuranceMinimal(Insurance i) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("patientId", i.getPatient().getId());
+        if (i.getId() != null) {
+            m.put("insuranceId", i.getId());
+        }
+        m.put("insurerName", i.getInsurerName());
+        m.put("policyNumberMasked", AuditPayloadMask.tailMask(i.getPolicyNumber()));
+        if (i.getCoveragePercent() != null) {
+            m.put("coveragePercent", i.getCoveragePercent().toPlainString());
+        }
+        m.put("active", i.isActive());
+        return m;
     }
 }

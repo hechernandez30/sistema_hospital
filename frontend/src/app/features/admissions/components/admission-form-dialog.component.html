@@ -12,7 +12,10 @@
     <mat-dialog-content class="form-scroll">
       <p class="hint">
         <mat-icon>info</mat-icon>
-        ID de paciente obligatorio. Cita opcional (ID). Valores de tipo y estado deben coincidir con el backend.
+        <strong>CU11:</strong> el paciente debe estar <strong>activo</strong> y tener <strong>código</strong> y <strong>DPI/NIT</strong> en el expediente.
+        Excepto estado <strong>RECHAZADO</strong>, debe documentarse cobertura con <strong>SEGURO</strong> vigente en sistema o bien
+        <strong>PAGO_SITIO</strong> (pago / garantía en sitio).
+        Opcionalmente puede vincular un <strong>ID de cita</strong>; debe ser la cita del <em>mismo</em> paciente.
       </p>
       <div class="row two">
         <mat-form-field appearance="outline">
@@ -28,6 +31,7 @@
         <mat-form-field appearance="outline">
           <mat-label>ID cita (opcional)</mat-label>
           <input matInput formControlName="appointmentId" inputmode="numeric" autocomplete="off" />
+          <mat-hint>Si informa cita, el backend exige que corresponda al paciente indicado.</mat-hint>
           @if (form.controls.appointmentId.hasError('positiveInteger') && form.controls.appointmentId.touched) {
             <mat-error>ID entero positivo o vacío</mat-error>
           }
@@ -35,10 +39,10 @@
       </div>
       <div class="row two">
         <mat-form-field appearance="outline">
-          <mat-label>Tipo de admisión</mat-label>
+          <mat-label>Tipo de ingreso</mat-label>
           <mat-select formControlName="admissionType">
             @for (t of types; track t) {
-              <mat-option [value]="t">{{ t }}</mat-option>
+              <mat-option [value]="t">{{ typeLabel[t] }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -49,7 +53,7 @@
               <mat-option value="">Predeterminado (ADMITIDO)</mat-option>
             }
             @for (s of statuses; track s) {
-              <mat-option [value]="s">{{ s }}</mat-option>
+              <mat-option [value]="s">{{ statusLabel[s] }}</mat-option>
             }
           </mat-select>
           @if (isEdit && form.controls.status.invalid && form.controls.status.touched) {
@@ -67,15 +71,20 @@
           <input matInput formControlName="room" maxlength="30" />
         </mat-form-field>
       </div>
-      <mat-checkbox formControlName="financialValidationOk">Validación financiera OK</mat-checkbox>
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>Origen validación</mat-label>
+      <mat-divider />
+      <h3 class="section">Financiero CU11</h3>
+      <mat-checkbox formControlName="financialValidationOk">
+        Validación financiera conforme al proceso interno (obligatorio salvo rechazo).
+      </mat-checkbox>
+      <mat-form-field appearance="outline" class="full margin-top-field">
+        <mat-label>Origen de cobertura / pago</mat-label>
         <mat-select formControlName="validationSource">
-          <mat-option value="">—</mat-option>
+          <mat-option value="">— seleccione —</mat-option>
           @for (x of validationSources; track x) {
-            <mat-option [value]="x">{{ x }}</mat-option>
+            <mat-option [value]="x">{{ validationLabel[x] }}</mat-option>
           }
         </mat-select>
+        <mat-hint>SEGURO: se verifica contra póliza activa en sistema. PAGO_SITIO: garantía registrada fuera del módulo de pagos por ahora.</mat-hint>
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Observaciones</mat-label>

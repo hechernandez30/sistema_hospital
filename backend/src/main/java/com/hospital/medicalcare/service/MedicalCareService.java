@@ -4,6 +4,8 @@ import com.hospital.admission.entity.Admission;
 import com.hospital.admission.repository.AdmissionRepository;
 import com.hospital.appointment.entity.Appointment;
 import com.hospital.appointment.repository.AppointmentRepository;
+import com.hospital.auditlog.BusinessAuditActions;
+import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.medicalcare.dto.MedicalCareCreateRequest;
@@ -18,28 +20,37 @@ import com.hospital.staff.repository.StaffRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 public class MedicalCareService {
+
+    /** Cita “activa” para vincular atención (alineado a estados de cita en el dominio). */
+    private static final Set<String> ACTIVE_APPOINTMENT_STATUS = Set.of("PROGRAMADA", "REPROGRAMADA");
 
     private final MedicalCareRepository medicalCareRepository;
     private final PatientRepository patientRepository;
     private final AdmissionRepository admissionRepository;
     private final AppointmentRepository appointmentRepository;
     private final StaffRepository staffRepository;
+    private final BusinessAuditRecorder businessAuditRecorder;
 
     public MedicalCareService(
             MedicalCareRepository medicalCareRepository,
             PatientRepository patientRepository,
             AdmissionRepository admissionRepository,
             AppointmentRepository appointmentRepository,
-            StaffRepository staffRepository) {
+            StaffRepository staffRepository,
+            BusinessAuditRecorder businessAuditRecorder) {
         this.medicalCareRepository = medicalCareRepository;
         this.patientRepository = patientRepository;
         this.admissionRepository = admissionRepository;
         this.appointmentRepository = appointmentRepository;
         this.staffRepository = staffRepository;
+        this.businessAuditRecorder = businessAuditRecorder;
     }
 
     @Transactional(readOnly = true)
@@ -50,7 +61,7 @@ public class MedicalCareService {
     @Transactional(readOnly = true)
     public MedicalCareResponse findById(Long id) {
         return toResponse(medicalCareRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Medical care not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la atención médica: " + id)));
     }
 
     @Transactional(readOnly = true)
@@ -64,25 +75,49 @@ public class MedicalCareService {
         mapCommon(medicalCare, request.patientId(), request.admissionId(), request.appointmentId(), request.doctorId(),
                 request.consultationReason(), request.clinicalEvaluation(), request.diagnosis(),
                 request.treatmentPlan(), request.requiresHospitalization() != null && request.requiresHospitalization());
-        return toResponse(medicalCareRepository.save(medicalCare));
+        MedicalCare saved = medicalCareRepository.save(medicalCare);
+        businessAuditRecorder.safeRecord(
+                "medical-care",
+                "MedicalCare",
+                String.valueOf(saved.getId()),
+                BusinessAuditActions.CREATE,
+                null,
+                snapshotMedicalCareMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
     public MedicalCareResponse update(Long id, MedicalCareUpdateRequest request) {
         MedicalCare medicalCare = medicalCareRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Medical care not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la atención médica: " + id));
+        Map<String, Object> prior = snapshotMedicalCareMinimal(medicalCare);
         mapCommon(medicalCare, request.patientId(), request.admissionId(), request.appointmentId(), request.doctorId(),
                 request.consultationReason(), request.clinicalEvaluation(), request.diagnosis(),
                 request.treatmentPlan(), request.requiresHospitalization());
-        return toResponse(medicalCareRepository.save(medicalCare));
+        MedicalCare saved = medicalCareRepository.save(medicalCare);
+        businessAuditRecorder.safeRecord(
+                "medical-care",
+                "MedicalCare",
+                String.valueOf(id),
+                BusinessAuditActions.UPDATE,
+                prior,
+                snapshotMedicalCareMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
     public void delete(Long id) {
-        if (!medicalCareRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Medical care not found: " + id);
-        }
+        MedicalCare medicalCare = medicalCareRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la atención médica: " + id));
+        Map<String, Object> prior = snapshotMedicalCareMinimal(medicalCare);
         medicalCareRepository.deleteById(id);
+        businessAuditRecorder.safeRecord(
+                "medical-care",
+                "MedicalCare",
+                String.valueOf(id),
+                BusinessAuditActions.DELETE,
+                prior,
+                null);
     }
 
     private void mapCommon(
@@ -97,13 +132,13 @@ public class MedicalCareService {
             String treatmentPlan,
             boolean requiresHospitalization) {
         Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found: " + patientId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el paciente: " + patientId));
         Staff doctor = staffRepository.findById(doctorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + doctorId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el personal: " + doctorId));
         Admission admission = resolveAdmission(admissionId);
         Appointment appointment = resolveAppointment(appointmentId);
 
-        validateFlowRules(admission, appointment);
+        validateContextAdmissionOrAppointment(admission, appointment);
         validateOwnership(patient.getId(), admission, appointment);
 
         medicalCare.setPatient(patient);
@@ -122,7 +157,7 @@ public class MedicalCareService {
             return null;
         }
         return admissionRepository.findById(admissionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Admission not found: " + admissionId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la admisión: " + admissionId));
     }
 
     private Appointment resolveAppointment(Long appointmentId) {
@@ -130,22 +165,61 @@ public class MedicalCareService {
             return null;
         }
         return appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found: " + appointmentId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la cita: " + appointmentId));
     }
 
-    private void validateFlowRules(Admission admission, Appointment appointment) {
-        // Emergency flow can register care without admission, but normal consultation requires admission.
-        if (admission == null && appointment != null) {
-            throw new BusinessRuleException("Normal consultation requires an admission");
+    private void validateContextAdmissionOrAppointment(Admission admission, Appointment appointment) {
+        boolean hasAdmission = admission != null;
+        boolean hasAppointment = appointment != null;
+        if (!hasAdmission && !hasAppointment) {
+            throw new BusinessRuleException(
+                    "La atención médica debe vincularse a una admisión existente (indique el ID de admisión del episodio). "
+                            + "Opcionalmente puede vincular también una cita en estado PROGRAMADA o REPROGRAMADA.");
         }
+        if (!hasAdmission) {
+            throw new BusinessRuleException(
+                    "Si asocia una cita programada debe indicar también la admisión del mismo paciente para ese episodio.");
+        }
+        if (hasAppointment && !isActiveAppointmentStatus(appointment.getStatus())) {
+            throw new BusinessRuleException(
+                    "La cita debe estar en estado PROGRAMADA o REPROGRAMADA para vincularla a esta atención médica.");
+        }
+    }
+
+    private static boolean isActiveAppointmentStatus(String status) {
+        if (status == null) {
+            return false;
+        }
+        return ACTIVE_APPOINTMENT_STATUS.contains(status.trim().toUpperCase());
+    }
+
+    private Map<String, Object> snapshotMedicalCareMinimal(MedicalCare m) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        if (m.getId() != null) {
+            map.put("medicalCareId", m.getId());
+        }
+        map.put("patientId", m.getPatient().getId());
+        if (m.getAdmission() != null && m.getAdmission().getId() != null) {
+            map.put("admissionId", m.getAdmission().getId());
+        }
+        if (m.getAppointment() != null && m.getAppointment().getId() != null) {
+            map.put("appointmentId", m.getAppointment().getId());
+        }
+        if (m.getDoctor() != null && m.getDoctor().getId() != null) {
+            map.put("doctorId", m.getDoctor().getId());
+        }
+        if (m.getCareDate() != null) {
+            map.put("careDate", m.getCareDate().toString());
+        }
+        return map;
     }
 
     private void validateOwnership(Long patientId, Admission admission, Appointment appointment) {
         if (admission != null && !admission.getPatient().getId().equals(patientId)) {
-            throw new BusinessRuleException("Admission does not belong to the selected patient");
+            throw new BusinessRuleException("La admisión no pertenece al paciente seleccionado");
         }
         if (appointment != null && !appointment.getPatient().getId().equals(patientId)) {
-            throw new BusinessRuleException("Appointment does not belong to the selected patient");
+            throw new BusinessRuleException("La cita no pertenece al paciente seleccionado");
         }
     }
 

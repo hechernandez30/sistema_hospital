@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -14,7 +14,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MedicalOrderApiService } from '../../services/medical-order-api.service';
-import { MedicalOrderResponse } from '../../models/medical-order.models';
+import {
+  MedicalOrderResponse,
+  medicalOrderPriorityLabel,
+  medicalOrderStatusLabel,
+  medicalOrderTypeLabel,
+} from '../../models/medical-order.models';
 import {
   MedicalOrderFormDialogComponent,
   MedicalOrderFormDialogData,
@@ -43,6 +48,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
     MatInputModule,
     FormsModule,
     DatePipe,
+    NgClass,
   ],
   templateUrl: './medical-order-list-page.component.html',
   styleUrl: './medical-order-list-page.component.scss',
@@ -55,6 +61,10 @@ export class MedicalOrderListPageComponent implements OnInit, AfterViewInit {
 
   readonly canMutate = this.auth.hasAnyRole(ROLES_MEDICAL_ORDERS);
 
+  readonly medicalOrderTypeLabel = medicalOrderTypeLabel;
+  readonly medicalOrderStatusLabel = medicalOrderStatusLabel;
+  readonly medicalOrderPriorityLabel = medicalOrderPriorityLabel;
+
   filterCareId = '';
   displayedColumns = ['id', 'orderDate', 'medicalCareId', 'orderType', 'status', 'priority', 'description', 'actions'];
   dataSource = new MatTableDataSource<MedicalOrderResponse>([]);
@@ -66,6 +76,16 @@ export class MedicalOrderListPageComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.dataSource.sortingDataAccessor = (data: MedicalOrderResponse, sortHeaderId: string) => {
       switch (sortHeaderId) {
+        case 'orderType': {
+          const ord = ['LABORATORIO', 'IMAGEN', 'FARMACIA', 'HOSPITALIZACION'];
+          const i = ord.indexOf(data.orderType);
+          return i >= 0 ? i : 99;
+        }
+        case 'status': {
+          const ord = ['PENDIENTE', 'EN_PROCESO', 'PARCIAL', 'COMPLETADO', 'RECHAZADO', 'ANULADO'];
+          const i = ord.indexOf(data.status);
+          return i >= 0 ? i : 99;
+        }
         case 'description':
           return (data.description ?? '').toLowerCase();
         default: {
@@ -86,8 +106,10 @@ export class MedicalOrderListPageComponent implements OnInit, AfterViewInit {
         String(data.id),
         String(data.medicalCareId),
         data.orderType,
+        medicalOrderTypeLabel(data.orderType),
         data.status,
-        data.priority ?? '',
+        medicalOrderStatusLabel(data.status),
+        medicalOrderPriorityLabel(data.priority),
         data.description,
       ]
         .join(' ')
@@ -147,6 +169,22 @@ export class MedicalOrderListPageComponent implements OnInit, AfterViewInit {
     this.dataSource.filter = value;
     if (this.dataSource.paginator) {
       this.dataSource.paginator.firstPage();
+    }
+  }
+
+  orderStatusClass(status: string): string {
+    switch (status) {
+      case 'COMPLETADO':
+        return 'st-done';
+      case 'RECHAZADO':
+      case 'ANULADO':
+        return 'st-bad';
+      case 'EN_PROCESO':
+        return 'st-wip';
+      case 'PARCIAL':
+        return 'st-partial';
+      default:
+        return 'st-pend';
     }
   }
 

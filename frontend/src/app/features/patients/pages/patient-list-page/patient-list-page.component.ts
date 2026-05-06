@@ -154,7 +154,7 @@ export class PatientListPageComponent implements OnInit, AfterViewInit {
 
   openDetail(row: PatientResponse): void {
     this.dialog.open(PatientDetailDialogComponent, {
-      width: '560px',
+      width: '720px',
       maxWidth: '95vw',
       data: row,
     });

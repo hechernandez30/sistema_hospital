@@ -8,21 +8,31 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 public record AdmissionUpdateRequest(
-        @NotNull Long patientId,
+        @NotNull(message = "El paciente es obligatorio")
+        Long patientId,
         Long appointmentId,
-        @NotBlank
-        @Pattern(regexp = "CONSULTA|EMERGENCIA|HOSPITALIZACION", message = "Invalid admissionType")
+        @NotBlank(message = "El tipo de admisión es obligatorio")
+        @Pattern(
+                regexp = "CONSULTA|EMERGENCIA|HOSPITALIZACION",
+                message = "El tipo de admisión debe ser CONSULTA, EMERGENCIA u HOSPITALIZACION")
         String admissionType,
-        @NotBlank
-        @Pattern(regexp = "PENDIENTE|ADMITIDO|ALTA|TRANSFERIDO|RECHAZADO", message = "Invalid status")
+        @NotBlank(message = "El estado es obligatorio")
+        @Pattern(
+                regexp = "PENDIENTE|ADMITIDO|ALTA|TRANSFERIDO|RECHAZADO",
+                message = "El estado debe ser PENDIENTE, ADMITIDO, ALTA, TRANSFERIDO o RECHAZADO")
         String status,
-        @Size(max = 100) String currentArea,
-        @Size(max = 30) String room,
+        @Size(max = 100, message = "El área actual no debe superar 100 caracteres")
+        String currentArea,
+        @Size(max = 30, message = "La habitación no debe superar 30 caracteres")
+        String room,
         boolean financialValidationOk,
-        @Pattern(regexp = "^$|SEGURO|PAGO_SITIO", message = "validationSource must be SEGURO or PAGO_SITIO")
+        @Pattern(
+                regexp = "^$|SEGURO|PAGO_SITIO",
+                message = "La fuente de validación debe ser SEGURO o PAGO_SITIO")
         String validationSource,
         String observations,
         LocalDateTime dischargeDate,
-        @Size(max = 100) String transferredArea,
+        @Size(max = 100, message = "El área de traslado no debe superar 100 caracteres")
+        String transferredArea,
         Long admittedByUserId
 ) {}

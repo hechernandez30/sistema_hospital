@@ -1,3 +1,17 @@
+@use '../appointment-status.styles.scss';
+
+.suggest-row {
+  margin-bottom: 0.5rem;
+
+  button mat-icon {
+    margin-right: 0.35rem;
+    vertical-align: middle;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
 .title-icon {
   vertical-align: middle;
   margin-right: 0.35rem;

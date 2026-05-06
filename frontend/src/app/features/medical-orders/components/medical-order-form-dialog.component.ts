@@ -10,11 +10,14 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MedicalOrderApiService } from '../services/medical-order-api.service';
 import {
+  MEDICAL_ORDER_PRIORITY_PRESETS,
   MEDICAL_ORDER_STATUSES,
   MEDICAL_ORDER_TYPES,
   MedicalOrderCreatePayload,
   MedicalOrderResponse,
   MedicalOrderUpdatePayload,
+  medicalOrderStatusLabel,
+  medicalOrderTypeLabel,
 } from '../models/medical-order.models';
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
 import { parsePositiveInt, requiredPositiveInteger } from '../../shared/form-validators';
@@ -50,6 +53,9 @@ export class MedicalOrderFormDialogComponent implements OnInit {
 
   readonly orderTypes = [...MEDICAL_ORDER_TYPES];
   readonly statuses = [...MEDICAL_ORDER_STATUSES];
+  readonly priorityPresets = [...MEDICAL_ORDER_PRIORITY_PRESETS];
+  /** Prioridades fuera del catálogo (datos legacy) para poder editar sin perder valor. */
+  extraPriorities: string[] = [];
 
   loading = false;
   saving = false;
@@ -58,15 +64,14 @@ export class MedicalOrderFormDialogComponent implements OnInit {
     medicalCareId: ['', [requiredPositiveInteger()]],
     orderType: ['LABORATORIO', [Validators.required]],
     description: ['', [Validators.required, Validators.maxLength(250)]],
-    priority: ['', [Validators.maxLength(120)]],
+    priority: ['NORMAL', [Validators.required, Validators.maxLength(120)]],
     status: ['PENDIENTE', [Validators.required]],
     observations: ['', [Validators.maxLength(2000)]],
   });
 
   ngOnInit(): void {
-    if (this.dialogData.mode === 'edit') {
-      this.form.controls.priority.setValidators([Validators.required, Validators.maxLength(120)]);
-      this.form.controls.priority.updateValueAndValidity({ emitEvent: false });
+    if (this.dialogData.mode === 'create') {
+      this.extraPriorities = [];
     }
     if (this.dialogData.mode === 'edit' && this.dialogData.medicalOrderId != null) {
       this.loading = true;
@@ -83,11 +88,16 @@ export class MedicalOrderFormDialogComponent implements OnInit {
 
   private patchFrom(o: MedicalOrderResponse): void {
     this.loading = false;
+    const pri = (o.priority ?? 'NORMAL').trim() || 'NORMAL';
+    const presetSet = new Set(this.priorityPresets as readonly string[]);
+    if (!presetSet.has(pri) && !this.extraPriorities.includes(pri)) {
+      this.extraPriorities = [...this.extraPriorities, pri];
+    }
     this.form.patchValue({
       medicalCareId: String(o.medicalCareId),
       orderType: o.orderType as (typeof MEDICAL_ORDER_TYPES)[number],
       description: o.description,
-      priority: o.priority ?? '',
+      priority: pri,
       status: o.status as (typeof MEDICAL_ORDER_STATUSES)[number],
       observations: o.observations ?? '',
     });
@@ -108,12 +118,12 @@ export class MedicalOrderFormDialogComponent implements OnInit {
     const observations = v.observations?.trim() ? v.observations.trim() : null;
     this.saving = true;
     if (this.dialogData.mode === 'create') {
-      const priorityTrim = v.priority?.trim();
+      const priorityTrim = (v.priority ?? '').trim() || 'NORMAL';
       const body: MedicalOrderCreatePayload = {
         medicalCareId,
         orderType: v.orderType as string,
         description: (v.description ?? '').trim(),
-        priority: priorityTrim ? priorityTrim : null,
+        priority: priorityTrim,
         status: v.status as string,
         observations,
       };
@@ -156,4 +166,7 @@ export class MedicalOrderFormDialogComponent implements OnInit {
   }
 
   readonly isEdit = this.dialogData.mode === 'edit';
+
+  readonly orderTypeLabel = medicalOrderTypeLabel;
+  readonly statusLabel = medicalOrderStatusLabel;
 }

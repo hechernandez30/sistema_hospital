@@ -138,6 +138,11 @@ export class MedicationListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(MedicationDetailDialogComponent, { width: '440px', maxWidth: '95vw', data: row });
   }
 
+  /** Stock actual en o por debajo del umbral mínimo (alerta de inventario). */
+  lowStock(row: MedicationResponse): boolean {
+    return row.currentStock <= row.minimumStock;
+  }
+
   confirmDelete(row: MedicationResponse): void {
     this.dialog
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {

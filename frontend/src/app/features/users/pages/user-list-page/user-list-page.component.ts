@@ -11,9 +11,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { forkJoin } from 'rxjs';
 import { UserApiService } from '../../services/user-api.service';
-import { UserResponse } from '../../models/user.models';
+import { USER_STATES, UserResponse } from '../../models/user.models';
 import { UserFormDialogComponent, UserFormDialogData } from '../../components/user-form-dialog.component';
 import { UserDetailDialogComponent } from '../../components/user-detail-dialog.component';
 import { RoleApiService } from '../../../roles/services/role-api.service';
@@ -38,6 +39,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
     MatProgressSpinnerModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
   ],
   templateUrl: './user-list-page.component.html',
   styleUrl: './user-list-page.component.scss',
@@ -51,7 +53,13 @@ export class UserListPageComponent implements OnInit, AfterViewInit {
 
   readonly canMutate = this.auth.hasAnyRole(ROLES_ADMIN_ONLY);
 
+  readonly userStateOptions = [...USER_STATES];
   private roleNameById = new Map<number, string>();
+  private searchText = '';
+  /** Vacío = todos los estados */
+  stateFilter = '';
+
+  private static readonly FILTER_SEP = '\u0001';
 
   displayedColumns = ['id', 'username', 'email', 'fullName', 'role', 'state', 'mfaEnabled', 'actions'];
   dataSource = new MatTableDataSource<UserResponse>([]);
@@ -80,8 +88,18 @@ export class UserListPageComponent implements OnInit, AfterViewInit {
       }
       return v == null ? '' : String(v);
     };
-    this.dataSource.filterPredicate = (data, filter) => {
-      const f = filter.trim().toLowerCase();
+    this.dataSource.filterPredicate = (data, filterRaw) => {
+      const sep = UserListPageComponent.FILTER_SEP;
+      const i = filterRaw.indexOf(sep);
+      const textPart = i >= 0 ? filterRaw.slice(0, i) : filterRaw;
+      const statePart = i >= 0 ? filterRaw.slice(i + sep.length) : '';
+      if (statePart && data.state !== statePart) {
+        return false;
+      }
+      const f = textPart.trim().toLowerCase();
+      if (!f) {
+        return true;
+      }
       const blob = [
         String(data.id),
         data.username,
@@ -115,6 +133,7 @@ export class UserListPageComponent implements OnInit, AfterViewInit {
         this.loading = false;
         this.roleNameById = new Map(roles.map((r) => [r.id, r.name]));
         this.dataSource.data = users;
+        this.pushTableFilter();
       },
       error: (err: unknown) => {
         this.loading = false;
@@ -126,7 +145,17 @@ export class UserListPageComponent implements OnInit, AfterViewInit {
   }
 
   applyFilter(value: string): void {
-    this.dataSource.filter = value;
+    this.searchText = value;
+    this.pushTableFilter();
+  }
+
+  onStateFilterChange(value: string): void {
+    this.stateFilter = value ?? '';
+    this.pushTableFilter();
+  }
+
+  private pushTableFilter(): void {
+    this.dataSource.filter = `${this.searchText}${UserListPageComponent.FILTER_SEP}${this.stateFilter}`;
     if (this.dataSource.paginator) {
       this.dataSource.paginator.firstPage();
     }

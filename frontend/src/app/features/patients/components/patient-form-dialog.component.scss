@@ -31,8 +31,23 @@
   gap: 0.75rem;
 }
 
-.row.two > mat-form-field {
+.row.two > mat-form-field,
+.row.two > .code-field-wrap {
   flex: 1 1 200px;
+}
+
+.code-field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.code-field {
+  width: 100%;
+}
+
+.code-suggest-btn {
+  align-self: flex-start;
 }
 
 .full {

@@ -51,3 +51,20 @@ export const TRIAGE_PRIORITIES = [
   'III_PRIORITARIO',
   'IV_NO_URGENTE',
 ] as const;
+
+/** Etiquetas legibles (CU10) — el valor enviado a la API sigue siendo el código (I_CRITICO, …). */
+export const TRIAGE_PRIORITY_LABELS: Record<(typeof TRIAGE_PRIORITIES)[number], string> = {
+  I_CRITICO: 'Nivel I — Crítico (inmediatez)',
+  II_URGENTE: 'Nivel II — Urgente',
+  III_PRIORITARIO: 'Nivel III — Prioritario',
+  IV_NO_URGENTE: 'Nivel IV — No urgente',
+};
+
+export function triagePriorityLabel(code: string): string {
+  return TRIAGE_PRIORITY_LABELS[code as (typeof TRIAGE_PRIORITIES)[number]] ?? code;
+}
+
+export const TRIAGE_PRIORITY_OPTIONS = TRIAGE_PRIORITIES.map((code) => ({
+  code,
+  label: TRIAGE_PRIORITY_LABELS[code],
+}));

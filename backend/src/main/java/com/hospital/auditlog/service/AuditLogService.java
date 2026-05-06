@@ -47,7 +47,7 @@ public class AuditLogService {
     @Transactional(readOnly = true)
     public AuditLogResponse findById(Long id) {
         return toResponse(auditLogRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Audit log not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el registro de bitácora: " + id)));
     }
 
     /**
@@ -72,7 +72,7 @@ public class AuditLogService {
             return null;
         }
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario: " + userId));
     }
 
     private InetAddress parseClientIp(String raw) {
@@ -82,7 +82,7 @@ public class AuditLogService {
         try {
             return InetAddress.getByName(raw.trim());
         } catch (UnknownHostException e) {
-            throw new BusinessRuleException("Invalid IP address: " + raw);
+            throw new BusinessRuleException("Dirección IP no válida: " + raw);
         }
     }
 

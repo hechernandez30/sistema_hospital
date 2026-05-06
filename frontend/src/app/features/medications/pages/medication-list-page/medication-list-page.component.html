@@ -57,11 +57,25 @@
           </ng-container>
           <ng-container matColumnDef="currentStock">
             <th mat-header-cell *matHeaderCellDef mat-sort-header="currentStock">Stock</th>
-            <td mat-cell *matCellDef="let row">{{ row.currentStock }}</td>
+            <td mat-cell *matCellDef="let row">
+              <span
+                class="stock-cell"
+                [class.stock-low]="lowStock(row)"
+                [matTooltip]="lowStock(row) ? 'Stock igual o por debajo del mínimo' : ''"
+                [matTooltipDisabled]="!lowStock(row)"
+                matTooltipPosition="above">
+                @if (lowStock(row)) {
+                  <mat-icon class="stock-low-icon" aria-hidden="true">inventory_2</mat-icon>
+                }
+                {{ row.currentStock }}
+              </span>
+            </td>
           </ng-container>
           <ng-container matColumnDef="minimumStock">
             <th mat-header-cell *matHeaderCellDef mat-sort-header="minimumStock">Mínimo</th>
-            <td mat-cell *matCellDef="let row">{{ row.minimumStock }}</td>
+            <td mat-cell *matCellDef="let row">
+              <span [class.stock-low]="lowStock(row)">{{ row.minimumStock }}</span>
+            </td>
           </ng-container>
           <ng-container matColumnDef="active">
             <th mat-header-cell *matHeaderCellDef mat-sort-header="active">Activo</th>

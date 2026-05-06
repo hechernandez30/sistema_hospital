@@ -1,3 +1,12 @@
+@use '../admission-ui.styles.scss';
+
+.note p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--hh-text-muted, #64748b);
+  line-height: 1.45;
+}
+
 .title-icon {
   vertical-align: middle;
   margin-right: 0.35rem;

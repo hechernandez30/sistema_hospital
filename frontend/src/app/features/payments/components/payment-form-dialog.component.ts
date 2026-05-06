@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { DestroyRef, Component, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,14 +9,22 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { DecimalPipe } from '@angular/common';
 import { PaymentApiService } from '../services/payment-api.service';
+import { PatientInsuranceApiService } from '../services/patient-insurance-api.service';
 import {
   PAYMENT_METHOD_OPTIONS,
   PAYMENT_STATUSES,
   PaymentCreatePayload,
   PaymentResponse,
   PaymentUpdatePayload,
+  paymentMethodLabel,
+  paymentStatusLabel,
 } from '../models/payment.models';
+import {
+  previewPaymentMath,
+  suggestCoveragePercentFromPolicies,
+} from '../utils/coverage-suggestion.util';
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
 import {
   optionalDecimalRange,
@@ -49,6 +58,7 @@ function parseMoneyToNumber(raw: string): number {
     MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    DecimalPipe,
   ],
   templateUrl: './payment-form-dialog.component.html',
   styleUrl: './payment-form-dialog.component.scss',
@@ -56,8 +66,10 @@ function parseMoneyToNumber(raw: string): number {
 export class PaymentFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(PaymentApiService);
+  private readonly patientInsuranceApi = inject(PatientInsuranceApiService);
   private readonly dialogRef = inject(MatDialogRef<PaymentFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly destroyRef = inject(DestroyRef);
   readonly dialogData = inject<PaymentFormDialogData>(MAT_DIALOG_DATA);
 
   readonly statuses = [...PAYMENT_STATUSES];
@@ -65,6 +77,8 @@ export class PaymentFormDialogComponent implements OnInit {
 
   loading = false;
   saving = false;
+  /** Intento reciente de sugerencia desde pólizas API (solo UX). */
+  suggestLoading = false;
 
   readonly form = this.fb.group({
     patientId: ['', [requiredPositiveInteger()]],
@@ -72,7 +86,7 @@ export class PaymentFormDialogComponent implements OnInit {
     medicalOrderId: ['', [optionalPositiveInteger()]],
     concept: ['', [Validators.required, Validators.maxLength(200)]],
     subtotal: ['', [Validators.required, optionalDecimalRange(0, 1_000_000_000)]],
-    insurancePercent: ['', [Validators.required, optionalDecimalRange(0, 100)]],
+    insurancePercent: ['0', [Validators.required, optionalDecimalRange(0, 100)]],
     copay: ['', [Validators.required, optionalDecimalRange(0, 1_000_000_000)]],
     paymentMethod: ['' as string],
     status: ['PENDIENTE', [Validators.required]],
@@ -81,6 +95,11 @@ export class PaymentFormDialogComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.form.controls.status.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.syncPaymentMethodValidator();
+    });
+    this.syncPaymentMethodValidator();
+
     if (this.dialogData.mode === 'edit' && this.dialogData.paymentId != null) {
       this.loading = true;
       this.api.getById(this.dialogData.paymentId).subscribe({
@@ -92,6 +111,70 @@ export class PaymentFormDialogComponent implements OnInit {
         },
       });
     }
+  }
+
+  private syncPaymentMethodValidator(): void {
+    const ctl = this.form.controls.paymentMethod;
+    if (this.form.controls.status.value === 'PAGADO') {
+      ctl.setValidators([Validators.required]);
+    } else {
+      ctl.clearValidators();
+    }
+    ctl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  readonly paymentStatusCaption = paymentStatusLabel;
+  readonly paymentMethodCaption = paymentMethodLabel;
+
+  applySuggestedInsurancePercent(): void {
+    const pid = parsePositiveInt(this.form.controls.patientId.value);
+    if (pid == null) {
+      this.snackBar.open('Indique primero un ID de paciente válido.', 'Cerrar', { duration: 6000 });
+      return;
+    }
+    this.suggestLoading = true;
+    this.patientInsuranceApi.listByPatient(pid).subscribe({
+      next: (rows) => {
+        this.suggestLoading = false;
+        const sug = suggestCoveragePercentFromPolicies(rows);
+        if (sug == null) {
+          this.snackBar.open(
+            'No hay póliza activa y vigente a la fecha para sugerir cobertura. Use 0% o indique porcentaje manualmente.',
+            'Cerrar',
+            { duration: 9000 },
+          );
+          return;
+        }
+        this.form.patchValue({
+          insurancePercent: String(sug.coveragePercent),
+        });
+        this.snackBar.open(
+          `Sugerido por ${sug.insurerHint}: cobertura ${sug.coveragePercent}% — puede cambiar este valor.`,
+          'Cerrar',
+          { duration: 8000 },
+        );
+      },
+      error: (err: unknown) => {
+        this.suggestLoading = false;
+        this.snackBar.open(
+          getHttpErrorMessage(err, 'No se pudieron cargar seguros del paciente. ¿Permisos o sesión caducada?'),
+          'Cerrar',
+          { duration: 8000 },
+        );
+      },
+    });
+  }
+
+  paymentPreview(): { discount: number; total: number; negative?: boolean } | null {
+    const v = this.form.getRawValue();
+    const sub = parseMoneyToNumber(v.subtotal as string);
+    const pct = parseMoneyToNumber(v.insurancePercent as string);
+    const cop = parseMoneyToNumber(v.copay as string);
+    const p = previewPaymentMath(sub, pct, cop);
+    if (p == null) {
+      return null;
+    }
+    return { discount: p.discount, total: p.total, negative: p.total < 0 };
   }
 
   private patchFrom(p: PaymentResponse): void {
@@ -114,7 +197,15 @@ export class PaymentFormDialogComponent implements OnInit {
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.snackBar.open('Revise los campos marcados.', 'Cerrar', { duration: 6000 });
+      if (this.form.controls.status.value === 'PAGADO' && this.form.controls.paymentMethod.invalid) {
+        this.snackBar.open(
+          'En estado PAGADO debe seleccionar un método de pago (CU09 / auditoría compatible).',
+          'Cerrar',
+          { duration: 9000 },
+        );
+      } else {
+        this.snackBar.open('Revise los campos marcados.', 'Cerrar', { duration: 6000 });
+      }
       return;
     }
     const v = this.form.getRawValue();
@@ -128,6 +219,15 @@ export class PaymentFormDialogComponent implements OnInit {
     const copay = parseMoneyToNumber(v.copay as string);
     if (!Number.isFinite(subtotal) || !Number.isFinite(insurancePercent) || !Number.isFinite(copay)) {
       this.snackBar.open('Montos no válidos.', 'Cerrar', { duration: 5000 });
+      return;
+    }
+    const pre = previewPaymentMath(subtotal, insurancePercent, copay);
+    if (pre != null && pre.total < 0) {
+      this.snackBar.open(
+        'La combinación de subtotal, % seguro y copago produciría un total negativo. El servidor rechazaría el guardado.',
+        'Cerrar',
+        { duration: 9500 },
+      );
       return;
     }
     const methodRaw = (v.paymentMethod ?? '').trim();

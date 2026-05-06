@@ -12,7 +12,9 @@
     <mat-dialog-content class="form-scroll">
       <p class="hint">
         <mat-icon>info</mat-icon>
-        En alta debe existir la orden médica. Tipos y estado son valores cerrados. Fechas de recepción/resultado solo en edición.
+        <strong>Flujo:</strong> Atención médica (CU12) → Orden médica tipo <strong>LABORATORIO</strong> → este registro (CU07). Los datos de
+        solicitante, tipo de solicitud, expediente y descripción de muestra materializan el trámite de <strong>muestra (CU06)</strong> dentro
+        de la misma entidad Laboratorio — no hay tabla separada de muestras. El campo Adjunto admite texto o URL; no hay carga de archivos binarios.
       </p>
       @if (!isEdit) {
         <mat-form-field appearance="outline" class="full">
@@ -31,16 +33,16 @@
           <mat-label>Solicitante</mat-label>
           <mat-select formControlName="requesterType">
             <mat-option value="">—</mat-option>
-            <mat-option value="INTERNO">INTERNO</mat-option>
-            <mat-option value="EXTERNO">EXTERNO</mat-option>
+            <mat-option value="INTERNO">INTERNO — {{ requesterLabels.INTERNO }}</mat-option>
+            <mat-option value="EXTERNO">EXTERNO — {{ requesterLabels.EXTERNO }}</mat-option>
           </mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Tipo solicitud</mat-label>
           <mat-select formControlName="requestType">
             <mat-option value="">—</mat-option>
-            <mat-option value="MUESTRA_MEDICA">MUESTRA_MEDICA</mat-option>
-            <mat-option value="LABORATORIO">LABORATORIO</mat-option>
+            <mat-option value="MUESTRA_MEDICA">MUESTRA_MEDICA — {{ requestTypeLabels.MUESTRA_MEDICA }}</mat-option>
+            <mat-option value="LABORATORIO">LABORATORIO — {{ requestTypeLabels.LABORATORIO }}</mat-option>
           </mat-select>
         </mat-form-field>
       </div>
@@ -53,7 +55,15 @@
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Descripción muestra</mat-label>
-        <textarea matInput rows="2" formControlName="sampleDescription"></textarea>
+        <textarea matInput rows="3" formControlName="sampleDescription"></textarea>
+        @if (isEdit) {
+          <mat-hint>Opcional en edición si el registro ya existía sin texto.</mat-hint>
+        } @else {
+          <mat-hint>Obligatoria en alta para documentar tipo de muestra y contexto (CU06).</mat-hint>
+        }
+        @if (form.controls.sampleDescription.hasError('required') && form.controls.sampleDescription.touched) {
+          <mat-error>Describa la muestra antes de crear el registro.</mat-error>
+        }
       </mat-form-field>
       <mat-checkbox formControlName="sampleReceived">Muestra recibida</mat-checkbox>
       <mat-form-field appearance="outline" class="full">
@@ -68,7 +78,7 @@
         <mat-label>Estado</mat-label>
         <mat-select formControlName="status">
           @for (s of statuses; track s) {
-            <mat-option [value]="s">{{ s }}</mat-option>
+            <mat-option [value]="s">{{ s }} — {{ labStatusCaption(s) }}</mat-option>
           }
         </mat-select>
         @if (form.controls.status.invalid && form.controls.status.touched) {

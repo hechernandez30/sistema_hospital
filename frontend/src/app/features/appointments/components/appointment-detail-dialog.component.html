@@ -7,7 +7,12 @@
     <div class="field"><span class="label">Paciente</span><span class="value">{{ data.patientLabel }}</span></div>
     <div class="field"><span class="label">Médico / personal</span><span class="value">{{ data.doctorLabel }}</span></div>
     <div class="field"><span class="label">Especialidad</span><span class="value">{{ data.specialtyLabel }}</span></div>
-    <div class="field"><span class="label">Estado</span><span class="value">{{ data.status }}</span></div>
+    <div class="field">
+      <span class="label">Estado</span>
+      <span class="value">
+        <span class="apt-status-chip" [ngClass]="statusChipClass(data.status)">{{ data.status }}</span>
+      </span>
+    </div>
     <div class="field full"><span class="label">Inicio</span><span class="value">{{ data.startAt | date: 'medium' }}</span></div>
     <div class="field full"><span class="label">Fin</span><span class="value">{{ data.endAt | date: 'medium' }}</span></div>
     <div class="field full"><span class="label">Motivo</span><span class="value pre">{{ data.reason ?? '—' }}</span></div>

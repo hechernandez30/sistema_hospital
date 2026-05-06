@@ -12,8 +12,19 @@
     <mat-dialog-content class="form-scroll">
       <p class="hint">
         <mat-icon>info</mat-icon>
-        IDs numéricos (paciente, médico staff, admisión y cita opcionales). El backend valida existencia y reglas de negocio.
+        <strong>Episodio (CU12):</strong> debe indicar el <strong>ID de admisión</strong> del paciente. Opcionalmente puede
+        indicar una <strong>cita</strong> en estado PROGRAMADA o REPROGRAMADA; en ese caso la admisión también es
+        obligatoria. Paciente y médico (staff) son obligatorios; motivo de consulta, evaluación clínica y diagnóstico
+        también (validado en servidor).
       </p>
+      @if (form.hasError('admissionOrAppointmentRequired') && form.touched) {
+        <p class="context-error">Indique el ID de admisión (mínimo obligatorio para registrar el episodio).</p>
+      }
+      @if (form.hasError('appointmentRequiresAdmission') && form.touched) {
+        <p class="context-error">
+          Con ID de cita debe completar también el ID de admisión correspondiente al mismo paciente.
+        </p>
+      }
       <div class="row two">
         <mat-form-field appearance="outline">
           <mat-label>ID paciente</mat-label>
@@ -38,8 +49,9 @@
       </div>
       <div class="row two">
         <mat-form-field appearance="outline">
-          <mat-label>ID admisión (opcional)</mat-label>
+          <mat-label>ID admisión</mat-label>
           <input matInput formControlName="admissionId" inputmode="numeric" autocomplete="off" />
+          <mat-hint>Obligatoria (episodio / ingreso).</mat-hint>
           @if (form.controls.admissionId.hasError('positiveInteger') && form.controls.admissionId.touched) {
             <mat-error>ID válido o vacío</mat-error>
           }
@@ -47,6 +59,7 @@
         <mat-form-field appearance="outline">
           <mat-label>ID cita (opcional)</mat-label>
           <input matInput formControlName="appointmentId" inputmode="numeric" autocomplete="off" />
+          <mat-hint>Solo PROGRAMADA o REPROGRAMADA.</mat-hint>
           @if (form.controls.appointmentId.hasError('positiveInteger') && form.controls.appointmentId.touched) {
             <mat-error>ID válido o vacío</mat-error>
           }

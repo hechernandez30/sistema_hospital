@@ -51,7 +51,9 @@
         <mat-label>Código de empleado</mat-label>
         <input matInput formControlName="employeeCode" maxlength="30" autocomplete="off" />
         @if (!isEdit) {
-          <mat-hint>Sugerido según la lista actual.</mat-hint>
+          <mat-hint>Sugerido según la lista actual. Debe ser único; el servidor rechaza duplicados.</mat-hint>
+        } @else {
+          <mat-hint>Código único por empleado.</mat-hint>
         }
         @if (form.controls.employeeCode.hasError('required') && form.controls.employeeCode.touched) {
           <mat-error>Requerido</mat-error>
@@ -70,13 +72,17 @@
       </div>
 
       <mat-form-field appearance="outline" class="full">
-        <mat-label>Asistencia</mat-label>
+        <mat-label>Asistencia (CU14)</mat-label>
         <mat-select formControlName="attendance">
-          <mat-option value="">Predeterminado (PRESENTE)</mat-option>
+          <mat-option [value]="null">Sin definir</mat-option>
           @for (a of attendanceTypes; track a) {
             <mat-option [value]="a">{{ a }}</mat-option>
           }
         </mat-select>
+        <mat-hint>Valores válidos del sistema: PRESENTE, AUSENTE, PERMISO, VACACIONES.</mat-hint>
+        @if (form.controls.attendance.hasError('attendanceCatalog') && form.controls.attendance.touched) {
+          <mat-error>Elija un valor del catálogo</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="full">

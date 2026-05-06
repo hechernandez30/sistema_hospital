@@ -10,6 +10,64 @@
       <a mat-button class="nav-link" routerLink="/p/nosotros" routerLinkActive="nav-active">Quiénes somos</a>
       <a mat-button class="nav-link" routerLink="/p/servicios" routerLinkActive="nav-active">Servicios</a>
       <a mat-button class="nav-link" routerLink="/p/especialidades" routerLinkActive="nav-active">Especialidades</a>
+      <a mat-button class="nav-link" routerLink="/p/medicos" routerLinkActive="nav-active">Médicos</a>
+      <div class="nav-search-wrap" role="search">
+        <mat-form-field appearance="outline" class="nav-search-field" subscriptSizing="dynamic">
+          <mat-label>Buscar</mat-label>
+          <input
+            matInput
+            [(ngModel)]="q"
+            (input)="runSearch()"
+            (focus)="open = !!q.trim()"
+            (keyup.enter)="runSearch()"
+            placeholder="Servicios, especialidades, médicos…"
+            autocomplete="off"
+          />
+          @if (q) {
+            <button mat-icon-button matSuffix type="button" (click)="clear()" aria-label="Limpiar búsqueda">
+              <mat-icon>close</mat-icon>
+            </button>
+          } @else {
+            <mat-icon matSuffix>search</mat-icon>
+          }
+        </mat-form-field>
+
+        @if (open) {
+          <div class="public-search-panel">
+            <mat-card class="panel-card">
+              <mat-card-content>
+                @if (searching) {
+                  <div class="panel-loading"><mat-progress-spinner diameter="22" mode="indeterminate" /></div>
+                } @else {
+                  @if (results$ | async; as results) {
+                    @if (q.trim() && results.length === 0) {
+                      <div class="panel-empty">
+                        <mat-icon aria-hidden="true">search_off</mat-icon>
+                        <div>
+                          <p class="panel-empty-title">Sin resultados</p>
+                          <p class="panel-empty-sub">
+                            No encontramos resultados para tu búsqueda. Intenta con otro servicio, especialidad o médico.
+                          </p>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="panel-list" role="list">
+                        @for (r of results; track r.type + r.title) {
+                          <button type="button" class="panel-item" (click)="pick(r)" role="listitem">
+                            <span class="panel-pill">{{ r.subtitle }}</span>
+                            <span class="panel-title">{{ r.title }}</span>
+                            <span class="panel-desc">{{ r.description }}</span>
+                          </button>
+                        }
+                      </div>
+                    }
+                  }
+                }
+              </mat-card-content>
+            </mat-card>
+          </div>
+        }
+      </div>
       <a mat-stroked-button color="primary" class="nav-cta-contact" routerLink="/p/contacto" routerLinkActive="nav-cta-contact-active">
         <mat-icon>mail</mat-icon>
         Contacto

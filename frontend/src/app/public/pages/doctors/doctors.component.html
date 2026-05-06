@@ -1,0 +1,34 @@
+<section class="doctors-page">
+  <h1 class="page-title">Médicos</h1>
+  <p class="page-lead">
+    Información institucional. No se muestra disponibilidad ni agenda real; la programación de citas se gestiona por personal autorizado.
+  </p>
+
+  @if (doctors$ | async; as list) {
+    @if (list.length === 0) {
+      <mat-card><mat-card-content>No se pudo cargar el listado estático.</mat-card-content></mat-card>
+    } @else {
+      <div class="grid">
+        @for (d of list; track d.id) {
+          <mat-card class="doc-card" [id]="d.slug" [class.highlight]="highlightedId === d.slug">
+            <mat-card-header>
+              <mat-card-title>{{ d.nombre }}</mat-card-title>
+              <mat-card-subtitle>{{ d.especialidad }}</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <p>{{ d.perfil }}</p>
+              @if (d.horarioReferencial) {
+                <p class="muted"><strong>Horario referencial:</strong> {{ d.horarioReferencial }}</p>
+              }
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    }
+  } @else {
+    <div class="loading">
+      <mat-progress-spinner diameter="40" mode="indeterminate" />
+    </div>
+  }
+</section>
+

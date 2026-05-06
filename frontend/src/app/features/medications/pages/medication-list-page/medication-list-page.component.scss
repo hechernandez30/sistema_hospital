@@ -62,3 +62,22 @@ table {
   background: #e2e8f0;
   color: #64748b;
 }
+
+.stock-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stock-low-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  vertical-align: middle;
+  color: var(--hh-warn-icon, #ef6c00);
+}
+
+.stock-low {
+  color: var(--hh-warn-text, #b45309);
+  font-weight: 600;
+}

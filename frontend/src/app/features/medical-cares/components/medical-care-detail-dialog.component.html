@@ -5,8 +5,10 @@
 <mat-dialog-content class="detail">
   <div class="field"><span class="label">Paciente</span><span class="value">{{ data.patientLabel }}</span></div>
   <div class="field"><span class="label">Médico / personal</span><span class="value">{{ data.doctorLabel }}</span></div>
-  <div class="field"><span class="label">Admisión</span><span class="value">{{ data.admissionId != null ? 'Admisión #' + data.admissionId : '—' }}</span></div>
-  <div class="field"><span class="label">Cita</span><span class="value">{{ data.appointmentId != null ? 'Cita #' + data.appointmentId : '—' }}</span></div>
+  <div class="field">
+    <span class="label">Admisión</span><span class="value">{{ data.admissionId != null ? 'Admisión #' + data.admissionId : '—' }}</span>
+  </div>
+  <div class="field"><span class="label">Cita</span><span class="value">{{ data.appointmentId != null ? 'Cita #' + data.appointmentId : 'Sin cita vinculada' }}</span></div>
   <div class="field full"><span class="label">Fecha</span><span class="value">{{ data.careDate ? (data.careDate | date: 'medium') : '—' }}</span></div>
   <div class="field full"><span class="label">Motivo</span><span class="value pre">{{ data.consultationReason }}</span></div>
   <div class="field full"><span class="label">Evaluación</span><span class="value pre">{{ data.clinicalEvaluation }}</span></div>

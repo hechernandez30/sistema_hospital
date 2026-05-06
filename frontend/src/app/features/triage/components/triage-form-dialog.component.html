@@ -12,8 +12,11 @@
     <mat-dialog-content class="form-scroll">
       <p class="hint">
         <mat-icon>info</mat-icon>
-        ID de admisión obligatorio (solo dígitos). Signos vitales opcionales. SpO₂ 0–100 y temperatura 20–45 °C (use
-        punto o coma decimal). Staff responsable: ID entero positivo opcional.
+        La admisión debe existir en el sistema y no estar en estado RECHAZADO (el servidor rechaza ese caso).
+        CU10 recomienda registrar FC, FR, TA (sistólica/diastólica), SpO₂, temperatura y escala de dolor 0–10; en esta
+        fase siguen siendo opcionales en API para no romper flujos existentes — complete los rangos válidos cuando los
+        ingrese.
+        Decimales: use punto o coma. Staff responsable: ID opcional.
       </p>
       <mat-form-field appearance="outline" class="full">
         <mat-label>ID admisión</mat-label>
@@ -24,11 +27,13 @@
         @if (form.controls.admissionId.hasError('positiveInteger') && form.controls.admissionId.touched) {
           <mat-error>Solo dígitos, sin 0 a la izquierda</mat-error>
         }
+        <mat-hint>ID de admisión existente</mat-hint>
       </mat-form-field>
       <div class="row three">
         <mat-form-field appearance="outline">
           <mat-label>FC (lpm)</mat-label>
           <input matInput formControlName="heartRate" inputmode="numeric" autocomplete="off" />
+          <mat-hint>0–300</mat-hint>
           @if (form.controls.heartRate.hasError('integer') && form.controls.heartRate.touched) {
             <mat-error>Solo números enteros</mat-error>
           }
@@ -37,8 +42,9 @@
           }
         </mat-form-field>
         <mat-form-field appearance="outline">
-          <mat-label>FR</mat-label>
+          <mat-label>FR (rpm)</mat-label>
           <input matInput formControlName="respiratoryRate" inputmode="numeric" autocomplete="off" />
+          <mat-hint>0–120</mat-hint>
           @if (form.controls.respiratoryRate.hasError('integer') && form.controls.respiratoryRate.touched) {
             <mat-error>Solo números enteros</mat-error>
           }
@@ -49,6 +55,7 @@
         <mat-form-field appearance="outline">
           <mat-label>Dolor (0–10)</mat-label>
           <input matInput formControlName="pain" inputmode="numeric" autocomplete="off" />
+          <mat-hint>Escala numérica EVA</mat-hint>
           @if (form.controls.pain.hasError('integer') && form.controls.pain.touched) {
             <mat-error>Solo números enteros</mat-error>
           }
@@ -61,6 +68,7 @@
         <mat-form-field appearance="outline">
           <mat-label>TA sistólica</mat-label>
           <input matInput formControlName="systolicPressure" inputmode="numeric" autocomplete="off" />
+          <mat-hint>mmHg · 0–300</mat-hint>
           @if (form.controls.systolicPressure.hasError('integer') && form.controls.systolicPressure.touched) {
             <mat-error>Solo números enteros</mat-error>
           }
@@ -71,6 +79,7 @@
         <mat-form-field appearance="outline">
           <mat-label>TA diastólica</mat-label>
           <input matInput formControlName="diastolicPressure" inputmode="numeric" autocomplete="off" />
+          <mat-hint>mmHg · 0–200</mat-hint>
           @if (form.controls.diastolicPressure.hasError('integer') && form.controls.diastolicPressure.touched) {
             <mat-error>Solo números enteros</mat-error>
           }
@@ -83,6 +92,7 @@
         <mat-form-field appearance="outline">
           <mat-label>SpO₂ (%)</mat-label>
           <input matInput formControlName="oxygenSaturation" inputmode="decimal" placeholder="ej. 98" autocomplete="off" />
+          <mat-hint>0–100</mat-hint>
           @if (form.controls.oxygenSaturation.hasError('decimal') && form.controls.oxygenSaturation.touched) {
             <mat-error>Número decimal válido</mat-error>
           }
@@ -93,6 +103,7 @@
         <mat-form-field appearance="outline">
           <mat-label>Temperatura (°C)</mat-label>
           <input matInput formControlName="temperature" inputmode="decimal" placeholder="ej. 36.5" autocomplete="off" />
+          <mat-hint>20–45</mat-hint>
           @if (form.controls.temperature.hasError('decimal') && form.controls.temperature.touched) {
             <mat-error>Número decimal válido</mat-error>
           }
@@ -108,8 +119,8 @@
       <mat-form-field appearance="outline" class="full">
         <mat-label>Prioridad</mat-label>
         <mat-select formControlName="priority">
-          @for (p of priorities; track p) {
-            <mat-option [value]="p">{{ p }}</mat-option>
+          @for (p of priorityOptions; track p.code) {
+            <mat-option [value]="p.code"><span class="opt-code">{{ p.code }}</span> — {{ p.label }}</mat-option>
           }
         </mat-select>
         @if (form.controls.priority.invalid && form.controls.priority.touched) {
@@ -119,6 +130,7 @@
       <mat-form-field appearance="outline" class="full">
         <mat-label>Meta minutos (opcional)</mat-label>
         <input matInput formControlName="targetMinutes" inputmode="numeric" autocomplete="off" />
+        <mat-hint>Tiempo objetivo ≥ 0 (minutos)</mat-hint>
         @if (form.controls.targetMinutes.hasError('integer') && form.controls.targetMinutes.touched) {
           <mat-error>Solo números enteros</mat-error>
         }

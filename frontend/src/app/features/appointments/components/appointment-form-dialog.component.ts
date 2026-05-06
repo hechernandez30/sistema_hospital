@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { NgClass } from '@angular/common';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { forkJoin, of } from 'rxjs';
 import { AppointmentApiService } from '../services/appointment-api.service';
 import {
   APPOINTMENT_STATUSES,
@@ -17,8 +19,17 @@ import {
   AppointmentUpdatePayload,
 } from '../models/appointment.models';
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
-import { datetimeLocalToApi, apiToDatetimeLocal } from '../../shared/datetime-local';
+import {
+  datetimeLocalToApi,
+  apiToDatetimeLocal,
+  addMinutesToDatetimeLocal,
+} from '../../shared/datetime-local';
 import { optionalPositiveInteger, parsePositiveInt, requiredPositiveInteger } from '../../shared/form-validators';
+import { SpecialtyApiService } from '../../specialties/services/specialty-api.service';
+import { SpecialtyResponse } from '../../specialties/models/specialty.models';
+import { AuthService } from '../../../core/services/auth.service';
+import { ROLES_RRHH_SPECIALTIES } from '../../../core/constants/role-routes';
+import { appointmentStatusChipClass } from '../appointment-status-chip';
 
 export interface AppointmentFormDialogData {
   mode: 'create' | 'edit';
@@ -43,6 +54,7 @@ function rangeValidator(group: AbstractControl): ValidationErrors | null {
   selector: 'app-appointment-form-dialog',
   standalone: true,
   imports: [
+    NgClass,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -61,11 +73,16 @@ function rangeValidator(group: AbstractControl): ValidationErrors | null {
 export class AppointmentFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(AppointmentApiService);
+  private readonly specialtyApi = inject(SpecialtyApiService);
+  private readonly auth = inject(AuthService);
   private readonly dialogRef = inject(MatDialogRef<AppointmentFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<AppointmentFormDialogData>(MAT_DIALOG_DATA);
 
+  readonly canPickSpecialtyCatalog = this.auth.hasAnyRole(ROLES_RRHH_SPECIALTIES);
   readonly statuses = [...APPOINTMENT_STATUSES];
+  specialties: SpecialtyResponse[] = [];
+
   loading = false;
   saving = false;
 
@@ -87,38 +104,91 @@ export class AppointmentFormDialogComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    const specs$ = this.canPickSpecialtyCatalog ? this.specialtyApi.list() : of([]);
     if (this.dialogData.mode === 'edit' && this.dialogData.appointmentId != null) {
       this.loading = true;
-      this.api.getById(this.dialogData.appointmentId).subscribe({
-        next: (a) => {
-          this.loading = false;
+      forkJoin({
+        specialties: specs$,
+        apt: this.api.getById(this.dialogData.appointmentId),
+      }).subscribe({
+        next: ({ specialties, apt }) => {
+          this.specialties = specialties;
           this.form.patchValue({
-            patientId: String(a.patientId),
-            doctorId: String(a.doctorId),
-            specialtyId: a.specialtyId != null ? String(a.specialtyId) : '',
-            startAt: apiToDatetimeLocal(a.startAt),
-            endAt: apiToDatetimeLocal(a.endAt),
-            reason: a.reason ?? '',
-            status: a.status,
-            notifyEmail: a.notifyEmail,
-            notifySms: a.notifySms,
-            notifyWhatsapp: a.notifyWhatsapp,
-            createdByUserId: a.createdByUserId != null ? String(a.createdByUserId) : '',
+            patientId: String(apt.patientId),
+            doctorId: String(apt.doctorId),
+            specialtyId: apt.specialtyId != null ? String(apt.specialtyId) : '',
+            startAt: apiToDatetimeLocal(apt.startAt),
+            endAt: apiToDatetimeLocal(apt.endAt),
+            reason: apt.reason ?? '',
+            status: apt.status,
+            notifyEmail: apt.notifyEmail,
+            notifySms: apt.notifySms,
+            notifyWhatsapp: apt.notifyWhatsapp,
+            createdByUserId: apt.createdByUserId != null ? String(apt.createdByUserId) : '',
           });
+          this.loading = false;
         },
         error: (err: unknown) => {
           this.loading = false;
-          this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar la cita.'), 'Cerrar', { duration: 6000 });
+          this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar la cita o especialidades.'), 'Cerrar', {
+            duration: 7000,
+          });
+          this.dialogRef.close(false);
+        },
+      });
+    } else {
+      this.loading = true;
+      specs$.subscribe({
+        next: (s) => {
+          this.specialties = s;
+          this.loading = false;
+        },
+        error: (err: unknown) => {
+          this.loading = false;
+          this.snackBar.open(getHttpErrorMessage(err, 'No se pudieron cargar especialidades.'), 'Cerrar', {
+            duration: 7000,
+          });
           this.dialogRef.close(false);
         },
       });
     }
   }
 
+  statusChip(status: string): string {
+    return appointmentStatusChipClass(status);
+  }
+
+  /** Sugerencia opcional usando `durationMinutes` del catálogo (sin nuevo contrato). Solo tras confirmación explícita. */
+  suggestEndFromSpecialtyDuration(): void {
+    const specId = parsePositiveInt(this.form.controls.specialtyId.value);
+    const startRaw = this.form.controls.startAt.value?.trim();
+    if (!specId || !startRaw) {
+      this.snackBar.open('Seleccione especialidad con duración conocida y hora de inicio.', 'Cerrar', { duration: 5000 });
+      return;
+    }
+    const row = this.specialties.find((x) => x.id === specId);
+    const mins = row?.durationMinutes;
+    if (mins == null || mins < 1) {
+      this.snackBar.open('Esta especialidad no tiene duración en minutos en el sistema.', 'Cerrar', { duration: 5000 });
+      return;
+    }
+    const nextEnd = addMinutesToDatetimeLocal(startRaw, mins);
+    if (!nextEnd) {
+      this.snackBar.open('Revise que la fecha/hora de inicio sea válida.', 'Cerrar', { duration: 5000 });
+      return;
+    }
+    this.form.patchValue({ endAt: nextEnd });
+    this.form.markAllAsTouched();
+  }
+
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.snackBar.open('Revise los campos marcados: hay datos inválidos o incompletos.', 'Cerrar', { duration: 6000 });
+      this.snackBar.open(
+        'Revise los campos: la hora de fin debe ser estrictamente posterior a la de inicio.',
+        'Cerrar',
+        { duration: 6500 },
+      );
       return;
     }
     const v = this.form.getRawValue();
@@ -130,8 +200,14 @@ export class AppointmentFormDialogComponent implements OnInit {
     }
     const startAt = datetimeLocalToApi(v.startAt as string);
     const endAt = datetimeLocalToApi(v.endAt as string);
+    const t0 = new Date(startAt).getTime();
+    const t1 = new Date(endAt).getTime();
+    if (Number.isNaN(t0) || Number.isNaN(t1) || t1 <= t0) {
+      this.snackBar.open('La fecha/hora de fin debe ser mayor que la de inicio.', 'Cerrar', { duration: 6000 });
+      return;
+    }
     const now = Date.now();
-    if (new Date(startAt).getTime() <= now || new Date(endAt).getTime() <= now) {
+    if (t0 <= now || t1 <= now) {
       this.snackBar.open('Las fechas de inicio y fin deben ser futuras (validación del backend).', 'Cerrar', {
         duration: 6000,
       });

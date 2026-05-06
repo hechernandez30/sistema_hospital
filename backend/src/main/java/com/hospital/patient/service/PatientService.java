@@ -1,5 +1,8 @@
 package com.hospital.patient.service;
 
+import com.hospital.auditlog.AuditPayloadMask;
+import com.hospital.auditlog.BusinessAuditActions;
+import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.patient.dto.PatientCreateRequest;
@@ -10,15 +13,19 @@ import com.hospital.patient.repository.PatientRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PatientService {
 
     private final PatientRepository patientRepository;
+    private final BusinessAuditRecorder businessAuditRecorder;
 
-    public PatientService(PatientRepository patientRepository) {
+    public PatientService(PatientRepository patientRepository, BusinessAuditRecorder businessAuditRecorder) {
         this.patientRepository = patientRepository;
+        this.businessAuditRecorder = businessAuditRecorder;
     }
 
     @Transactional(readOnly = true)
@@ -29,7 +36,7 @@ public class PatientService {
     @Transactional(readOnly = true)
     public PatientResponse findById(Long id) {
         return toResponse(patientRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el paciente: " + id)));
     }
 
     @Transactional
@@ -37,37 +44,60 @@ public class PatientService {
         String code = request.patientCode().trim();
         String dpi = request.dpiNit().trim();
         if (patientRepository.existsByPatientCode(code)) {
-            throw new BusinessRuleException("Patient code already exists");
+            throw new BusinessRuleException(
+                    "El código de paciente ya está en uso. Elija otro o use la sugerencia del sistema.");
         }
         if (patientRepository.existsByDpiNit(dpi)) {
-            throw new BusinessRuleException("DPI/NIT already exists");
+            throw new BusinessRuleException(
+                    "Ya existe un paciente con este DPI/NIT. Revise el número o consulte el expediente ya registrado.");
         }
         Patient p = mapNew(request, code, dpi);
-        return toResponse(patientRepository.save(p));
+        Patient saved = patientRepository.save(p);
+        businessAuditRecorder.safeRecord(
+                "patients",
+                "Patient",
+                String.valueOf(saved.getId()),
+                BusinessAuditActions.CREATE,
+                null,
+                snapshotPatientMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
     public PatientResponse update(Long id, PatientUpdateRequest request) {
         Patient p = patientRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el paciente: " + id));
         String code = request.patientCode().trim();
         String dpi = request.dpiNit().trim();
         if (!code.equals(p.getPatientCode()) && patientRepository.existsByPatientCode(code)) {
-            throw new BusinessRuleException("Patient code already exists");
+            throw new BusinessRuleException(
+                    "El código de paciente ya está en uso. Elija otro o use la sugerencia del sistema.");
         }
         if (!dpi.equalsIgnoreCase(p.getDpiNit()) && patientRepository.existsByDpiNit(dpi)) {
-            throw new BusinessRuleException("DPI/NIT already exists");
+            throw new BusinessRuleException(
+                    "Ya existe un paciente con este DPI/NIT. Revise el número o consulte el expediente ya registrado.");
         }
+        Map<String, Object> prior = snapshotPatientMinimal(p);
         mapUpdate(p, request, code, dpi);
-        return toResponse(patientRepository.save(p));
+        Patient saved = patientRepository.save(p);
+        businessAuditRecorder.safeRecord(
+                "patients",
+                "Patient",
+                String.valueOf(id),
+                BusinessAuditActions.UPDATE,
+                prior,
+                snapshotPatientMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
     public void delete(Long id) {
-        if (!patientRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Patient not found: " + id);
-        }
+        Patient p = patientRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el paciente: " + id));
+        Map<String, Object> prior = snapshotPatientMinimal(p);
         patientRepository.deleteById(id);
+        businessAuditRecorder.safeRecord(
+                "patients", "Patient", String.valueOf(id), BusinessAuditActions.DELETE, prior, null);
     }
 
     private Patient mapNew(PatientCreateRequest request, String code, String dpi) {
@@ -134,5 +164,16 @@ public class PatientService {
                 p.isActive(),
                 p.getCreatedAt(),
                 p.getUpdatedAt());
+    }
+
+    private static Map<String, Object> snapshotPatientMinimal(Patient p) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        if (p.getId() != null) {
+            m.put("patientId", p.getId());
+        }
+        m.put("patientCode", p.getPatientCode());
+        m.put("dpiNitMasked", AuditPayloadMask.tailMask(p.getDpiNit()));
+        m.put("active", p.isActive());
+        return m;
     }
 }

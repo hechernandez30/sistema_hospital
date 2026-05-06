@@ -59,7 +59,7 @@ export class StaffListPageComponent implements OnInit, AfterViewInit {
   private specialtyNameById = new Map<number, string>();
   private userLabelById = new Map<number, string>();
 
-  displayedColumns = ['id', 'employeeCode', 'staffType', 'user', 'specialty', 'active', 'actions'];
+  displayedColumns = ['id', 'employeeCode', 'staffType', 'user', 'specialty', 'attendance', 'active', 'actions'];
   dataSource = new MatTableDataSource<StaffResponse>([]);
   loading = false;
 
@@ -99,6 +99,11 @@ export class StaffListPageComponent implements OnInit, AfterViewInit {
         data.userId != null ? (this.userLabelById.get(data.userId) ?? '') : '',
         data.specialtyId != null ? String(data.specialtyId) : '',
         data.specialtyId != null ? (this.specialtyNameById.get(data.specialtyId) ?? '') : '',
+        data.attendance ?? '',
+        data.schedule ?? '',
+        data.licenseNumber ?? '',
+        data.hireDate ?? '',
+        data.active ? 'sí activo' : 'no inactivo',
       ]
         .join(' ')
         .toLowerCase();

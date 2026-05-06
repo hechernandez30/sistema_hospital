@@ -16,6 +16,7 @@
         <mat-form-field appearance="outline" class="full">
           <mat-label>Nombre de usuario</mat-label>
           <input matInput formControlName="username" maxlength="100" autocomplete="username" />
+          <mat-hint>Único en el sistema; no se puede cambiar después de creado.</mat-hint>
           @if (form.controls.username.hasError('required') && form.controls.username.touched) {
             <mat-error>Requerido</mat-error>
           }
@@ -37,6 +38,7 @@
       <mat-form-field appearance="outline" class="full">
         <mat-label>Correo</mat-label>
         <input matInput type="email" formControlName="email" maxlength="150" autocomplete="email" />
+        <mat-hint>Un correo por usuario; el servidor rechaza duplicados.</mat-hint>
         @if (form.controls.email.hasError('required') && form.controls.email.touched) {
           <mat-error>Requerido</mat-error>
         }
@@ -48,14 +50,16 @@
       <mat-form-field appearance="outline" class="full">
         <mat-label>{{ isEdit ? 'Nueva contraseña (opcional)' : 'Contraseña' }}</mat-label>
         <input matInput type="password" formControlName="password" autocomplete="new-password" />
+        <mat-hint>CU03: mín. 8, una minúscula, una mayúscula y un número</mat-hint>
         @if (!isEdit && form.controls.password.hasError('required') && form.controls.password.touched) {
-          <mat-error>Requerida (mín. 8 caracteres)</mat-error>
+          <mat-error>Contraseña requerida</mat-error>
         }
-        @if (form.controls.password.hasError('minlength') && form.controls.password.touched) {
-          <mat-error>Mínimo 8 caracteres</mat-error>
-        }
-        @if (isEdit && form.controls.password.hasError('passwordLength') && form.controls.password.touched) {
-          <mat-error>Si indica contraseña, entre 8 y 255 caracteres</mat-error>
+        @if (form.controls.password.hasError('cu03Password') && form.controls.password.touched) {
+          <mat-error>
+            {{
+              isEdit ? 'Si indica una contraseña, debe cumplir CU03.' : 'Debe cumplir CU03 (8+ caracteres, mayús., minús. y dígito).'
+            }}
+          </mat-error>
         }
       </mat-form-field>
 

@@ -1,3 +1,6 @@
+/** Fila lista con etiqueta paciente / detalle enriquecido. */
+export type AdmissionDetailData = AdmissionResponse & { patientLabel?: string };
+
 export interface AdmissionResponse {
   id: number;
   patientId: number;
@@ -48,3 +51,23 @@ export interface AdmissionUpdatePayload {
 export const ADMISSION_TYPES = ['CONSULTA', 'EMERGENCIA', 'HOSPITALIZACION'] as const;
 export const ADMISSION_STATUSES = ['PENDIENTE', 'ADMITIDO', 'ALTA', 'TRANSFERIDO', 'RECHAZADO'] as const;
 export const VALIDATION_SOURCES = ['SEGURO', 'PAGO_SITIO'] as const;
+
+/** Etiquetas UI (valores backend sin cambiar). */
+export const ADMISSION_TYPE_LABELS: Record<(typeof ADMISSION_TYPES)[number], string> = {
+  CONSULTA: 'Consulta externa',
+  EMERGENCIA: 'Emergencia',
+  HOSPITALIZACION: 'Hospitalización',
+};
+
+export const ADMISSION_STATUS_LABELS: Record<(typeof ADMISSION_STATUSES)[number], string> = {
+  PENDIENTE: 'Pendiente',
+  ADMITIDO: 'Admitido',
+  ALTA: 'Alta',
+  TRANSFERIDO: 'Transferido',
+  RECHAZADO: 'Rechazado',
+};
+
+export const VALIDATION_SOURCE_LABELS: Record<(typeof VALIDATION_SOURCES)[number], string> = {
+  SEGURO: 'Seguro — póliza vigente verificada',
+  PAGO_SITIO: 'Pago en sitio / garantía administrativa registrada',
+};

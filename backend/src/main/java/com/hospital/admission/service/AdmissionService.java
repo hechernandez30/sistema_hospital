@@ -7,6 +7,8 @@ import com.hospital.admission.entity.Admission;
 import com.hospital.admission.repository.AdmissionRepository;
 import com.hospital.appointment.entity.Appointment;
 import com.hospital.appointment.repository.AppointmentRepository;
+import com.hospital.auditlog.BusinessAuditActions;
+import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.insurance.entity.Insurance;
@@ -19,7 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -32,18 +36,21 @@ public class AdmissionService {
     private final AppointmentRepository appointmentRepository;
     private final InsuranceRepository insuranceRepository;
     private final UserRepository userRepository;
+    private final BusinessAuditRecorder businessAuditRecorder;
 
     public AdmissionService(
             AdmissionRepository admissionRepository,
             PatientRepository patientRepository,
             AppointmentRepository appointmentRepository,
             InsuranceRepository insuranceRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            BusinessAuditRecorder businessAuditRecorder) {
         this.admissionRepository = admissionRepository;
         this.patientRepository = patientRepository;
         this.appointmentRepository = appointmentRepository;
         this.insuranceRepository = insuranceRepository;
         this.userRepository = userRepository;
+        this.businessAuditRecorder = businessAuditRecorder;
     }
 
     @Transactional(readOnly = true)
@@ -54,7 +61,7 @@ public class AdmissionService {
     @Transactional(readOnly = true)
     public AdmissionResponse findById(Long id) {
         return toResponse(admissionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Admission not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la admisión: " + id)));
     }
 
     @Transactional
@@ -75,13 +82,23 @@ public class AdmissionService {
                 request.dischargeDate(),
                 request.transferredArea(),
                 request.admittedByUserId());
-        return toResponse(admissionRepository.save(admission));
+        Admission saved = admissionRepository.save(admission);
+        AdmissionResponse created = toResponse(saved);
+        businessAuditRecorder.safeRecord(
+                "admissions",
+                "Admission",
+                String.valueOf(created.id()),
+                BusinessAuditActions.CREATE,
+                null,
+                snapshotAdmissionMinimal(created));
+        return created;
     }
 
     @Transactional
     public AdmissionResponse update(Long id, AdmissionUpdateRequest request) {
         Admission admission = admissionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Admission not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la admisión: " + id));
+        AdmissionResponse priorResponse = toResponse(admission);
         mapCommon(
                 admission,
                 request.patientId(),
@@ -96,15 +113,31 @@ public class AdmissionService {
                 request.dischargeDate(),
                 request.transferredArea(),
                 request.admittedByUserId());
-        return toResponse(admissionRepository.save(admission));
+        Admission saved = admissionRepository.save(admission);
+        AdmissionResponse updated = toResponse(saved);
+        businessAuditRecorder.safeRecord(
+                "admissions",
+                "Admission",
+                String.valueOf(id),
+                BusinessAuditActions.UPDATE,
+                snapshotAdmissionMinimal(priorResponse),
+                snapshotAdmissionMinimal(updated));
+        return updated;
     }
 
     @Transactional
     public void delete(Long id) {
-        if (!admissionRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Admission not found: " + id);
-        }
-        admissionRepository.deleteById(id);
+        Admission admission = admissionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la admisión: " + id));
+        AdmissionResponse prior = toResponse(admission);
+        admissionRepository.delete(admission);
+        businessAuditRecorder.safeRecord(
+                "admissions",
+                "Admission",
+                String.valueOf(id),
+                BusinessAuditActions.DELETE,
+                snapshotAdmissionMinimal(prior),
+                null);
     }
 
     private void mapCommon(
@@ -123,12 +156,14 @@ public class AdmissionService {
             Long admittedByUserId) {
 
         if (!STATUS_VALUES.contains(status)) {
-            throw new BusinessRuleException("Invalid admission status");
+            throw new BusinessRuleException("Estado de admisión no válido");
         }
 
         Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found: " + patientId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el paciente: " + patientId));
+        ensurePatientIdentifiedForAdmission(patient);
         Appointment appointment = resolveAppointment(appointmentId);
+        validateAppointmentBelongsToPatient(appointment, patient.getId());
         User admittedBy = resolveUser(admittedByUserId);
 
         ensureFinancialValidation(patient.getId(), financialValidationOk, validationSource, status);
@@ -147,21 +182,49 @@ public class AdmissionService {
         admission.setAdmittedBy(admittedBy);
     }
 
+    private static void ensurePatientIdentifiedForAdmission(Patient patient) {
+        if (!patient.isActive()) {
+            throw new BusinessRuleException(
+                    "No se puede admitir: el paciente está inactivo en el sistema. Reactive el expediente o use uno activo.");
+        }
+        if (patient.getDpiNit() == null || patient.getDpiNit().isBlank()) {
+            throw new BusinessRuleException(
+                    "No se puede admitir sin identificación DPI/NIT en el expediente del paciente.");
+        }
+        if (patient.getPatientCode() == null || patient.getPatientCode().isBlank()) {
+            throw new BusinessRuleException(
+                    "No se puede admitir sin código de paciente registrado en el expediente.");
+        }
+    }
+
+    private static void validateAppointmentBelongsToPatient(Appointment appointment, Long patientId) {
+        if (appointment == null) {
+            return;
+        }
+        if (!appointment.getPatient().getId().equals(patientId)) {
+            throw new BusinessRuleException(
+                    "La cita indicada no corresponde al paciente seleccionado. Quite el ID de cita o corríjalo.");
+        }
+    }
+
     private void ensureFinancialValidation(Long patientId, boolean financialValidationOk, String validationSource, String status) {
         if ("RECHAZADO".equals(status)) {
             return;
         }
         if (!financialValidationOk) {
-            throw new BusinessRuleException("Financial validation is required for admission");
+            throw new BusinessRuleException(
+                    "Cuando el estado no es RECHAZADO, debe marcarse «validación financiera OK» para documentar cobertura o pago en sitio.");
         }
         if (validationSource == null || validationSource.isBlank()) {
-            throw new BusinessRuleException("Validation source is required when financial validation is OK");
+            throw new BusinessRuleException(
+                    "Indique el origen: SEGURO (póliza vigente verificada) o PAGO_SITIO (pago en sitio / garantía administrativa registrada).");
         }
         if ("SEGURO".equals(validationSource) && !hasValidInsurance(patientId)) {
-            throw new BusinessRuleException("Patient does not have an active insurance policy");
+            throw new BusinessRuleException(
+                    "Con origen SEGURO el paciente debe tener al menos un seguro activo y dentro de vigencia en el sistema.");
         }
         if (!"SEGURO".equals(validationSource) && !"PAGO_SITIO".equals(validationSource)) {
-            throw new BusinessRuleException("Validation source must be SEGURO or PAGO_SITIO");
+            throw new BusinessRuleException("La fuente de validación debe ser SEGURO o PAGO_SITIO.");
         }
     }
 
@@ -178,7 +241,7 @@ public class AdmissionService {
             return null;
         }
         return appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found: " + appointmentId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la cita: " + appointmentId));
     }
 
     private User resolveUser(Long userId) {
@@ -186,7 +249,7 @@ public class AdmissionService {
             return null;
         }
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario: " + userId));
     }
 
     private AdmissionResponse toResponse(Admission a) {
@@ -205,5 +268,24 @@ public class AdmissionService {
                 a.getDischargeDate(),
                 a.getTransferredArea(),
                 a.getAdmittedBy() != null ? a.getAdmittedBy().getId() : null);
+    }
+
+    /**
+     * Bitácora de negocio: sin observaciones ni datos clínicos; incluye vínculos mínimos para CU11.
+     */
+    private static Map<String, Object> snapshotAdmissionMinimal(AdmissionResponse r) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("admissionId", r.id());
+        m.put("patientId", r.patientId());
+        if (r.appointmentId() != null) {
+            m.put("appointmentId", r.appointmentId());
+        }
+        m.put("admissionType", r.admissionType());
+        m.put("status", r.status());
+        m.put("financialValidationOk", r.financialValidationOk());
+        if (r.validationSource() != null) {
+            m.put("validationSource", r.validationSource());
+        }
+        return m;
     }
 }

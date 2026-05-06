@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -20,6 +20,21 @@ import {
   parsePositiveInt,
   requiredPositiveInteger,
 } from '../../shared/form-validators';
+
+/** CU12: al menos admisión o cita; si hay cita, el backend exige admisión del mismo paciente. */
+function medicalCareEpisodeContextValidator(): ValidatorFn {
+  return (group: AbstractControl): ValidationErrors | null => {
+    const admissionId = parsePositiveInt(group.get('admissionId')?.value);
+    const appointmentId = parsePositiveInt(group.get('appointmentId')?.value);
+    if (appointmentId != null && admissionId == null) {
+      return { appointmentRequiresAdmission: true };
+    }
+    if (admissionId == null && appointmentId == null) {
+      return { admissionOrAppointmentRequired: true };
+    }
+    return null;
+  };
+}
 
 export interface MedicalCareFormDialogData {
   mode: 'create' | 'edit';
@@ -53,17 +68,20 @@ export class MedicalCareFormDialogComponent implements OnInit {
   loading = false;
   saving = false;
 
-  readonly form = this.fb.group({
-    patientId: ['', [requiredPositiveInteger()]],
-    admissionId: ['', [optionalPositiveInteger()]],
-    appointmentId: ['', [optionalPositiveInteger()]],
-    doctorId: ['', [requiredPositiveInteger()]],
-    consultationReason: ['', [Validators.required, Validators.maxLength(4000)]],
-    clinicalEvaluation: ['', [Validators.required, Validators.maxLength(8000)]],
-    diagnosis: ['', [Validators.required, Validators.maxLength(4000)]],
-    treatmentPlan: ['', [Validators.maxLength(8000)]],
-    requiresHospitalization: [false],
-  });
+  readonly form = this.fb.group(
+    {
+      patientId: ['', [requiredPositiveInteger()]],
+      admissionId: ['', [optionalPositiveInteger()]],
+      appointmentId: ['', [optionalPositiveInteger()]],
+      doctorId: ['', [requiredPositiveInteger()]],
+      consultationReason: ['', [Validators.required, Validators.maxLength(4000)]],
+      clinicalEvaluation: ['', [Validators.required, Validators.maxLength(8000)]],
+      diagnosis: ['', [Validators.required, Validators.maxLength(4000)]],
+      treatmentPlan: ['', [Validators.maxLength(8000)]],
+      requiresHospitalization: [false],
+    },
+    { validators: [medicalCareEpisodeContextValidator()] },
+  );
 
   ngOnInit(): void {
     if (this.dialogData.mode === 'edit' && this.dialogData.medicalCareId != null) {
@@ -97,7 +115,14 @@ export class MedicalCareFormDialogComponent implements OnInit {
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.snackBar.open('Revise los campos marcados.', 'Cerrar', { duration: 6000 });
+      let msg = 'Revise los campos marcados: hay datos obligatorios incompletos o inválidos.';
+      if (this.form.hasError('admissionOrAppointmentRequired')) {
+        msg =
+          'Indique al menos el ID de admisión (episodio). Si además vincula una cita, esa cita debe estar PROGRAMADA o REPROGRAMADA.';
+      } else if (this.form.hasError('appointmentRequiresAdmission')) {
+        msg = 'Si indica ID de cita, también debe indicar el ID de admisión del mismo paciente para ese episodio.';
+      }
+      this.snackBar.open(msg, 'Cerrar', { duration: 8000 });
       return;
     }
     const v = this.form.getRawValue();

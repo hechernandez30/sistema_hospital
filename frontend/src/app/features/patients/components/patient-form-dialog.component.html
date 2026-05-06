@@ -12,19 +12,27 @@
     <mat-dialog-content class="form-scroll">
       <h3 class="section">Identificación</h3>
       <div class="row two">
-        <mat-form-field appearance="outline">
-          <mat-label>Código paciente</mat-label>
-          <input matInput formControlName="patientCode" maxlength="30" autocomplete="off" />
+        <div class="code-field-wrap">
+          <mat-form-field appearance="outline" class="code-field">
+            <mat-label>Código paciente</mat-label>
+            <input matInput formControlName="patientCode" maxlength="30" autocomplete="off" />
+            @if (!isEdit) {
+              <mat-hint>Sugerido según la lista actual; puede editarlo o renovar la sugerencia.</mat-hint>
+            }
+            @if (form.controls.patientCode.invalid && form.controls.patientCode.touched) {
+              <mat-error>Requerido (máx. 30)</mat-error>
+            }
+          </mat-form-field>
           @if (!isEdit) {
-            <mat-hint>Sugerido según la lista actual.</mat-hint>
+            <button mat-stroked-button type="button" class="code-suggest-btn" (click)="regenerateSuggestedPatientCode()">
+              Renovar sugerencia
+            </button>
           }
-          @if (form.controls.patientCode.invalid && form.controls.patientCode.touched) {
-            <mat-error>Requerido (máx. 30)</mat-error>
-          }
-        </mat-form-field>
+        </div>
         <mat-form-field appearance="outline">
           <mat-label>DPI / NIT</mat-label>
           <input matInput formControlName="dpiNit" maxlength="30" />
+          <mat-hint>Identificador único. Si el servidor rechaza el guardado, puede que ya exista otro expediente con este número.</mat-hint>
           @if (form.controls.dpiNit.hasError('required') && form.controls.dpiNit.touched) {
             <mat-error>Requerido</mat-error>
           }
@@ -37,15 +45,22 @@
         <mat-form-field appearance="outline">
           <mat-label>Nombres</mat-label>
           <input matInput formControlName="firstName" maxlength="100" />
-          @if (form.controls.firstName.invalid && form.controls.firstName.touched) {
+          <mat-hint>2–100 caracteres; solo letras (incl. acentos) y espacios</mat-hint>
+          @if (form.controls.firstName.hasError('required') && form.controls.firstName.touched) {
             <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.firstName.hasError('patientPersonNameCu02') && form.controls.firstName.touched) {
+            <mat-error>Formato no válido (no use guiones, números ni signos especiales aquí)</mat-error>
           }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Apellidos</mat-label>
           <input matInput formControlName="lastName" maxlength="100" />
-          @if (form.controls.lastName.invalid && form.controls.lastName.touched) {
+          @if (form.controls.lastName.hasError('required') && form.controls.lastName.touched) {
             <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.lastName.hasError('patientPersonNameCu02') && form.controls.lastName.touched) {
+            <mat-error>Formato no válido (no use guiones, números ni signos especiales aquí)</mat-error>
           }
         </mat-form-field>
       </div>

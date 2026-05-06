@@ -1,0 +1,189 @@
+<mat-card class="page-card">
+  <mat-card-header>
+    <mat-icon mat-card-avatar class="page-avatar">insights</mat-icon>
+    <mat-card-title>Reportes operativos</mat-card-title>
+    <mat-card-subtitle>CU08 (versión inicial read-only)</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content class="page-grid">
+    <section class="report-box">
+      <h3>Citas por fecha/estado</h3>
+      <div class="filters">
+        <mat-form-field appearance="outline">
+          <mat-label>Desde</mat-label>
+          <input matInput type="date" [(ngModel)]="appointmentDateFrom" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Hasta</mat-label>
+          <input matInput type="date" [(ngModel)]="appointmentDateTo" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Estado</mat-label>
+          <mat-select [(ngModel)]="appointmentStatus">
+            <mat-option value="">Todos</mat-option>
+            @for (s of appointmentStatuses; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="actions">
+        <button mat-flat-button color="primary" type="button" (click)="runAppointments()" [disabled]="appointmentsLoading">
+          Generar
+        </button>
+        <button mat-stroked-button type="button" (click)="exportCsv('reporte_citas', appointments)">CSV</button>
+      </div>
+      @if (appointmentsLoading) {
+        <div class="loading"><mat-progress-spinner diameter="28" mode="indeterminate" /></div>
+      } @else if (!appointments.length) {
+        <p class="empty">Sin datos para los filtros seleccionados.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Paciente</th><th>Médico</th><th>Inicio</th><th>Estado</th></tr></thead>
+            <tbody>
+              @for (row of appointments; track row.appointmentId) {
+                <tr>
+                  <td>{{ row.appointmentId }}</td><td>{{ row.patientId }}</td><td>{{ row.doctorId }}</td>
+                  <td>{{ row.startAt | date: 'yyyy-MM-dd HH:mm' }}</td><td>{{ row.status }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="report-box">
+      <h3>Admisiones por fecha/estado</h3>
+      <div class="filters">
+        <mat-form-field appearance="outline"><mat-label>Desde</mat-label><input matInput type="date" [(ngModel)]="admissionDateFrom" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Hasta</mat-label><input matInput type="date" [(ngModel)]="admissionDateTo" /></mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Estado</mat-label>
+          <mat-select [(ngModel)]="admissionStatus">
+            <mat-option value="">Todos</mat-option>
+            @for (s of admissionStatuses; track s) { <mat-option [value]="s">{{ s }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="actions">
+        <button mat-flat-button color="primary" type="button" (click)="runAdmissions()" [disabled]="admissionsLoading">Generar</button>
+        <button mat-stroked-button type="button" (click)="exportCsv('reporte_admisiones', admissions)">CSV</button>
+      </div>
+      @if (admissionsLoading) {
+        <div class="loading"><mat-progress-spinner diameter="28" mode="indeterminate" /></div>
+      } @else if (!admissions.length) {
+        <p class="empty">Sin datos para los filtros seleccionados.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Paciente</th><th>Tipo</th><th>Ingreso</th><th>Estado</th></tr></thead>
+            <tbody>
+              @for (row of admissions; track row.admissionId) {
+                <tr>
+                  <td>{{ row.admissionId }}</td><td>{{ row.patientId }}</td><td>{{ row.admissionType }}</td>
+                  <td>{{ row.admissionDate | date: 'yyyy-MM-dd HH:mm' }}</td><td>{{ row.status }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="report-box">
+      <h3>Pagos por fecha/estado</h3>
+      <div class="filters">
+        <mat-form-field appearance="outline"><mat-label>Desde</mat-label><input matInput type="date" [(ngModel)]="paymentDateFrom" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Hasta</mat-label><input matInput type="date" [(ngModel)]="paymentDateTo" /></mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Estado</mat-label>
+          <mat-select [(ngModel)]="paymentStatus">
+            <mat-option value="">Todos</mat-option>
+            @for (s of paymentStatuses; track s) { <mat-option [value]="s">{{ s }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="actions">
+        <button mat-flat-button color="primary" type="button" (click)="runPayments()" [disabled]="paymentsLoading">Generar</button>
+        <button mat-stroked-button type="button" (click)="exportCsv('reporte_pagos', payments)">CSV</button>
+      </div>
+      @if (paymentsLoading) {
+        <div class="loading"><mat-progress-spinner diameter="28" mode="indeterminate" /></div>
+      } @else if (!payments.length) {
+        <p class="empty">Sin datos para los filtros seleccionados.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Paciente</th><th>Total</th><th>Estado</th><th>Fecha</th></tr></thead>
+            <tbody>
+              @for (row of payments; track row.paymentId) {
+                <tr>
+                  <td>{{ row.paymentId }}</td><td>{{ row.patientId }}</td><td>{{ row.totalToPay | number: '1.2-2' }}</td>
+                  <td>{{ row.status }}</td><td>{{ row.paidAt ? (row.paidAt | date: 'yyyy-MM-dd HH:mm') : '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="report-box">
+      <h3>Medicamentos con stock bajo</h3>
+      <div class="actions">
+        <button mat-flat-button color="primary" type="button" (click)="runLowStock()" [disabled]="lowStockLoading">Generar</button>
+        <button mat-stroked-button type="button" (click)="exportCsv('reporte_stock_bajo', lowStock)">CSV</button>
+      </div>
+      @if (lowStockLoading) {
+        <div class="loading"><mat-progress-spinner diameter="28" mode="indeterminate" /></div>
+      } @else if (!lowStock.length) {
+        <p class="empty">No hay medicamentos con stock bajo actualmente.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Nombre</th><th>Stock</th><th>Mínimo</th><th>Activo</th></tr></thead>
+            <tbody>
+              @for (row of lowStock; track row.medicationId) {
+                <tr><td>{{ row.medicationId }}</td><td>{{ row.name }}</td><td>{{ row.currentStock }}</td><td>{{ row.minimumStock }}</td><td>{{ row.active ? 'Sí' : 'No' }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="report-box">
+      <h3>Laboratorio por estado</h3>
+      <div class="filters">
+        <mat-form-field appearance="outline">
+          <mat-label>Estado</mat-label>
+          <mat-select [(ngModel)]="laboratoryStatus">
+            <mat-option value="">Todos</mat-option>
+            @for (s of laboratoryStatuses; track s) { <mat-option [value]="s">{{ s }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="actions">
+        <button mat-flat-button color="primary" type="button" (click)="runLaboratory()" [disabled]="laboratoryLoading">Generar</button>
+        <button mat-stroked-button type="button" (click)="exportCsv('reporte_laboratorio', laboratory)">CSV</button>
+      </div>
+      @if (laboratoryLoading) {
+        <div class="loading"><mat-progress-spinner diameter="28" mode="indeterminate" /></div>
+      } @else if (!laboratory.length) {
+        <p class="empty">Sin datos para los filtros seleccionados.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Orden</th><th>Estado</th><th>Muestra</th></tr></thead>
+            <tbody>
+              @for (row of laboratory; track row.laboratoryId) {
+                <tr><td>{{ row.laboratoryId }}</td><td>{{ row.medicalOrderId }}</td><td>{{ row.status }}</td><td>{{ row.sampleReceived ? 'Recibida' : 'Pendiente' }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </mat-card-content>
+</mat-card>

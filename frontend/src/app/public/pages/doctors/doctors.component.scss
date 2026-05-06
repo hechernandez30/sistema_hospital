@@ -1,0 +1,43 @@
+.doctors-page {
+  .page-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--hh-navy);
+  }
+
+  .page-lead {
+    margin: 0 0 1.25rem;
+    color: var(--hh-text-muted);
+    max-width: 70ch;
+    line-height: 1.55;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.85rem;
+}
+
+.doc-card {
+  border: 1px solid var(--hh-border, #cfd8e3);
+  border-radius: 12px;
+}
+
+.doc-card.highlight {
+  outline: 3px solid rgba(21, 101, 192, 0.35);
+  box-shadow: 0 0 0 6px rgba(21, 101, 192, 0.12) !important;
+}
+
+.muted {
+  color: #64748b;
+  margin: 0.65rem 0 0;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+}
+

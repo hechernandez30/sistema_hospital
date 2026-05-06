@@ -1,5 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -27,6 +34,16 @@ export interface StaffFormDialogData {
   staffId?: number;
   /** Solo alta: códigos de la lista cargada para sugerir el siguiente EMP-nnnn. */
   existingEmployeeCodes?: readonly string[];
+}
+
+function attendanceFromCatalog(types: readonly string[]): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const v = control.value;
+    if (v == null || v === '') {
+      return null;
+    }
+    return types.includes(String(v)) ? null : { attendanceCatalog: true };
+  };
 }
 
 function optionalPositiveInt(): ValidatorFn {
@@ -84,7 +101,7 @@ export class StaffFormDialogComponent implements OnInit {
     employeeCode: ['', [Validators.required, Validators.maxLength(30)]],
     licenseNumber: ['', [Validators.maxLength(50)]],
     schedule: ['', [Validators.maxLength(100)]],
-    attendance: [''],
+    attendance: [null as string | null, [attendanceFromCatalog([...ATTENDANCE_TYPES])]],
     active: [true],
     hireDate: [''],
     specialtyId: [null as number | null],
@@ -135,7 +152,7 @@ export class StaffFormDialogComponent implements OnInit {
       employeeCode: s.employeeCode,
       licenseNumber: s.licenseNumber ?? '',
       schedule: s.schedule ?? '',
-      attendance: s.attendance ?? '',
+      attendance: s.attendance && ATTENDANCE_TYPES.includes(s.attendance as (typeof ATTENDANCE_TYPES)[number]) ? s.attendance : null,
       active: s.active,
       hireDate: s.hireDate ?? '',
       specialtyId: s.specialtyId,
@@ -168,7 +185,9 @@ export class StaffFormDialogComponent implements OnInit {
     const specialtyId = specialtyRaw == null ? null : Number(specialtyRaw);
     const lic = (v.licenseNumber ?? '').trim();
     const sch = (v.schedule ?? '').trim();
-    const att = (v.attendance ?? '').trim();
+    const rawAtt = v.attendance;
+    const att =
+      rawAtt == null || String(rawAtt).trim() === '' ? null : String(rawAtt).trim();
     const hire = (v.hireDate ?? '').trim();
     const hireDate = hire ? hire : null;
 

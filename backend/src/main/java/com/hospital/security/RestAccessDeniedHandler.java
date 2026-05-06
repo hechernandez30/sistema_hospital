@@ -49,7 +49,7 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
                 Instant.now(),
                 HttpStatus.FORBIDDEN.value(),
                 HttpStatus.FORBIDDEN.getReasonPhrase(),
-                "Forbidden",
+                "Acceso denegado",
                 request.getRequestURI(),
                 null);
 

@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
@@ -27,6 +27,7 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confi
 import { AuthService } from '../../../../core/services/auth.service';
 import { ROLES_RRHH_SPECIALTIES } from '../../../../core/constants/role-routes';
 import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
+import { appointmentStatusChipClass } from '../../appointment-status-chip';
 
 @Component({
   selector: 'app-appointment-list-page',
@@ -45,6 +46,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
     MatFormFieldModule,
     MatInputModule,
     DatePipe,
+    NgClass,
   ],
   templateUrl: './appointment-list-page.component.html',
   styleUrl: './appointment-list-page.component.scss',
@@ -94,6 +96,10 @@ export class AppointmentListPageComponent implements OnInit, AfterViewInit {
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
+  }
+
+  statusChipClass(status: string): string {
+    return appointmentStatusChipClass(status);
   }
 
   reload(): void {

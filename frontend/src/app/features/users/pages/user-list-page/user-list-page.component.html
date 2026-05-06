@@ -13,6 +13,15 @@
         </button>
       }
       <span class="spacer"></span>
+      <mat-form-field appearance="outline" class="state-filter-field" subscriptSizing="dynamic">
+        <mat-label>Estado</mat-label>
+        <mat-select [value]="stateFilter" (selectionChange)="onStateFilterChange($event.value)">
+          <mat-option value="">Todos</mat-option>
+          @for (s of userStateOptions; track s) {
+            <mat-option [value]="s">{{ s }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
       <mat-form-field appearance="outline" class="filter-field" subscriptSizing="dynamic">
         <mat-label>Buscar</mat-label>
         <input matInput (keyup)="applyFilter($any($event.target).value)" placeholder="Usuario, correo, rol…" />

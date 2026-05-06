@@ -3,7 +3,7 @@ import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { TriageResponse } from '../models/triage.models';
+import { triagePriorityLabel, TriageResponse } from '../models/triage.models';
 
 @Component({
   selector: 'app-triage-detail-dialog',
@@ -14,6 +14,7 @@ import { TriageResponse } from '../models/triage.models';
 })
 export class TriageDetailDialogComponent {
   readonly data = inject<TriageResponse>(MAT_DIALOG_DATA);
+  readonly triagePriorityLabel = triagePriorityLabel;
 
   ta(d: TriageResponse): string {
     if (d.systolicPressure == null && d.diastolicPressure == null) {

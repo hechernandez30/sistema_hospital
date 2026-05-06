@@ -3,6 +3,12 @@
   {{ data.name }}
 </h2>
 <mat-dialog-content class="detail">
+  @if (data.currentStock <= data.minimumStock) {
+    <div class="low-stock-banner" role="status">
+      <mat-icon aria-hidden="true">warning</mat-icon>
+      <span>Stock bajo: el actual es igual o menor al mínimo configurado.</span>
+    </div>
+  }
   <div class="field"><span class="label">ID</span><span class="value">{{ data.id }}</span></div>
   <div class="field full"><span class="label">Presentación</span><span class="value">{{ data.presentation ?? '—' }}</span></div>
   <div class="field"><span class="label">Unidad</span><span class="value">{{ data.unit ?? '—' }}</span></div>

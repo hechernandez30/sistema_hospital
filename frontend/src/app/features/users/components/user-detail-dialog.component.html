@@ -8,7 +8,11 @@
   <div class="field"><span class="label">Nombre</span><span class="value">{{ data.firstName }} {{ data.lastName }}</span></div>
   <div class="field"><span class="label">Rol (id)</span><span class="value">#{{ data.roleId }}</span></div>
   <div class="field"><span class="label">Estado</span><span class="value">{{ data.state }}</span></div>
-  <div class="field"><span class="label">MFA</span><span class="value">{{ data.mfaEnabled ? 'Activado' : 'Desactivado' }}</span></div>
+  <div class="field">
+    <span class="label">MFA (bandera)</span>
+    <span class="value">{{ data.mfaEnabled ? 'Sí' : 'No' }} — sin segundo factor real en esta versión</span>
+  </div>
+  <p class="foot-note">La contraseña no se expone por API ni en esta pantalla.</p>
   <div class="field"><span class="label">Creado</span><span class="value">{{ data.createdAt | date: 'medium' }}</span></div>
   <div class="field"><span class="label">Actualizado</span><span class="value">{{ data.updatedAt | date: 'medium' }}</span></div>
 </mat-dialog-content>

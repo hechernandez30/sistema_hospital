@@ -1,5 +1,40 @@
 import { AbstractControl, FormControl, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 
+/** CU03 — alineado a `UserCreateRequest` / `UserUpdateRequest` del backend */
+export const PASSWORD_CU03_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,255}$/;
+
+export function cu03PasswordValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null =>
+    PASSWORD_CU03_PATTERN.test(String(control.value ?? '')) ? null : { cu03Password: true };
+}
+
+/** En edición: vacío permite no cambiar contraseña. */
+export function optionalCu03PasswordValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const s = stringOrEmpty(control.value);
+    if (!s) {
+      return null;
+    }
+    return PASSWORD_CU03_PATTERN.test(s) ? null : { cu03Password: true };
+  };
+}
+
+/**
+ * CU02 — nombres de persona: entre 2 y 100 caracteres, solo letras Unicode y espacios, al menos una letra.
+ * No permite guiones, apostrofes ni otros signos de puntuación.
+ */
+export const PATIENT_PERSON_NAME_CU02_PATTERN = /^(?=.*\p{L})[\p{L} ]{2,100}$/u;
+
+export function patientPersonNameCu02Validator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const s = stringOrEmpty(control.value);
+    if (!s) {
+      return null;
+    }
+    return PATIENT_PERSON_NAME_CU02_PATTERN.test(s) ? null : { patientPersonNameCu02: true };
+  };
+}
+
 /** Backend patient phone: optional + then 8–15 digits */
 export const PHONE_BACKEND_PATTERN = /^\+?[0-9]{8,15}$/;
 

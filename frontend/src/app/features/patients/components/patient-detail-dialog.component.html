@@ -24,6 +24,59 @@
     <div class="field full"><span class="label">Historia</span><span class="value pre">{{ data.medicalHistory ?? '—' }}</span></div>
     <div class="field full"><span class="label">Medicación actual</span><span class="value pre">{{ data.currentMedications ?? '—' }}</span></div>
   </div>
+
+  <mat-divider />
+  <h3 class="sub">Seguros (RN07)</h3>
+  <p class="hint">
+    Registro de coberturas en intranet. El alta y la vigencia sirven como referencia; la validación con aseguradora y el uso en
+    cobros siguen las reglas de negocio del hospital.
+  </p>
+  @if (insuranceLoading) {
+    <div class="centered">
+      <mat-progress-spinner diameter="36" mode="indeterminate" />
+    </div>
+  } @else if (insuranceError) {
+    <p class="warn">{{ insuranceError }}</p>
+    <button mat-stroked-button type="button" (click)="loadInsurances()">Reintentar</button>
+  } @else {
+    @if (canMutatePatients) {
+      <div class="ins-toolbar">
+        <button mat-flat-button color="primary" type="button" (click)="openInsuranceCreate()">
+          <mat-icon>add</mat-icon>
+          Agregar seguro
+        </button>
+      </div>
+    }
+    @if (insurances.length === 0) {
+      <p class="muted">Sin seguros registrados para este paciente.</p>
+    } @else {
+      <div class="ins-list">
+        @for (row of insurances; track row.id) {
+          <div class="ins-card">
+            <div class="ins-card-main">
+              <div class="ins-title">{{ row.insurerName }}</div>
+              <div class="ins-meta">
+                <span>Póliza: {{ row.policyNumber }}</span>
+                <span>Cobertura: {{ coverageDisplay(row) }}%</span>
+                <span>Vigencia: {{ datesLabel(row) }}</span>
+                <span [class.inactive-chip]="!row.active">{{ row.active ? 'Activo' : 'Inactivo' }}</span>
+              </div>
+            </div>
+            @if (canMutatePatients) {
+              <div class="ins-card-actions">
+                <button mat-icon-button type="button" (click)="openInsuranceEdit(row)" aria-label="Editar seguro">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button type="button" (click)="confirmDeleteInsurance(row)" aria-label="Eliminar seguro">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
 </mat-dialog-content>
 <mat-dialog-actions align="end">
   <button mat-stroked-button mat-dialog-close type="button">Cerrar</button>

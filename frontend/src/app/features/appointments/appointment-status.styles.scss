@@ -1,0 +1,41 @@
+/* Chips de estado CU04 — reutilizable en lista/detalle/formulario */
+
+.apt-status-chip {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.apt-st-programada {
+  background: rgba(37, 99, 235, 0.14);
+  color: #1d4ed8;
+}
+
+.apt-st-reprogramada {
+  background: rgba(124, 58, 237, 0.14);
+  color: #6d28d9;
+}
+
+.apt-st-cancelada {
+  background: rgba(71, 85, 105, 0.2);
+  color: #475569;
+}
+
+.apt-st-atendida {
+  background: rgba(22, 163, 74, 0.16);
+  color: #15803d;
+}
+
+.apt-st-no-asistio {
+  background: rgba(234, 88, 12, 0.16);
+  color: #c2410c;
+}
+
+.apt-st-unknown {
+  background: #e2e8f0;
+  color: #334155;
+}

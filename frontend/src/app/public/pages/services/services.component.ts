@@ -1,39 +1,61 @@
-import { Component } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { PublicContentService } from '../../services/public-content.service';
+import { PublicServiceItem } from '../../models/public-content.models';
+import { slugify } from '../../utils/slug.util';
+import { map, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-services',
   standalone: true,
-  imports: [MatCardModule, MatIconModule],
+  imports: [MatCardModule, MatIconModule, AsyncPipe],
   templateUrl: './services.component.html',
   styleUrl: './services.component.scss',
 })
 export class ServicesComponent {
-  readonly services = [
-    {
-      icon: 'calendar_month',
-      title: 'Agenda y consulta externa',
-      subtitle: 'Citas programadas',
-      description: 'Coordinación de citas con especialistas y seguimiento oportuno.',
-    },
-    {
-      icon: 'local_hospital',
-      title: 'Urgencias y admisión',
-      subtitle: 'Atención priorizada',
-      description: 'Valoración inicial, triage y admisión según protocolos institucionales.',
-    },
-    {
-      icon: 'biotech',
-      title: 'Apoyo diagnóstico',
-      subtitle: 'Laboratorio e imágenes',
-      description: 'Estudios con trazabilidad y resultados integrados al expediente.',
-    },
-    {
-      icon: 'payments',
-      title: 'Gestión financiera',
-      subtitle: 'Seguros y pagos',
-      description: 'Asesoría en coberturas y opciones de pago en sitio.',
-    },
-  ];
+  private readonly content = inject(PublicContentService);
+  private readonly route = inject(ActivatedRoute);
+
+  highlightedId: string | null = null;
+
+  /** Nota: el portal público usa solo contenido estático (assets). */
+  readonly services$: Observable<(PublicServiceItem & { slug: string })[]> = this.content.services$.pipe(
+    map((rows) => rows.map((r) => ({ ...r, slug: slugify(r.nombre) }))),
+  );
+
+  readonly iconByName: Record<string, string> = {
+    'Consulta externa': 'calendar_month',
+    Urgencias: 'local_hospital',
+    'Laboratorio clínico': 'biotech',
+    'Imágenes médicas': 'photo_camera',
+    Farmacia: 'medication',
+  };
+
+  constructor() {
+    this.route.fragment.subscribe((frag) => {
+      if (!frag) {
+        return;
+      }
+      this.highlightAndScroll(frag);
+    });
+  }
+
+  iconFor(name: string): string {
+    return this.iconByName[name] ?? 'local_hospital';
+  }
+
+  private highlightAndScroll(id: string): void {
+    this.highlightedId = id;
+    setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+    setTimeout(() => {
+      if (this.highlightedId === id) {
+        this.highlightedId = null;
+      }
+    }, 2000);
+  }
 }

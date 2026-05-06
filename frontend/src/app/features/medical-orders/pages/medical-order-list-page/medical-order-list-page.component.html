@@ -2,7 +2,9 @@
   <mat-card-header>
     <mat-icon mat-card-avatar class="page-avatar">assignment</mat-icon>
     <mat-card-title>Órdenes médicas</mat-card-title>
-    <mat-card-subtitle>Laboratorio, imagen, farmacia u hospitalización — Hospital H&amp;H</mat-card-subtitle>
+    <mat-card-subtitle>
+      CU12 → orden (laboratorio / imagen / farmacia / hospitalización); cada orden exige ID de atención válido.
+    </mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
     <div class="toolbar-row">
@@ -59,15 +61,20 @@
           </ng-container>
           <ng-container matColumnDef="orderType">
             <th mat-header-cell *matHeaderCellDef mat-sort-header="orderType">Tipo</th>
-            <td mat-cell *matCellDef="let row">{{ row.orderType }}</td>
+            <td mat-cell *matCellDef="let row">
+              <span class="mono">{{ row.orderType }}</span>
+              <div class="sub">{{ medicalOrderTypeLabel(row.orderType) }}</div>
+            </td>
           </ng-container>
           <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef mat-sort-header="status">Estado</th>
-            <td mat-cell *matCellDef="let row">{{ row.status }}</td>
+            <td mat-cell *matCellDef="let row">
+              <span class="status-pill" [ngClass]="orderStatusClass(row.status)">{{ medicalOrderStatusLabel(row.status) }}</span>
+            </td>
           </ng-container>
           <ng-container matColumnDef="priority">
             <th mat-header-cell *matHeaderCellDef mat-sort-header="priority">Prioridad</th>
-            <td mat-cell *matCellDef="let row">{{ row.priority ?? '—' }}</td>
+            <td mat-cell *matCellDef="let row">{{ medicalOrderPriorityLabel(row.priority) }}</td>
           </ng-container>
           <ng-container matColumnDef="description">
             <th mat-header-cell *matHeaderCellDef mat-sort-header="description">Descripción</th>

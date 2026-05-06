@@ -25,7 +25,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleAuthentication(
             AuthenticationException ex,
             HttpServletRequest request) {
-        return build(HttpStatus.UNAUTHORIZED, "Unauthorized", request, null);
+        return build(HttpStatus.UNAUTHORIZED, "No autorizado", request, null);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
         List<ApiErrorResponse.FieldErrorDetail> details = ex.getBindingResult().getFieldErrors().stream()
                 .map(fe -> new ApiErrorResponse.FieldErrorDetail(fe.getField(), fe.getDefaultMessage()))
                 .collect(Collectors.toList());
-        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, details);
+        return build(HttpStatus.BAD_REQUEST, "Error de validación", request, details);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -55,20 +55,20 @@ public class GlobalExceptionHandler {
         List<ApiErrorResponse.FieldErrorDetail> details = ex.getConstraintViolations().stream()
                 .map(v -> new ApiErrorResponse.FieldErrorDetail(v.getPropertyPath().toString(), v.getMessage()))
                 .collect(Collectors.toList());
-        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, details);
+        return build(HttpStatus.BAD_REQUEST, "Error de validación", request, details);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiErrorResponse> handleDataIntegrity(
             DataIntegrityViolationException ex,
             HttpServletRequest request) {
-        return build(HttpStatus.CONFLICT, "Data integrity violation", request, null);
+        return build(HttpStatus.CONFLICT, "Conflicto de datos o restricción en base de datos", request, null);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGeneric(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception", ex);
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error", request, null);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno inesperado", request, null);
     }
 
     private ResponseEntity<ApiErrorResponse> build(

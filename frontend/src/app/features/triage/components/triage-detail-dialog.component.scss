@@ -41,3 +41,14 @@
   white-space: pre-wrap;
   font-weight: 400;
 }
+
+.mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+}
+
+.sub {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--hh-text-muted);
+}

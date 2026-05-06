@@ -19,6 +19,7 @@ import {
   DPI_NIT_PATTERN,
   optionalEmail,
   optionalPhoneBackendPattern,
+  patientPersonNameCu02Validator,
   requiredPhoneBackendPattern,
 } from '../../shared/form-validators';
 
@@ -60,8 +61,8 @@ export class PatientFormDialogComponent implements OnInit {
 
   readonly form = this.fb.nonNullable.group({
     patientCode: ['', [Validators.required, Validators.maxLength(30)]],
-    firstName: ['', [Validators.required, Validators.maxLength(100)]],
-    lastName: ['', [Validators.required, Validators.maxLength(100)]],
+    firstName: ['', [Validators.required, Validators.maxLength(100), patientPersonNameCu02Validator()]],
+    lastName: ['', [Validators.required, Validators.maxLength(100), patientPersonNameCu02Validator()]],
     dpiNit: ['', [Validators.required, Validators.maxLength(30), Validators.pattern(DPI_NIT_PATTERN)]],
     birthDate: ['', [Validators.required, birthDatePastValidator()]],
     sex: ['M' as string | null, [Validators.required, Validators.pattern(/^(M|F|OTRO)$/)]],
@@ -198,6 +199,19 @@ export class PatientFormDialogComponent implements OnInit {
 
   cancel(): void {
     this.dialogRef.close(false);
+  }
+
+  /** Nueva sugerencia PAC-nnnn tratando el código actual como «ocupado» para avanzar el correlativo. */
+  regenerateSuggestedPatientCode(): void {
+    if (this.dialogData.mode !== 'create') {
+      return;
+    }
+    const current = this.form.controls.patientCode.value?.trim() ?? '';
+    const base = [...(this.dialogData.existingPatientCodes ?? [])];
+    if (current && !base.includes(current)) {
+      base.push(current);
+    }
+    this.form.patchValue({ patientCode: nextPatientCodeFromExistingCodes(base) });
   }
 
   readonly isEdit = this.dialogData.mode === 'edit';

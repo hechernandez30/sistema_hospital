@@ -49,3 +49,28 @@
 .full {
   width: 100%;
 }
+
+.suggest-row {
+  margin-bottom: 0.75rem;
+}
+
+.preview-box {
+  font-size: 0.85rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(21, 101, 192, 0.06);
+  border: 1px solid rgba(21, 101, 192, 0.18);
+  margin-bottom: 0.75rem;
+}
+
+.preview-box.preview-bad {
+  background: rgba(183, 28, 28, 0.07);
+  border-color: rgba(183, 28, 28, 0.25);
+}
+
+.preview-box .bad-note {
+  display: block;
+  margin-top: 0.35rem;
+  color: #b71c1c;
+  font-weight: 600;
+}

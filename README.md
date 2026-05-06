@@ -29,6 +29,9 @@ Construir una API REST mantenible, por fases, con seguridad y frontend separados
 El modelo base está en:
 - `hospital_postgresql_15_tablas_es.sql`
 
+## API y errores
+Formato unificado de errores (`ApiErrorResponse`), ejemplos y textos **401** / **403** / validación en español: **`backend/doc/API.md`** (sección *Errores*).
+
 ## Estrategia de trabajo con agente
 1. Analizar contexto
 2. Crear plan

@@ -5,7 +5,12 @@
 <mat-dialog-content class="detail-body">
   <div class="grid">
     <div class="field"><span class="label">Admisión (ID)</span><span class="value">{{ data.admissionId }}</span></div>
-    <div class="field"><span class="label">Prioridad</span><span class="value">{{ data.priority }}</span></div>
+    <div class="field">
+      <span class="label">Prioridad</span>
+      <span class="value"
+        ><span class="mono">{{ data.priority }}</span><br /><span class="sub">{{ triagePriorityLabel(data.priority) }}</span></span
+      >
+    </div>
     <div class="field"><span class="label">FC</span><span class="value">{{ data.heartRate ?? '—' }}</span></div>
     <div class="field"><span class="label">FR</span><span class="value">{{ data.respiratoryRate ?? '—' }}</span></div>
     <div class="field"><span class="label">TA</span><span class="value">{{ ta(data) }}</span></div>

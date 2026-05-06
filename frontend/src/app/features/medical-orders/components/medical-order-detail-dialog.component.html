@@ -4,9 +4,18 @@
 </h2>
 <mat-dialog-content class="detail">
   <div class="field"><span class="label">Atención médica</span><span class="value">#{{ data.medicalCareId }}</span></div>
-  <div class="field"><span class="label">Tipo</span><span class="value">{{ data.orderType }}</span></div>
-  <div class="field"><span class="label">Estado</span><span class="value">{{ data.status }}</span></div>
-  <div class="field"><span class="label">Prioridad</span><span class="value">{{ data.priority ?? '—' }}</span></div>
+  <div class="field">
+    <span class="label">Tipo</span>
+    <span class="value"
+      ><span class="mono">{{ data.orderType }}</span><br /><span class="sub">{{ medicalOrderTypeLabel(data.orderType) }}</span></span
+    >
+  </div>
+  <div class="field">
+    <span class="label">Estado</span><span class="value">{{ medicalOrderStatusLabel(data.status) }} ({{ data.status }})</span>
+  </div>
+  <div class="field">
+    <span class="label">Prioridad</span><span class="value">{{ medicalOrderPriorityLabel(data.priority) }}</span>
+  </div>
   <div class="field full"><span class="label">Fecha orden</span><span class="value">{{ data.orderDate ? (data.orderDate | date: 'medium') : '—' }}</span></div>
   <div class="field full"><span class="label">Descripción</span><span class="value pre">{{ data.description }}</span></div>
   <div class="field full"><span class="label">Observaciones</span><span class="value pre">{{ data.observations ?? '—' }}</span></div>

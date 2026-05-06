@@ -1,5 +1,7 @@
 package com.hospital.staff.service;
 
+import com.hospital.auditlog.BusinessAuditActions;
+import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.specialty.entity.Specialty;
@@ -14,7 +16,9 @@ import com.hospital.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class StaffService {
@@ -22,14 +26,17 @@ public class StaffService {
     private final StaffRepository staffRepository;
     private final UserRepository userRepository;
     private final SpecialtyRepository specialtyRepository;
+    private final BusinessAuditRecorder businessAuditRecorder;
 
     public StaffService(
             StaffRepository staffRepository,
             UserRepository userRepository,
-            SpecialtyRepository specialtyRepository) {
+            SpecialtyRepository specialtyRepository,
+            BusinessAuditRecorder businessAuditRecorder) {
         this.staffRepository = staffRepository;
         this.userRepository = userRepository;
         this.specialtyRepository = specialtyRepository;
+        this.businessAuditRecorder = businessAuditRecorder;
     }
 
     @Transactional(readOnly = true)
@@ -40,14 +47,15 @@ public class StaffService {
     @Transactional(readOnly = true)
     public StaffResponse findById(Long id) {
         return toResponse(staffRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el personal: " + id)));
     }
 
     @Transactional
     public StaffResponse create(StaffCreateRequest request) {
         String code = request.employeeCode().trim();
         if (staffRepository.existsByEmployeeCode(code)) {
-            throw new BusinessRuleException("Employee code already exists");
+            throw new BusinessRuleException(
+                    "El código de empleado ya está en uso. Elija otro o revise el registro existente.");
         }
         Staff staff = new Staff();
         staff.setStaffType(request.staffType());
@@ -59,17 +67,27 @@ public class StaffService {
         staff.setHireDate(request.hireDate());
         attachUser(staff, request.userId(), null);
         attachSpecialty(staff, request.specialtyId());
-        return toResponse(staffRepository.save(staff));
+        Staff saved = staffRepository.save(staff);
+        businessAuditRecorder.safeRecord(
+                "staff",
+                "Staff",
+                String.valueOf(saved.getId()),
+                BusinessAuditActions.CREATE,
+                null,
+                snapshotStaffMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
     public StaffResponse update(Long id, StaffUpdateRequest request) {
         Staff staff = staffRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el personal: " + id));
         String code = request.employeeCode().trim();
         if (!code.equals(staff.getEmployeeCode()) && staffRepository.existsByEmployeeCode(code)) {
-            throw new BusinessRuleException("Employee code already exists");
+            throw new BusinessRuleException(
+                    "El código de empleado ya está en uso. Elija otro o revise el registro existente.");
         }
+        Map<String, Object> prior = snapshotStaffMinimal(staff);
         staff.setStaffType(request.staffType());
         staff.setEmployeeCode(code);
         staff.setLicenseNumber(request.licenseNumber());
@@ -79,15 +97,24 @@ public class StaffService {
         staff.setHireDate(request.hireDate());
         attachUser(staff, request.userId(), id);
         attachSpecialty(staff, request.specialtyId());
-        return toResponse(staffRepository.save(staff));
+        Staff saved = staffRepository.save(staff);
+        businessAuditRecorder.safeRecord(
+                "staff",
+                "Staff",
+                String.valueOf(id),
+                BusinessAuditActions.UPDATE,
+                prior,
+                snapshotStaffMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
     public void delete(Long id) {
-        if (!staffRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Staff not found: " + id);
-        }
+        Staff staff = staffRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el personal: " + id));
+        Map<String, Object> prior = snapshotStaffMinimal(staff);
         staffRepository.deleteById(id);
+        businessAuditRecorder.safeRecord("staff", "Staff", String.valueOf(id), BusinessAuditActions.DELETE, prior, null);
     }
 
     private void attachUser(Staff staff, Long userId, Long currentStaffId) {
@@ -96,10 +123,10 @@ public class StaffService {
             return;
         }
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario: " + userId));
         staffRepository.findByUser_Id(userId).ifPresent(other -> {
             if (currentStaffId == null || !other.getId().equals(currentStaffId)) {
-                throw new BusinessRuleException("User is already linked to another staff record");
+                throw new BusinessRuleException("El usuario ya está vinculado a otro registro de personal");
             }
         });
         staff.setUser(user);
@@ -111,7 +138,7 @@ public class StaffService {
             return;
         }
         Specialty specialty = specialtyRepository.findById(specialtyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Specialty not found: " + specialtyId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la especialidad: " + specialtyId));
         staff.setSpecialty(specialty);
     }
 
@@ -127,5 +154,23 @@ public class StaffService {
                 staff.getAttendance(),
                 staff.isActive(),
                 staff.getHireDate());
+    }
+
+    private static Map<String, Object> snapshotStaffMinimal(Staff s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        if (s.getId() != null) {
+            m.put("staffId", s.getId());
+        }
+        m.put("employeeCode", s.getEmployeeCode());
+        m.put("staffType", s.getStaffType());
+        m.put("attendance", s.getAttendance());
+        m.put("active", s.isActive());
+        if (s.getUser() != null) {
+            m.put("userId", s.getUser().getId());
+        }
+        if (s.getSpecialty() != null) {
+            m.put("specialtyId", s.getSpecialty().getId());
+        }
+        return m;
     }
 }

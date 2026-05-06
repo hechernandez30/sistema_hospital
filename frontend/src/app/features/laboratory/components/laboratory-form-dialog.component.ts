@@ -11,7 +11,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { LaboratoryApiService } from '../services/laboratory-api.service';
 import {
+  LAB_REQUESTER_LABELS,
+  LAB_REQUEST_TYPE_LABELS,
   LABORATORY_STATUSES,
+  laboratoryStatusLabel,
   LaboratoryCreatePayload,
   LaboratoryResponse,
   LaboratoryUpdatePayload,
@@ -51,6 +54,8 @@ export class LaboratoryFormDialogComponent implements OnInit {
   readonly dialogData = inject<LaboratoryFormDialogData>(MAT_DIALOG_DATA);
 
   readonly statuses = [...LABORATORY_STATUSES];
+  readonly requesterLabels = LAB_REQUESTER_LABELS;
+  readonly requestTypeLabels = LAB_REQUEST_TYPE_LABELS;
   readonly sampleValidOptions = [
     { value: '', label: 'Sin indicar' },
     { value: 'true', label: 'Sí' },
@@ -78,6 +83,12 @@ export class LaboratoryFormDialogComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.form.controls.sampleDescription.addValidators([Validators.maxLength(8000)]);
+    if (this.dialogData.mode === 'create') {
+      this.form.controls.sampleDescription.addValidators([Validators.required]);
+    }
+    this.form.controls.sampleDescription.updateValueAndValidity({ emitEvent: false });
+
     if (this.dialogData.mode === 'edit') {
       this.form.controls.medicalOrderId.clearValidators();
       this.form.controls.medicalOrderId.updateValueAndValidity({ emitEvent: false });
@@ -135,7 +146,13 @@ export class LaboratoryFormDialogComponent implements OnInit {
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.snackBar.open('Revise los campos marcados.', 'Cerrar', { duration: 6000 });
+      if (this.form.controls.sampleDescription.invalid) {
+        this.snackBar.open('La descripción de la muestra es obligatoria al crear el registro (CU06/CU07).', 'Cerrar', {
+          duration: 8000,
+        });
+      } else {
+        this.snackBar.open('Revise los campos marcados.', 'Cerrar', { duration: 6000 });
+      }
       return;
     }
     const v = this.form.getRawValue();
@@ -211,6 +228,10 @@ export class LaboratoryFormDialogComponent implements OnInit {
   }
 
   readonly isEdit = this.dialogData.mode === 'edit';
+
+  labStatusCaption(s: string): string {
+    return laboratoryStatusLabel(s);
+  }
 
   private emptyToNull(s: string | null | undefined): string | null {
     const t = s?.trim();

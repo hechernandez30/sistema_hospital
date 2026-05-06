@@ -7,19 +7,20 @@
   </header>
 
   <div class="services-grid">
-    @for (s of services; track s.title) {
-      <mat-card class="svc-card">
+    @if (services$ | async; as services) {
+      @for (s of services; track s.id) {
+        <mat-card class="svc-card" [id]="s.slug" [class.highlight]="highlightedId === s.slug">
         <mat-card-header>
           <div mat-card-avatar class="svc-avatar">
-            <mat-icon>{{ s.icon }}</mat-icon>
+            <mat-icon>{{ iconFor(s.nombre) }}</mat-icon>
           </div>
-          <mat-card-title>{{ s.title }}</mat-card-title>
-          <mat-card-subtitle>{{ s.subtitle }}</mat-card-subtitle>
+          <mat-card-title>{{ s.nombre }}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <p>{{ s.description }}</p>
+          <p>{{ s.descripcion }}</p>
         </mat-card-content>
-      </mat-card>
+        </mat-card>
+      }
     }
   </div>
 </section>

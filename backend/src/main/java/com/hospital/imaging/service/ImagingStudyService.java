@@ -42,24 +42,24 @@ public class ImagingStudyService {
     @Transactional(readOnly = true)
     public ImagingStudyResponse findById(Long id) {
         return toResponse(imagingStudyRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Imaging study not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el estudio de imagen: " + id)));
     }
 
     @Transactional(readOnly = true)
     public ImagingStudyResponse findByMedicalOrderId(Long medicalOrderId) {
         return toResponse(imagingStudyRepository.findByMedicalOrder_Id(medicalOrderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Imaging study not found for order: " + medicalOrderId)));
+                .orElseThrow(() -> new ResourceNotFoundException("No hay estudio de imagen para la orden: " + medicalOrderId)));
     }
 
     @Transactional
     public ImagingStudyResponse create(ImagingStudyCreateRequest request) {
         MedicalOrder order = medicalOrderRepository.findById(request.medicalOrderId())
-                .orElseThrow(() -> new ResourceNotFoundException("Medical order not found: " + request.medicalOrderId()));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la orden médica: " + request.medicalOrderId()));
         if (!ORDER_TYPE_IMAGE.equals(order.getOrderType())) {
-            throw new BusinessRuleException("Medical order must be of type IMAGEN");
+            throw new BusinessRuleException("La orden médica debe ser de tipo IMAGEN");
         }
         if (imagingStudyRepository.existsByMedicalOrder_Id(order.getId())) {
-            throw new BusinessRuleException("An imaging study already exists for this order");
+            throw new BusinessRuleException("Ya existe un estudio de imagen para esta orden");
         }
         ImagingStudy study = new ImagingStudy();
         study.setMedicalOrder(order);
@@ -76,7 +76,7 @@ public class ImagingStudyService {
     @Transactional
     public ImagingStudyResponse update(Long id, ImagingStudyUpdateRequest request) {
         ImagingStudy study = imagingStudyRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Imaging study not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el estudio de imagen: " + id));
         study.setStudyType(request.studyType().trim());
         study.setScheduledAt(request.scheduledAt());
         study.setPerformedAt(request.performedAt());
@@ -90,7 +90,7 @@ public class ImagingStudyService {
     @Transactional
     public void delete(Long id) {
         if (!imagingStudyRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Imaging study not found: " + id);
+            throw new ResourceNotFoundException("No se encontró el estudio de imagen: " + id);
         }
         imagingStudyRepository.deleteById(id);
     }
@@ -100,7 +100,7 @@ public class ImagingStudyService {
             return null;
         }
         return staffRepository.findById(staffId)
-                .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + staffId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el personal: " + staffId));
     }
 
     private ImagingStudyResponse toResponse(ImagingStudy study) {

@@ -5,6 +5,8 @@ import com.hospital.appointment.dto.AppointmentResponse;
 import com.hospital.appointment.dto.AppointmentUpdateRequest;
 import com.hospital.appointment.entity.Appointment;
 import com.hospital.appointment.repository.AppointmentRepository;
+import com.hospital.auditlog.BusinessAuditActions;
+import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.patient.entity.Patient;
@@ -19,7 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -33,18 +37,21 @@ public class AppointmentService {
     private final StaffRepository staffRepository;
     private final SpecialtyRepository specialtyRepository;
     private final UserRepository userRepository;
+    private final BusinessAuditRecorder businessAuditRecorder;
 
     public AppointmentService(
             AppointmentRepository appointmentRepository,
             PatientRepository patientRepository,
             StaffRepository staffRepository,
             SpecialtyRepository specialtyRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            BusinessAuditRecorder businessAuditRecorder) {
         this.appointmentRepository = appointmentRepository;
         this.patientRepository = patientRepository;
         this.staffRepository = staffRepository;
         this.specialtyRepository = specialtyRepository;
         this.userRepository = userRepository;
+        this.businessAuditRecorder = businessAuditRecorder;
     }
 
     @Transactional(readOnly = true)
@@ -55,7 +62,7 @@ public class AppointmentService {
     @Transactional(readOnly = true)
     public AppointmentResponse findById(Long id) {
         return toResponse(appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la cita: " + id)));
     }
 
     @Transactional
@@ -78,8 +85,21 @@ public class AppointmentService {
                 request.notifyWhatsapp() != null && request.notifyWhatsapp(),
                 request.createdByUserId());
 
-        validateDoctorSchedule(appointment.getDoctor().getId(), appointment.getStartAt(), appointment.getStatus(), null);
-        return toResponse(appointmentRepository.save(appointment));
+        validateDoctorActiveIntervalOverlap(
+                appointment.getDoctor().getId(),
+                appointment.getStartAt(),
+                appointment.getEndAt(),
+                appointment.getStatus(),
+                null);
+        Appointment saved = appointmentRepository.save(appointment);
+        businessAuditRecorder.safeRecord(
+                "appointments",
+                "Appointment",
+                String.valueOf(saved.getId()),
+                BusinessAuditActions.CREATE,
+                null,
+                snapshotAppointmentMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
@@ -88,7 +108,8 @@ public class AppointmentService {
         validateDateRange(request.startAt(), request.endAt());
 
         Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la cita: " + id));
+        Map<String, Object> prior = snapshotAppointmentMinimal(appointment);
 
         mapCommon(
                 appointment,
@@ -104,16 +125,37 @@ public class AppointmentService {
                 request.notifyWhatsapp(),
                 request.createdByUserId());
 
-        validateDoctorSchedule(appointment.getDoctor().getId(), appointment.getStartAt(), appointment.getStatus(), appointment.getId());
-        return toResponse(appointmentRepository.save(appointment));
+        validateDoctorActiveIntervalOverlap(
+                appointment.getDoctor().getId(),
+                appointment.getStartAt(),
+                appointment.getEndAt(),
+                appointment.getStatus(),
+                appointment.getId());
+
+        Appointment saved = appointmentRepository.save(appointment);
+        businessAuditRecorder.safeRecord(
+                "appointments",
+                "Appointment",
+                String.valueOf(id),
+                BusinessAuditActions.UPDATE,
+                prior,
+                snapshotAppointmentMinimal(saved));
+        return toResponse(saved);
     }
 
     @Transactional
     public void delete(Long id) {
-        if (!appointmentRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Appointment not found: " + id);
-        }
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la cita: " + id));
+        Map<String, Object> prior = snapshotAppointmentMinimal(appointment);
         appointmentRepository.deleteById(id);
+        businessAuditRecorder.safeRecord(
+                "appointments",
+                "Appointment",
+                String.valueOf(id),
+                BusinessAuditActions.DELETE,
+                prior,
+                null);
     }
 
     private void mapCommon(
@@ -130,9 +172,9 @@ public class AppointmentService {
             boolean notifyWhatsapp,
             Long createdByUserId) {
         Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found: " + patientId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el paciente: " + patientId));
         Staff doctor = staffRepository.findById(doctorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + doctorId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el personal: " + doctorId));
 
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);
@@ -152,7 +194,7 @@ public class AppointmentService {
             return null;
         }
         return specialtyRepository.findById(specialtyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Specialty not found: " + specialtyId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la especialidad: " + specialtyId));
     }
 
     private User resolveUser(Long userId) {
@@ -160,36 +202,34 @@ public class AppointmentService {
             return null;
         }
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario: " + userId));
     }
 
     private void validateStatus(String status) {
         if (!ALLOWED_STATUS.contains(status)) {
-            throw new BusinessRuleException("Invalid appointment status");
+            throw new BusinessRuleException("Estado de cita no válido");
         }
     }
 
     private void validateDateRange(LocalDateTime startAt, LocalDateTime endAt) {
         if (!endAt.isAfter(startAt)) {
-            throw new BusinessRuleException("Appointment endAt must be after startAt");
+            throw new BusinessRuleException(
+                    "La fecha y hora de fin debe ser posterior a la de inicio (no pueden ser iguales).");
         }
     }
 
-    private void validateDoctorSchedule(Long doctorId, LocalDateTime startAt, String status, Long currentAppointmentId) {
+    /** Citas PROGRAMADA/REPROGRAMADA no pueden solaparse en el tiempo para el mismo médico. */
+    private void validateDoctorActiveIntervalOverlap(
+            Long doctorId, LocalDateTime startAt, LocalDateTime endAt, String status, Long excludeAppointmentId) {
         if (!ACTIVE_STATUS.contains(status)) {
             return;
         }
-        boolean conflict = appointmentRepository.existsByDoctor_IdAndStartAtAndStatusIn(doctorId, startAt, ACTIVE_STATUS);
-        if (!conflict) {
-            return;
-        }
-        if (currentAppointmentId == null) {
-            throw new BusinessRuleException("Doctor already has an active appointment at this start time");
-        }
-        Appointment current = appointmentRepository.findById(currentAppointmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found: " + currentAppointmentId));
-        if (!current.getDoctor().getId().equals(doctorId) || !current.getStartAt().equals(startAt) || !ACTIVE_STATUS.contains(current.getStatus())) {
-            throw new BusinessRuleException("Doctor already has an active appointment at this start time");
+        long hits = appointmentRepository.countActiveOverlapInterval(
+                doctorId, startAt, endAt, ACTIVE_STATUS, excludeAppointmentId);
+        if (hits > 0) {
+            throw new BusinessRuleException(
+                    "Este médico ya tiene otra cita activa que se traslapa con el horario elegido "
+                            + "(PROGRAMADA o REPROGRAMADA). Ajuste las horas o el médico.");
         }
     }
 
@@ -209,5 +249,18 @@ public class AppointmentService {
                 a.getCreatedBy() != null ? a.getCreatedBy().getId() : null,
                 a.getCreatedAt(),
                 a.getUpdatedAt());
+    }
+
+    private static Map<String, Object> snapshotAppointmentMinimal(Appointment a) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        if (a.getId() != null) {
+            m.put("appointmentId", a.getId());
+        }
+        m.put("patientId", a.getPatient().getId());
+        m.put("doctorId", a.getDoctor().getId());
+        m.put("startAt", a.getStartAt() != null ? a.getStartAt().toString() : null);
+        m.put("endAt", a.getEndAt() != null ? a.getEndAt().toString() : null);
+        m.put("status", a.getStatus());
+        return m;
     }
 }

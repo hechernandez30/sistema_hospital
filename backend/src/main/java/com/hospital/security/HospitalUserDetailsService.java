@@ -21,7 +21,7 @@ public class HospitalUserDetailsService implements UserDetailsService {
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsernameWithRoleFetched(username.trim())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
         return new HospitalUserDetails(user);
     }
 }

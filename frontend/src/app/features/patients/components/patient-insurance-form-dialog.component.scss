@@ -1,0 +1,23 @@
+.form-body {
+  min-width: min(92vw, 420px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.full {
+  width: 100%;
+}
+
+.row.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.active-wrap {
+  display: flex;
+  align-items: center;
+  padding-top: 0.5rem;
+}

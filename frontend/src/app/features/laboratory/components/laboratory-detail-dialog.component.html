@@ -3,10 +3,13 @@
   Laboratorio #{{ data.id }}
 </h2>
 <mat-dialog-content class="detail">
-  <div class="field"><span class="label">Orden médica</span><span class="value">#{{ data.medicalOrderId }}</span></div>
-  <div class="field"><span class="label">Estado</span><span class="value">{{ data.status }}</span></div>
-  <div class="field"><span class="label">Solicitante</span><span class="value">{{ data.requesterType ?? '—' }}</span></div>
-  <div class="field"><span class="label">Tipo solicitud</span><span class="value">{{ data.requestType ?? '—' }}</span></div>
+  <div class="field"><span class="label">Orden médica</span><span class="value">#{{ data.medicalOrderId }} (debe ser LABORATORIO)</span></div>
+  <div class="field">
+    <span class="label">Estado</span>
+    <span class="value">{{ laboratoryStatusLabel(data.status) }} ({{ data.status }})</span>
+  </div>
+  <div class="field"><span class="label">Solicitante</span><span class="value">{{ requesterDisplay(data.requesterType) }}</span></div>
+  <div class="field"><span class="label">Tipo solicitud</span><span class="value">{{ requestTypeDisplay(data.requestType) }}</span></div>
   <div class="field full"><span class="label">Registro</span><span class="value">{{ data.recordNumber ?? '—' }}</span></div>
   <div class="field full"><span class="label">Muestra</span><span class="value pre">{{ data.sampleDescription ?? '—' }}</span></div>
   <div class="field"><span class="label">Recibida</span><span class="value">{{ data.sampleReceived ? 'Sí' : 'No' }}</span></div>
@@ -15,7 +18,7 @@
   <div class="field full"><span class="label">Resultado (fecha)</span><span class="value">{{ data.resultAt ? (data.resultAt | date: 'medium') : '—' }}</span></div>
   <div class="field full"><span class="label">Incidente</span><span class="value pre">{{ data.incident ?? '—' }}</span></div>
   <div class="field full"><span class="label">Resultado</span><span class="value pre">{{ data.result ?? '—' }}</span></div>
-  <div class="field full"><span class="label">Adjunto</span><span class="value">{{ data.attachment ?? '—' }}</span></div>
+  <div class="field full"><span class="label">Adjunto</span><span class="value pre">{{ data.attachment ?? '—' }}</span></div>
   <div class="field"><span class="label">Staff</span><span class="value">{{ data.responsibleStaffId ?? '—' }}</span></div>
 </mat-dialog-content>
 <mat-dialog-actions align="end">

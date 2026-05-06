@@ -3,7 +3,12 @@ import { DatePipe } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MedicalOrderResponse } from '../models/medical-order.models';
+import {
+  MedicalOrderResponse,
+  medicalOrderPriorityLabel,
+  medicalOrderStatusLabel,
+  medicalOrderTypeLabel,
+} from '../models/medical-order.models';
 
 @Component({
   selector: 'app-medical-order-detail-dialog',
@@ -15,6 +20,9 @@ import { MedicalOrderResponse } from '../models/medical-order.models';
 export class MedicalOrderDetailDialogComponent {
   readonly dialogRef = inject(MatDialogRef<MedicalOrderDetailDialogComponent>);
   readonly data = inject<MedicalOrderResponse>(MAT_DIALOG_DATA);
+  readonly medicalOrderTypeLabel = medicalOrderTypeLabel;
+  readonly medicalOrderStatusLabel = medicalOrderStatusLabel;
+  readonly medicalOrderPriorityLabel = medicalOrderPriorityLabel;
 
   close(): void {
     this.dialogRef.close();

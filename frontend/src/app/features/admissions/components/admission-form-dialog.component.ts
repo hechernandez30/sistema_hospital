@@ -7,15 +7,19 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AdmissionApiService } from '../services/admission-api.service';
 import {
+  ADMISSION_STATUS_LABELS,
   ADMISSION_STATUSES,
   ADMISSION_TYPES,
+  ADMISSION_TYPE_LABELS,
   AdmissionCreatePayload,
   AdmissionUpdatePayload,
   VALIDATION_SOURCES,
+  VALIDATION_SOURCE_LABELS,
 } from '../models/admission.models';
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
 import { datetimeLocalToApi } from '../../shared/datetime-local';
@@ -38,6 +42,7 @@ export interface AdmissionFormDialogData {
     MatSelectModule,
     MatCheckboxModule,
     MatIconModule,
+    MatDividerModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
   ],
@@ -54,6 +59,10 @@ export class AdmissionFormDialogComponent implements OnInit {
   readonly types = [...ADMISSION_TYPES];
   readonly statuses = [...ADMISSION_STATUSES];
   readonly validationSources = [...VALIDATION_SOURCES];
+
+  readonly typeLabel = ADMISSION_TYPE_LABELS;
+  readonly statusLabel = ADMISSION_STATUS_LABELS;
+  readonly validationLabel = VALIDATION_SOURCE_LABELS;
 
   loading = false;
   saving = false;
@@ -111,7 +120,7 @@ export class AdmissionFormDialogComponent implements OnInit {
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.snackBar.open('Revise los campos marcados: hay datos inválidos o incompletos.', 'Cerrar', { duration: 6000 });
+      this.snackBar.open('Revise los campos marcados.', 'Cerrar', { duration: 6000 });
       return;
     }
     const v = this.form.getRawValue();
@@ -120,6 +129,27 @@ export class AdmissionFormDialogComponent implements OnInit {
       this.snackBar.open('ID de paciente no válido.', 'Cerrar', { duration: 5000 });
       return;
     }
+
+    const effectiveStatusCreate = ((v.status ?? '').trim() || 'ADMITIDO').toUpperCase();
+    const editStatus = (v.status ?? '').trim().toUpperCase();
+    const checkFin =
+      this.dialogData.mode === 'create' ? effectiveStatusCreate !== 'RECHAZADO' : editStatus !== 'RECHAZADO';
+    if (checkFin) {
+      if (!v.financialValidationOk) {
+        this.snackBar.open(
+          'Cuando el estado no es RECHAZADO, marque «Validación financiera OK» (seguro vigente o pago en sitio).',
+          'Cerrar',
+          { duration: 8000 },
+        );
+        return;
+      }
+      const vsTrim = v.validationSource?.trim();
+      if (!vsTrim) {
+        this.snackBar.open('Seleccione el origen: SEGURO o PAGO_SITIO.', 'Cerrar', { duration: 7000 });
+        return;
+      }
+    }
+
     this.saving = true;
     const appointmentId = parsePositiveInt(v.appointmentId);
     const admittedByUserId = parsePositiveInt(v.admittedByUserId);

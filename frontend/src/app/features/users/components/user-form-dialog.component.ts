@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -14,23 +14,11 @@ import { UserCreatePayload, UserUpdatePayload, USER_STATES } from '../models/use
 import { RoleApiService } from '../../roles/services/role-api.service';
 import { RoleResponse } from '../../roles/models/role.models';
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
+import { cu03PasswordValidator, optionalCu03PasswordValidator } from '../../shared/form-validators';
 
 export interface UserFormDialogData {
   mode: 'create' | 'edit';
   userId?: number;
-}
-
-function optionalPasswordEdit(): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const s = String(control.value ?? '').trim();
-    if (!s) {
-      return null;
-    }
-    if (s.length < 8 || s.length > 255) {
-      return { passwordLength: true };
-    }
-    return null;
-  };
 }
 
 @Component({
@@ -83,14 +71,14 @@ export class UserFormDialogComponent implements OnInit {
       this.form.controls.username.setValidators([Validators.required, Validators.maxLength(100)]);
       this.form.controls.password.setValidators([
         Validators.required,
-        Validators.minLength(8),
         Validators.maxLength(255),
+        cu03PasswordValidator(),
       ]);
       this.form.controls.state.clearValidators();
       this.form.controls.state.updateValueAndValidity({ emitEvent: false });
     } else {
       this.form.controls.username.clearValidators();
-      this.form.controls.password.setValidators([optionalPasswordEdit()]);
+      this.form.controls.password.setValidators([Validators.maxLength(255), optionalCu03PasswordValidator()]);
       this.form.controls.state.setValidators([Validators.required]);
       this.form.controls.mfaEnabled.clearValidators();
     }

@@ -5,8 +5,77 @@
 }
 
 .detail-body {
-  min-width: min(92vw, 520px);
+  min-width: min(92vw, 640px);
   max-height: 70vh;
+}
+
+.hint {
+  font-size: 0.82rem;
+  color: var(--hh-text-muted, #475569);
+  line-height: 1.45;
+  margin: 0 0 0.75rem;
+}
+
+.centered {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.warn {
+  color: #b45309;
+  margin: 0 0 0.5rem;
+}
+
+.muted {
+  color: var(--hh-text-muted, #64748b);
+}
+
+.ins-toolbar {
+  margin-bottom: 0.75rem;
+}
+
+.ins-toolbar button mat-icon {
+  margin-right: 0.35rem;
+  vertical-align: middle;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.ins-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ins-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.ins-title {
+  font-weight: 700;
+  color: var(--hh-navy, #0a2840);
+}
+
+.ins-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  font-size: 0.82rem;
+  color: #475569;
+  margin-top: 0.2rem;
+}
+
+.inactive-chip {
+  color: #94a3b8;
 }
 
 .grid {

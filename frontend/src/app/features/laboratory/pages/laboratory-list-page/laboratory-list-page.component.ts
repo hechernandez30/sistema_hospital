@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -14,7 +14,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { LaboratoryApiService } from '../../services/laboratory-api.service';
-import { LaboratoryResponse } from '../../models/laboratory.models';
+import { LaboratoryResponse, laboratoryStatusLabel } from '../../models/laboratory.models';
 import {
   LaboratoryFormDialogComponent,
   LaboratoryFormDialogData,
@@ -43,6 +43,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
     MatInputModule,
     FormsModule,
     DatePipe,
+    NgClass,
   ],
   templateUrl: './laboratory-list-page.component.html',
   styleUrl: './laboratory-list-page.component.scss',
@@ -54,6 +55,8 @@ export class LaboratoryListPageComponent implements OnInit, AfterViewInit {
   private readonly auth = inject(AuthService);
 
   readonly canMutate = this.auth.hasAnyRole(ROLES_LAB);
+
+  readonly laboratoryStatusLabelFn = laboratoryStatusLabel;
 
   filterOrderId = '';
   displayedColumns = [
@@ -73,6 +76,11 @@ export class LaboratoryListPageComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.dataSource.sortingDataAccessor = (data: LaboratoryResponse, sortHeaderId: string) => {
+      if (sortHeaderId === 'status') {
+        const ord = ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'RECHAZADO'];
+        const i = ord.indexOf(data.status);
+        return i >= 0 ? i : 99;
+      }
       const v = (data as unknown as Record<string, unknown>)[sortHeaderId];
       if (typeof v === 'string') {
         return v.toLowerCase();
@@ -91,6 +99,7 @@ export class LaboratoryListPageComponent implements OnInit, AfterViewInit {
         String(data.id),
         String(data.medicalOrderId),
         data.status,
+        laboratoryStatusLabel(data.status),
         data.requesterType ?? '',
         data.recordNumber ?? '',
       ]
@@ -146,6 +155,19 @@ export class LaboratoryListPageComponent implements OnInit, AfterViewInit {
         this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar laboratorio.'), 'Cerrar', { duration: 7000 });
       },
     });
+  }
+
+  labStatusClass(status: string): string {
+    switch (status) {
+      case 'COMPLETADO':
+        return 'ls-done';
+      case 'RECHAZADO':
+        return 'ls-rej';
+      case 'EN_PROCESO':
+        return 'ls-wip';
+      default:
+        return 'ls-pend';
+    }
   }
 
   applyTextFilter(value: string): void {

@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "nombre": "Dra. Ana López",
+    "especialidad": "Medicina General",
+    "perfil": "Atención integral y acompañamiento preventivo. Enfoque en medicina familiar.",
+    "horarioReferencial": "Lun–Vie 08:00–16:00"
+  },
+  {
+    "id": 2,
+    "nombre": "Dr. Carlos Méndez",
+    "especialidad": "Cardiología",
+    "perfil": "Evaluación cardiovascular, prevención y seguimiento clínico. Orientación a educación del paciente.",
+    "horarioReferencial": "Lun–Vie 09:00–17:00"
+  },
+  {
+    "id": 3,
+    "nombre": "Dra. Sofía Ramírez",
+    "especialidad": "Pediatría",
+    "perfil": "Control de crecimiento, vacunación y seguimiento pediátrico. Atención humanizada.",
+    "horarioReferencial": "Lun–Sáb 08:00–14:00"
+  }
+]

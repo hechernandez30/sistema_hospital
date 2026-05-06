@@ -10,7 +10,7 @@ Todas las rutas bajo el prefijo documentado devuelven JSON salvo `204 No Content
 - Configuración JWT: `app.jwt.secret` (UTF-8, mínimo 32 bytes para HS256) y `app.jwt.expiration-minutes` en `application.yml` (sustituir secreto en producción).
 - Con perfil `dev` y `application-dev.yml`, `app.security.enabled=false` deja la API abierta para desarrollo local (sin Bearer).
 - Swagger solo en perfil `dev` (`springdoc.*.enabled=true`); en OpenAPI use **Authorize** con el valor `Bearer <accessToken>` del login.
-- **401 y 403** (filtro de seguridad y login fallido vía `GlobalExceptionHandler`) usan el mismo formato **`ApiErrorResponse`** que el resto de la API (`timestamp`, `status`, `error`, `message`, `path`, `fieldErrors`). Para JWT inválido/expirado el mensaje de 401 es `Invalid or expired token`.
+- **401 y 403** (filtro de seguridad y login fallido vía `GlobalExceptionHandler`) usan el mismo formato **`ApiErrorResponse`** que el resto de la API (`timestamp`, `status`, `error`, `message`, `path`, `fieldErrors`). Para JWT inválido o expirado el cuerpo suele incluir `message`: **`Token inválido o expirado`**. Sin token o no autenticado: **`No autorizado`**. **403** (`RestAccessDeniedHandler`): **`Acceso denegado`**.
 - **Auditoría de seguridad** (solo interna, sin POST de bitácora): eventos `LOGIN_SUCCESS`, `LOGIN_FAILURE`, `ACCESS_DENIED`, `JWT_INVALID` en módulo `security` vía `SecurityAuditService` → `AuditLogService.recordEvent`.
 
 ### Rutas públicas (`app.security.enabled=true`)
@@ -63,6 +63,8 @@ Reglas adicionales: **`/api/users/**` y `/api/roles/**`** solo **ADMINISTRADOR**
 | POST | `/api/users` | Crear |
 | PUT | `/api/users/{id}` | Actualizar |
 | DELETE | `/api/users/{id}` | Eliminar |
+
+**Contraseña (CU03 — Fase 1.3):** en alta la contraseña es obligatoria; longitud **8–255** y debe incluir al menos **una minúscula**, **una mayúscula** y **un dígito**. En actualización, el campo `password` puede omitirse o ir vacío; si se envía valor, debe cumplir la misma regla.
 
 ## Especialidades
 
@@ -164,6 +166,8 @@ Reglas adicionales: **`/api/users/**` y `/api/roles/**`** solo **ADMINISTRADOR**
 | PUT | `/api/medical-orders/{id}` | Actualizar |
 | DELETE | `/api/medical-orders/{id}` | Eliminar |
 
+**Prioridad (POST):** el DTO permite `priority` vacío o ausente; el servicio asigna **`NORMAL`** por defecto en ese caso. La intranet envía prioridad explícita (p. ej. `NORMAL`) por coherencia con el flujo de actualización, donde `priority` sigue siendo obligatorio.
+
 ## Laboratorio
 
 | Método | Ruta | Descripción |
@@ -207,7 +211,89 @@ Los eventos se registran **solo por vía interna** (`AuditLogService.recordEvent
 
 ## Errores
 
-Las respuestas de error usan **`ApiErrorResponse`** (`timestamp`, `status`, `error`, `message`, `path`, `fieldErrors` opcional), incluidos **401** (filtro de seguridad, JWT inválido y login fallido) y **403** (acceso denegado).
+Las respuestas de error usan **`ApiErrorResponse`** con los campos JSON:
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `timestamp` | string (ISO-8601) | Instante del error |
+| `status` | number | Código HTTP (400, 401, 403, 404, 409, 500, …) |
+| `error` | string | Razón estándar HTTP en inglés (`Bad Request`, `Unauthorized`, …) según `HttpStatus` |
+| `message` | string | Mensaje orientado al usuario (**español** desde Fase 1.1) |
+| `path` | string | Ruta solicitada |
+| `fieldErrors` | array opcional | Lista de `{ "field", "message" }` en **400** por fallo de validación Bean Validation |
+
+Incluye **401** (JWT inválido/expirado, no autenticado, login incorrecto), **403** (rol insuficiente) y el resto de códigos gestionados por `GlobalExceptionHandler` o el filtro JWT.
+
+### Ejemplos (mensajes representativos)
+
+**Validación DTO (400)** — `fieldErrors` puede venir con rutas de propiedad (p. ej. parámetros tipo record):
+
+```json
+{
+  "timestamp": "2026-05-05T12:00:00Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Error de validación",
+  "path": "/api/patients",
+  "fieldErrors": [
+    { "field": "firstName", "message": "El nombre es obligatorio" }
+  ]
+}
+```
+
+**Regla de negocio (400)**:
+
+```json
+{
+  "timestamp": "2026-05-05T12:00:00Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "El código de paciente ya está en uso. Elija otro o use la sugerencia del sistema.",
+  "path": "/api/patients",
+  "fieldErrors": null
+}
+```
+
+**Recurso no encontrado (404)**:
+
+```json
+{
+  "timestamp": "2026-05-05T12:00:00Z",
+  "status": 404,
+  "error": "Not Found",
+  "message": "No se encontró el paciente: 999",
+  "path": "/api/patients/999",
+  "fieldErrors": null
+}
+```
+
+**No autenticado / JWT inválido (401)**:
+
+```json
+{
+  "timestamp": "2026-05-05T12:00:00Z",
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Token inválido o expirado",
+  "path": "/api/patients",
+  "fieldErrors": null
+}
+```
+
+**Permisos insuficientes (403)**:
+
+```json
+{
+  "timestamp": "2026-05-05T12:00:00Z",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "Acceso denegado",
+  "path": "/api/users",
+  "fieldErrors": null
+}
+```
+
+El **frontend intranet** debe mostrar preferentemente `message` y, en 400 con validación, concatenar o listar `fieldErrors` (ver `frontend/src/app/core/utils/http-error-message.ts`).
 
 ## Pruebas automatizadas
 

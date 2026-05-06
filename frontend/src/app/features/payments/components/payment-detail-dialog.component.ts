@@ -3,7 +3,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { PaymentView } from '../models/payment.models';
+import { PaymentView, paymentMethodLabel, paymentStatusLabel } from '../models/payment.models';
 
 @Component({
   selector: 'app-payment-detail-dialog',
@@ -15,6 +15,8 @@ import { PaymentView } from '../models/payment.models';
 export class PaymentDetailDialogComponent {
   readonly dialogRef = inject(MatDialogRef<PaymentDetailDialogComponent>);
   readonly data = inject<PaymentView>(MAT_DIALOG_DATA);
+  readonly paymentStatusLabelFn = paymentStatusLabel;
+  readonly paymentMethodLabelFn = paymentMethodLabel;
 
   close(): void {
     this.dialogRef.close();

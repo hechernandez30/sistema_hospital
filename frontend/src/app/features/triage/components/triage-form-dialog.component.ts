@@ -9,7 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { TriageApiService } from '../services/triage-api.service';
-import { TRIAGE_PRIORITIES, TriageCreatePayload, TriageUpdatePayload } from '../models/triage.models';
+import { TRIAGE_PRIORITY_OPTIONS, TriageCreatePayload, TriageUpdatePayload } from '../models/triage.models';
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
 import {
   optionalDecimalRange,
@@ -50,7 +50,7 @@ export class TriageFormDialogComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<TriageFormDialogData>(MAT_DIALOG_DATA);
 
-  readonly priorities = [...TRIAGE_PRIORITIES];
+  readonly priorityOptions = TRIAGE_PRIORITY_OPTIONS;
   loading = false;
   saving = false;
 
