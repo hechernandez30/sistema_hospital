@@ -58,15 +58,6 @@
   color: var(--hh-primary, #1565c0);
 }
 
-.sidenav-link-muted mat-icon {
-  color: var(--hh-blue-muted, #3d5a73);
-}
-
-.sidenav-footer {
-  margin-top: auto;
-  padding-bottom: 0.65rem;
-}
-
 /* Contenido: gris muy claro, distinto del sidebar */
 .shell-content {
   display: flex;
