@@ -93,7 +93,9 @@ CREATE TABLE IF NOT EXISTS pacientes (
     CONSTRAINT chk_paciente_correo
         CHECK (correo IS NULL OR correo ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$'),
     CONSTRAINT chk_paciente_telefono
-        CHECK (telefono IS NULL OR telefono ~ '^\+?[0-9]{8,15}$')
+        CHECK (telefono IS NULL OR telefono ~ '^[0-9]{8}$'),
+    CONSTRAINT chk_paciente_contacto_emergencia_telefono
+        CHECK (contacto_emergencia_telefono IS NULL OR contacto_emergencia_telefono ~ '^[0-9]{8}$')
 );
 
 -- =========================================================

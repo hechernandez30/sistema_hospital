@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,11 +17,11 @@ import { nextPatientCodeFromExistingCodes } from '../../../core/utils/next-seque
 import {
   birthDatePastValidator,
   DPI_NIT_PATTERN,
-  optionalEmail,
   optionalPhoneBackendPattern,
   patientPersonNameCu02Validator,
   requiredPhoneBackendPattern,
 } from '../../shared/form-validators';
+import { PrivacyNoticeDialogComponent } from './privacy-notice-dialog.component';
 
 export interface PatientFormDialogData {
   mode: 'create' | 'edit';
@@ -53,6 +53,7 @@ export class PatientFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(PatientApiService);
   private readonly dialogRef = inject(MatDialogRef<PatientFormDialogComponent, boolean>);
+  private readonly overlayDialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<PatientFormDialogData>(MAT_DIALOG_DATA);
 
@@ -66,8 +67,8 @@ export class PatientFormDialogComponent implements OnInit {
     dpiNit: ['', [Validators.required, Validators.maxLength(30), Validators.pattern(DPI_NIT_PATTERN)]],
     birthDate: ['', [Validators.required, birthDatePastValidator()]],
     sex: ['M' as string | null, [Validators.required, Validators.pattern(/^(M|F|OTRO)$/)]],
-    phone: ['', [optionalPhoneBackendPattern()]],
-    email: ['', [optionalEmail(), Validators.maxLength(150)]],
+    phone: ['', [requiredPhoneBackendPattern()]],
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
     address: [''],
     emergencyContactName: ['', [Validators.maxLength(150)]],
     emergencyContactPhone: ['', [optionalPhoneBackendPattern()]],
@@ -98,8 +99,6 @@ export class PatientFormDialogComponent implements OnInit {
 
   private patchFromPatient(p: PatientResponse): void {
     this.loading = false;
-    this.form.controls.phone.setValidators([requiredPhoneBackendPattern()]);
-    this.form.controls.phone.updateValueAndValidity();
     this.form.patchValue({
       patientCode: p.patientCode,
       firstName: p.firstName,
@@ -148,7 +147,7 @@ export class PatientFormDialogComponent implements OnInit {
         address: emptyToNull(raw.address),
         emergencyContactName: emptyToNull(raw.emergencyContactName),
         emergencyContactPhone: em ? em : null,
-        privacyAccepted: true,
+        privacyAccepted: raw.privacyAccepted,
         allergies: emptyToNull(raw.allergies),
         conditions: emptyToNull(raw.conditions),
         medicalHistory: emptyToNull(raw.medicalHistory),
@@ -199,6 +198,28 @@ export class PatientFormDialogComponent implements OnInit {
 
   cancel(): void {
     this.dialogRef.close(false);
+  }
+
+  /** Abre el aviso legal; no altera el checkbox (evento aislado del `mat-checkbox`). */
+  openPrivacyNotice(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.overlayDialog.open(PrivacyNoticeDialogComponent, {
+      width: 'min(720px, 94vw)',
+      maxHeight: '92vh',
+      autoFocus: 'first-tabbable',
+      restoreFocus: true,
+    });
+  }
+
+  /** Solo dígitos Guatemala (8 máx.), evita texto y notación tipo `e` que ocurre en `input type="number"`. */
+  onGtPhoneInput(controlKey: 'phone' | 'emergencyContactPhone', event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digits = input.value.replace(/\D/g, '').slice(0, 8);
+    const c = this.form.controls[controlKey];
+    if (c.value !== digits) {
+      c.setValue(digits);
+    }
   }
 
   /** Nueva sugerencia PAC-nnnn tratando el código actual como «ocupado» para avanzar el correlativo. */

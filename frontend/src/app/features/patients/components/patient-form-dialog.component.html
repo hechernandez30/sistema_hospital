@@ -16,23 +16,14 @@
           <mat-form-field appearance="outline" class="code-field">
             <mat-label>Código paciente</mat-label>
             <input matInput formControlName="patientCode" maxlength="30" autocomplete="off" />
-            @if (!isEdit) {
-              <mat-hint>Sugerido según la lista actual; puede editarlo o renovar la sugerencia.</mat-hint>
-            }
             @if (form.controls.patientCode.invalid && form.controls.patientCode.touched) {
               <mat-error>Requerido (máx. 30)</mat-error>
             }
           </mat-form-field>
-          @if (!isEdit) {
-            <button mat-stroked-button type="button" class="code-suggest-btn" (click)="regenerateSuggestedPatientCode()">
-              Renovar sugerencia
-            </button>
-          }
         </div>
         <mat-form-field appearance="outline">
-          <mat-label>DPI / NIT</mat-label>
-          <input matInput formControlName="dpiNit" maxlength="30" />
-          <mat-hint>Identificador único. Si el servidor rechaza el guardado, puede que ya exista otro expediente con este número.</mat-hint>
+          <mat-label>DPI / NIT (Sin guiones)</mat-label>
+          <input matInput formControlName="dpiNit" maxlength="13" />
           @if (form.controls.dpiNit.hasError('required') && form.controls.dpiNit.touched) {
             <mat-error>Requerido</mat-error>
           }
@@ -45,7 +36,6 @@
         <mat-form-field appearance="outline">
           <mat-label>Nombres</mat-label>
           <input matInput formControlName="firstName" maxlength="100" />
-          <mat-hint>2–100 caracteres; solo letras (incl. acentos) y espacios</mat-hint>
           @if (form.controls.firstName.hasError('required') && form.controls.firstName.touched) {
             <mat-error>Requerido</mat-error>
           }
@@ -96,18 +86,28 @@
       <div class="row two">
         <mat-form-field appearance="outline">
           <mat-label>Teléfono</mat-label>
-          <input matInput formControlName="phone" inputmode="tel" autocomplete="tel" placeholder="+50212345678" />
+          <input
+            matInput
+            formControlName="phone"
+            inputmode="numeric"
+            autocomplete="tel"
+            maxlength="8"
+            (input)="onGtPhoneInput('phone', $event)"
+          />
           @if (form.controls.phone.hasError('required') && form.controls.phone.touched) {
             <mat-error>Requerido</mat-error>
           }
           @if (form.controls.phone.hasError('phoneFormat') && form.controls.phone.touched) {
-            <mat-error>8–15 dígitos; solo + al inicio (ej. +50212345678)</mat-error>
+            <mat-error>Ingrese 8 dígitos (solo 0–9, número local)</mat-error>
           }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Correo</mat-label>
           <input matInput type="email" formControlName="email" maxlength="150" />
-          @if (form.controls.email.invalid && form.controls.email.touched) {
+          @if (form.controls.email.hasError('required') && form.controls.email.touched) {
+            <mat-error>Requerido</mat-error>
+          }
+          @if (form.controls.email.hasError('email') && form.controls.email.touched) {
             <mat-error>Correo no válido</mat-error>
           }
         </mat-form-field>
@@ -119,26 +119,49 @@
       <div class="row two">
         <mat-form-field appearance="outline">
           <mat-label>Contacto emergencia</mat-label>
-          <input matInput formControlName="emergencyContactName" maxlength="150" />
+          <input matInput formControlName="emergencyContactName" maxlength="150" placeholder="Nombre del contacto" />
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Tel. emergencia</mat-label>
-          <input matInput formControlName="emergencyContactPhone" />
+          <input
+            matInput
+            formControlName="emergencyContactPhone"
+            inputmode="numeric"
+            maxlength="8"
+            (input)="onGtPhoneInput('emergencyContactPhone', $event)"
+          />
           @if (form.controls.emergencyContactPhone.hasError('phoneFormat') && form.controls.emergencyContactPhone.touched) {
-            <mat-error>8–15 dígitos; solo + al inicio</mat-error>
+            <mat-error>8 dígitos o vacío (solo 0–9)</mat-error>
           }
         </mat-form-field>
       </div>
 
       @if (!isEdit) {
         <div class="privacy-row">
-          <mat-checkbox formControlName="privacyAccepted">Aceptación de privacidad (obligatorio)</mat-checkbox>
+          <div class="privacy-line">
+            <mat-checkbox
+              formControlName="privacyAccepted"
+              aria-label="Confirmo haber leído el aviso de privacidad y otorgo mi consentimiento (obligatorio)"
+            />
+            <span class="privacy-line-text">
+              <button type="button" class="privacy-link" (click)="openPrivacyNotice($event)">Aceptación de privacidad</button>
+              <span class="privacy-suffix"> (obligatorio). Marque la casilla tras revisar los términos.</span>
+            </span>
+          </div>
           @if (form.controls.privacyAccepted.invalid && form.controls.privacyAccepted.touched) {
-            <p class="field-error">Debe aceptar privacidad para registrar.</p>
+            <p class="field-error">Debe marcar la casilla para confirmar privacidad y poder registrar.</p>
           }
         </div>
       } @else {
-        <mat-checkbox formControlName="privacyAccepted">Privacidad aceptada</mat-checkbox>
+        <div class="privacy-row">
+          <div class="privacy-line">
+            <mat-checkbox formControlName="privacyAccepted" aria-label="Paciente con aviso de privacidad aceptado" />
+            <span class="privacy-line-text">
+              <span class="privacy-edit-label">Privacidad aceptada.</span>
+              <button type="button" class="privacy-link" (click)="openPrivacyNotice($event)">Ver aviso de privacidad</button>
+            </span>
+          </div>
+        </div>
       }
 
       <mat-divider />
@@ -149,15 +172,15 @@
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Condiciones</mat-label>
-        <textarea matInput rows="2" formControlName="conditions"></textarea>
+        <textarea matInput rows="2" formControlName="conditions" placeholder="Describe tus padecimientos actuales"></textarea>
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Historia clínica</mat-label>
-        <textarea matInput rows="2" formControlName="medicalHistory"></textarea>
+        <textarea matInput rows="2" formControlName="medicalHistory" placeholder="Describe tus antecedentes médicos"></textarea>
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Medicación actual</mat-label>
-        <textarea matInput rows="2" formControlName="currentMedications"></textarea>
+        <textarea matInput rows="2" formControlName="currentMedications" placeholder="Describe tus medicaciones actuales"></textarea>
       </mat-form-field>
       <mat-checkbox formControlName="active">Paciente activo</mat-checkbox>
     </mat-dialog-content>

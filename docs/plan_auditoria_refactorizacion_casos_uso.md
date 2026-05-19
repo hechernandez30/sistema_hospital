@@ -65,7 +65,7 @@ El portal público no debe crear, modificar ni iniciar procesos operativos del h
 ### CU02 — Registro de Paciente
 
 - **Qué pide:** Formulario RN01–RN06; unicidad DPI; seguro opcional con aseguradora y póliza (RN07); generación/expediente y mensajes claros FA.
-- **Qué existe:** `PatientCreateRequest` con email/tel/expresiones, `privacyAccepted` obligatorio, unicidad `dpiNit` y `patientCode` en servicio; API segreguros bajo `/api/patients/{id}/insurances`; UI pacientes intranet.
+- **Qué existe:** `PatientCreateRequest` con email/tel/expresiones, `privacyAccepted` obligatorio, unicidad `dpiNit` y `patientCode` en servicio; API segreguros bajo `/api/patients/{id}/insurances`; UI pacientes intranet con aviso de privacidad en modal (CU02, `docs/cu02_aviso_privacidad_modal.md`).
 - **Qué falta:** RN02 validación nombre alfabética 2–100; número de paciente **generado por sistema** (hoy código enviado en request); UX registro combinado alta + seguro en un flujo CU; FA explícitos en UI; errores dominio en español uniforme (`BusinessRuleException` en inglés).
 - **Implementado diferente:** Modelo SQL usa `codigo_paciente` único cargado manualmente desde cliente vs narrativa CU “genera número”.
 - **Riesgos:** Duplicidad operativa código paciente/DPI gestionada sólo servidor; inconsistencia linguistic UX.

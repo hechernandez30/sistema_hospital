@@ -60,7 +60,8 @@ Incluye:
 Validaciones:
 - DPI/NIT único
 - Correo válido
-- Teléfono válido
+- Teléfono válido: 8 dígitos (0–9), número local Guatemala; contacto de emergencia mismo formato u omitido
+- Privacidad: casilla obligatoria en alta; el aviso completo se muestra por enlace en modal (`docs/cu02_aviso_privacidad_modal.md`)
 
 ---
 

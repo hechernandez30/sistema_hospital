@@ -35,7 +35,7 @@ public record PatientUpdateRequest(
         LocalDate birthDate,
         @Pattern(regexp = "M|F|OTRO", message = "El sexo debe ser M, F u OTRO")
         String sex,
-        @Pattern(regexp = "^\\+?[0-9]{8,15}$", message = "El teléfono debe tener entre 8 y 15 dígitos; opcionalmente puede iniciar con +")
+        @Pattern(regexp = "^[0-9]{8}$", message = "El teléfono debe tener exactamente 8 dígitos (solo números, sin código de país)")
         String phone,
         @Email(message = "Debe ingresar un correo electrónico válido")
         @Size(max = 150, message = "El correo no debe superar 150 caracteres")
@@ -44,8 +44,8 @@ public record PatientUpdateRequest(
         @Size(max = 150, message = "El nombre del contacto de emergencia no debe superar 150 caracteres")
         String emergencyContactName,
         @Pattern(
-                regexp = "^$|^\\+?[0-9]{8,15}$",
-                message = "El teléfono de emergencia debe tener entre 8 y 15 dígitos; opcionalmente puede iniciar con +")
+                regexp = "^$|^[0-9]{8}$",
+                message = "El teléfono de emergencia debe tener exactamente 8 dígitos o dejarse vacío (solo números, sin código de país)")
         String emergencyContactPhone,
         boolean privacyAccepted,
         String allergies,

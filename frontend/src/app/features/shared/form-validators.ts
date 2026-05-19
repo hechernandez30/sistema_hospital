@@ -35,8 +35,8 @@ export function patientPersonNameCu02Validator(): ValidatorFn {
   };
 }
 
-/** Backend patient phone: optional + then 8–15 digits */
-export const PHONE_BACKEND_PATTERN = /^\+?[0-9]{8,15}$/;
+/** Paciente Guatemala: número local sin código de país — exactamente 8 dígitos 0–9 */
+export const PHONE_BACKEND_PATTERN = /^[0-9]{8}$/;
 
 /** DPI/NIT: alfanumérico, guión o punto (sin espacios raros); max en control */
 export const DPI_NIT_PATTERN = /^[A-Za-z0-9.\-]+$/;

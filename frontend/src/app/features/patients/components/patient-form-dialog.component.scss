@@ -63,8 +63,55 @@ mat-dialog-actions mat-progress-spinner {
   margin: 0.25rem 0 0.5rem;
 }
 
+.privacy-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.privacy-line-text {
+  flex: 1;
+  padding-top: 0.15rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.privacy-edit-label {
+  margin-right: 0.35rem;
+}
+
+.privacy-link {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--hh-primary, #1565c0);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  vertical-align: baseline;
+
+  &:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--hh-primary, #1565c0);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.privacy-suffix {
+  color: rgba(0, 0, 0, 0.75);
+}
+
 .field-error {
-  margin: 0.35rem 0 0 2.5rem;
+  margin: 0.35rem 0 0;
+  padding-left: 2.5rem;
   font-size: 0.75rem;
   color: var(--mat-form-field-error-text-color, #b3261e);
 }

@@ -1,17 +1,25 @@
-# Casos de Uso Detallados - Sistema Hospitalario Hospital H&H
+# Casos de Uso Detallados - Sistema Hospitalario Hospital H&H (Alineado a implementación)
 
 ## Propósito del documento
 
-Este documento consolida los 14 casos de uso funcionales del sistema hospitalario **Hospital H&H** tomando como fuente oficial los documentos Word proporcionados para el proyecto.
+Este documento consolida los 14 casos de uso funcionales del sistema hospitalario **Hospital H&H** tomando como fuente oficial los documentos Word proporcionados para el proyecto y las decisiones de alcance aprobadas durante las fases de implementación.
 
 Debe utilizarse como fuente de referencia para revisar cobertura funcional, planificar refactorizaciones controladas y validar que backend, frontend, seguridad, reglas de negocio y experiencia de usuario respeten el alcance descrito en los casos de uso originales.
 
 ## Criterio de corrección aplicado
 
-- Se prioriza el contenido de los documentos Word sobre versiones previas del archivo Markdown.
-- No se agregan flujos, reglas, estados, criterios ni módulos que no estén descritos en los documentos fuente.
+- Se prioriza el contenido de los documentos Word y se ajusta a lo efectivamente implementado y aprobado en fases 0-8.
+- No se agregan flujos, reglas, estados, criterios ni módulos fuera del alcance aprobado.
 - Los requerimientos suplementarios se mantienen de forma homogénea cuando aparecen iguales en los documentos Word.
 - CU05 se conserva como documento consolidado de reglas de negocio, aunque no tenga actores, precondiciones, flujo normal ni poscondiciones aplicables.
+- Cuando un CU quedó parcialmente implementado, se indica explícitamente como **Parcial** y se documenta la brecha.
+
+## Ajustes clave incorporados por implementación
+
+- CU01: se eliminó registro y reserva pública; el portal quedó únicamente informativo más acceso de personal.
+- CU06/CU07: el flujo de muestras quedó integrado dentro de laboratorio mediante orden médica.
+- CU08: versión inicial de reportes con filtros operativos y exportación CSV (sin PDF/Excel por ahora).
+- CU13: inventario básico funcional; despacho real documentado como pendiente.
 
 ---
 
@@ -21,7 +29,7 @@ Debe utilizarse como fuente de referencia para revisar cobertura funcional, plan
 Este documento describe los pasos para que el usuario navegue en el portal web y visualice servicios, especialidades y opciones disponibles.
 
 ## Objetivo
-Permitir al usuario explorar el portafolio de servicios y acceder a funcionalidades públicas del hospital.
+Permitir al usuario explorar información institucional pública del hospital y acceder al login de personal autorizado.
 
 ## Actores
 - Usuario visitante
@@ -36,8 +44,8 @@ Permitir al usuario explorar el portafolio de servicios y acceder a funcionalida
 2. El sistema muestra la página de inicio con menú principal y buscador (RN01, RN02).
 3. El usuario navega por las secciones: Servicios, Especialidades, Médicos, Contacto.
 4. El usuario utiliza el buscador para encontrar un servicio o médico específico (RN03).
-5. El sistema muestra resultados y fichas detalladas de servicios.
-6. El usuario puede iniciar proceso de registro o reservar una consulta redirigiéndose a los módulos correspondientes.
+5. El sistema muestra resultados y fichas públicas de servicios, especialidades y médicos.
+6. El usuario puede acceder a la pantalla de acceso personal (login interno).
 7. Fin del caso de uso.
 
 ## Flujos alternos
@@ -50,12 +58,13 @@ Permitir al usuario explorar el portafolio de servicios y acceder a funcionalida
 2. Se muestra mensaje de indisponibilidad temporal.
 
 ## Poscondiciones
-- Se registran métricas de navegación para analítica.
+- El usuario concluye navegación informativa o acceso al login de personal.
 
 ## Reglas de negocio
 - RN01: Disponibilidad de menú. El menú principal debe ser visible en todas las páginas.
 - RN02: Accesibilidad. Cumplir pautas WCAG AA en navegación y contraste.
 - RN03: Búsqueda. El buscador debe permitir búsqueda por nombre de médico, especialidad y servicio.
+- RN04: Alcance público. El portal no permite registro externo de pacientes ni reserva/solicitud pública de citas.
 
 ## Requerimientos suplementarios o no funcionales
 - Disponibilidad 99.5% mensual.
@@ -74,7 +83,6 @@ Define los pasos para crear un registro de paciente en el sistema.
 Permitir el alta de pacientes con datos mínimos y validaciones básicas.
 
 ## Actores
-- Paciente
 - Recepcionista
 - Sistema informático
 
@@ -86,10 +94,11 @@ Permitir el alta de pacientes con datos mínimos y validaciones básicas.
 1. El usuario accede al módulo de Registro de Pacientes.
 2. El sistema muestra el formulario de registro con campos obligatorios (RN01-RN06).
 3. El usuario ingresa datos personales: Nombres, Apellidos, DPI/NIT, Fecha de nacimiento, Teléfono, Email (RN02-RN06).
-4. El usuario puede asociar información de seguro si aplica (RN07).
-5. El usuario confirma y guarda.
-6. El sistema valida los datos, crea el expediente y genera un número de paciente (RN01-RN07).
-7. Fin del caso de uso.
+4. El usuario revisa el aviso de privacidad mediante el enlace “Aceptación de privacidad” (opcional antes de guardar pero recomendado) y marca la casilla de confirmación asociada (RN06).
+5. El usuario puede asociar información de seguro si aplica (RN07).
+6. El usuario confirma y guarda.
+7. El sistema valida los datos, crea el expediente y genera un número de paciente (RN01-RN07).
+8. Fin del caso de uso.
 
 ## Flujos alternos
 ### FA01 - Documento de identidad duplicado
@@ -100,6 +109,11 @@ Permitir el alta de pacientes con datos mínimos y validaciones básicas.
 1. El sistema detecta formato inválido de correo (RN05).
 2. Se solicita corrección al usuario.
 
+### FA03 - Consulta del aviso de privacidad
+1. En el formulario de alta o edición de paciente, el usuario selecciona el enlace “Aceptación de privacidad” o “Ver aviso de privacidad”.
+2. El sistema muestra en modal el texto íntegro del aviso (responsable del tratamiento, finalidades, derechos del titular, etc.) con los datos institucionales configurados en entorno de despliegue.
+3. El usuario cierra el modal; puede continuar cumplimentando o guardando el formulario sin que el sólo acto de abrir el aviso sustituya el marcado obligatorio de la casilla en alta (RN06).
+
 ## Poscondiciones
 - Se crea expediente activo asociado al paciente.
 
@@ -107,9 +121,9 @@ Permitir el alta de pacientes con datos mínimos y validaciones básicas.
 - RN01: Campos obligatorios. Nombres, Apellidos, Documento de identidad, Fecha de nacimiento.
 - RN02: Validación de nombre. Permite de 2 a 100 caracteres alfabéticos y espacios.
 - RN03: Unicidad de DPI/NIT. No se permite duplicar documento de identidad.
-- RN04: Teléfono. Solo números, 8 a 15 dígitos.
+- RN04: Teléfono. Solo dígitos 0–9, exactamente **8** (formato número local Guatemala, sin código de país ni `+`).
 - RN05: Email. Debe cumplir formato de correo electrónico válido.
-- RN06: Consentimiento. Debe aceptarse aviso de privacidad para finalizar.
+- RN06: Consentimiento. Para finalizar el registro debe marcarse explícitamente la casilla de aceptación. El texto completo del aviso está disponible en modal al activar el enlace “Aceptación de privacidad” (alta) o “Ver aviso de privacidad” (edición); el clic sobre ese enlace no marca la casilla automáticamente. Detalle técnico: `docs/cu02_aviso_privacidad_modal.md`.
 - RN07: Seguro. Si el paciente declara seguro, registrar aseguradora y número de póliza.
 
 ## Requerimientos suplementarios o no funcionales
@@ -251,7 +265,7 @@ Centralizar y estandarizar reglas comunes para reutilización y control.
 
 ## Reglas de negocio
 - RN01: Formato de correo. Debe cumplir RFC básico usuario@dominio.
-- RN02: Teléfono. Solo dígitos, longitud 8-15, opcional +prefijo.
+- RN02: Teléfono (paciente / contactos en sistema). Solo dígitos 0–9, exactamente 8 caracteres por número local (Guatemala); sin prefijo `+`.
 - RN03: Identificación única. DPI/NIT único por paciente.
 - RN04: Trazabilidad. Registrar usuario, fecha y operación en auditoría.
 - RN05: RBAC. Acceso basado en roles para módulos críticos.
@@ -269,10 +283,10 @@ Centralizar y estandarizar reglas comunes para reutilización y control.
 # CU06 - Muestras Médicas
 
 ## Descripción
-Creación y registro de solicitudes de muestras médicas para análisis.
+Caso de uso absorbido en la operación de Órdenes Médicas y Laboratorio.
 
 ## Objetivo
-Permitir solicitar, identificar y enviar muestras al laboratorio.
+Documentar que la solicitud/gestión de muestras se ejecuta dentro del flujo de laboratorio asociado a orden médica tipo LABORATORIO.
 
 ## Actores
 - Usuario
@@ -282,13 +296,10 @@ Permitir solicitar, identificar y enviar muestras al laboratorio.
 - El sistema debe estar disponible.
 
 ## Flujo normal básico
-1. El usuario accede a Muestras Médicas.
-2. El sistema muestra formulario de solicitud con campos Tipo solicitante, Tipo de solicitud, Descripción, No. de expediente (RN01-RN05).
-3. El usuario ingresa datos y solicita búsqueda del expediente.
-4. El sistema valida y muestra datos del expediente (RN03, RN04).
-5. El usuario confirma y envía la solicitud.
-6. El sistema crea la solicitud y muestra el número asignado.
-7. Fin del caso de uso.
+1. El médico genera orden médica de tipo LABORATORIO en CU12.
+2. El personal de laboratorio registra recepción y validez de muestra en CU07.
+3. El sistema conserva trazabilidad de muestra en el mismo módulo de laboratorio.
+4. Fin del caso de uso.
 
 ## Flujos alternos
 ### FA01 - Tipo de solicitante externo
@@ -300,7 +311,7 @@ Permitir solicitar, identificar y enviar muestras al laboratorio.
 2. Se muestra mensaje y se detiene el proceso.
 
 ## Poscondiciones
-- Solicitud creada y lista para laboratorio.
+- La muestra queda registrada dentro del proceso de laboratorio asociado a una orden médica válida.
 
 ## Reglas de negocio
 - RN01: Tipo solicitante. IN-Interno, EX-Externo, selección obligatoria.
@@ -310,7 +321,7 @@ Permitir solicitar, identificar y enviar muestras al laboratorio.
 - RN05: Validación de campos. Todos los campos obligatorios deben completarse correctamente.
 - RN06: Tipo soporte. Catálogo Interno/Externo según políticas.
 - RN07: Número soporte. Hasta 50 caracteres alfanuméricos.
-- RN08: Contacto. Teléfono 8 dígitos, email válido.
+- RN08: Contacto. Teléfono exactamente 8 dígitos (solo 0–9), email válido.
 
 ## Requerimientos suplementarios o no funcionales
 - Disponibilidad 99.5% mensual.
@@ -376,8 +387,8 @@ Generación de reportes operativos y administrativos.
 Permitir a los usuarios generar reportes con filtros definidos.
 
 ## Actores
-- Analista
 - Administrador
+- Auditor
 - Sistema informático
 
 ## Precondiciones
@@ -387,7 +398,7 @@ Permitir a los usuarios generar reportes con filtros definidos.
 1. El usuario accede al módulo de Reportes.
 2. El sistema muestra catálogo de reportes y filtros disponibles (RN01).
 3. El usuario selecciona un reporte, define filtros y ejecuta.
-4. El sistema genera el reporte y permite exportarlo a PDF/Excel (RN02).
+4. El sistema genera el reporte y permite exportarlo a CSV desde frontend.
 5. Fin del caso de uso.
 
 ## Flujos alternos
@@ -400,8 +411,9 @@ Permitir a los usuarios generar reportes con filtros definidos.
 
 ## Reglas de negocio
 - RN01: Catálogo de reportes. Acceso según rol y área.
-- RN02: Exportación. Permitir exportar a PDF y Excel.
+- RN02: Exportación. En la versión actual, la exportación disponible es CSV.
 - RN03: Validación de filtros. Validar rangos de fecha y parámetros obligatorios.
+- RN04: Seguridad. El módulo de reportes solo está disponible para ADMINISTRADOR y AUDITOR.
 
 ## Requerimientos suplementarios o no funcionales
 - Disponibilidad 99.5% mensual.
@@ -630,10 +642,10 @@ Permitir al médico documentar la consulta o atención del paciente y generar in
 # CU13 - Farmacia e Inventario
 
 ## Descripción
-Gestiona el despacho de medicamentos y el control básico del inventario hospitalario.
+Gestiona catálogo de medicamentos e inventario básico con alertas de stock.
 
 ## Objetivo
-Permitir la entrega de medicamentos con base en una orden médica válida, descontando existencias y generando alertas de stock bajo.
+Mantener control básico de stock y estado activo/inactivo de medicamentos en el catálogo institucional.
 
 ## Actores
 - Farmacéutico
@@ -645,37 +657,31 @@ Permitir la entrega de medicamentos con base en una orden médica válida, desco
 - El medicamento debe estar registrado en inventario.
 
 ## Flujo normal básico
-1. El farmacéutico accede al módulo de Farmacia.
-2. El sistema muestra órdenes médicas pendientes de despacho.
-3. El farmacéutico selecciona la orden y consulta los medicamentos requeridos (RN01).
-4. El sistema valida existencia disponible para cada medicamento (RN02).
-5. El farmacéutico confirma el despacho.
-6. El sistema descuenta las cantidades entregadas del inventario y actualiza la orden a estado despachada (RN03).
-7. Si el stock queda por debajo del mínimo definido, el sistema genera alerta de stock bajo (RN04).
-8. Fin del caso de uso.
+1. El farmacéutico accede al módulo de Medicamentos.
+2. El sistema permite crear/editar medicamentos con stock actual, stock mínimo y estado activo.
+3. El sistema valida que no existan valores negativos de stock.
+4. El sistema muestra alerta visual cuando `stock_actual <= stock_minimo`.
+5. El usuario ajusta stock por CRUD de medicamento (reabastecimiento/corrección manual).
+6. Fin del caso de uso.
 
 ## Flujos alternos
-### FA01 - Stock insuficiente
-1. El sistema detecta que la cantidad disponible no cubre lo solicitado.
-2. Se informa al usuario y se registra despacho parcial o pendiente según política interna.
+### FA01 - Stock negativo
+1. El sistema detecta valor negativo en stock actual o stock mínimo.
+2. Se rechaza el guardado.
 
-### FA02 - Orden no válida
-1. El sistema detecta orden anulada, vencida o ya despachada.
-2. Se bloquea el despacho.
-
-### FA03 - Reabastecimiento
+### FA02 - Reabastecimiento
 1. El usuario registra ingreso de medicamentos al inventario.
 2. El sistema incrementa existencias del producto correspondiente.
 
 ## Poscondiciones
-- La entrega del medicamento queda registrada y el inventario actualizado.
+- El inventario básico queda actualizado en el catálogo de medicamentos.
 
 ## Reglas de negocio
-- RN01: Orden médica obligatoria. Solo se podrán despachar medicamentos con orden médica activa.
-- RN02: Control de existencias. Validar cantidad disponible antes de confirmar el despacho.
-- RN03: Actualización de inventario. Cada despacho reduce existencias; cada abastecimiento incrementa existencias.
-- RN04: Stock mínimo. Generar alerta cuando la existencia esté igual o por debajo del nivel mínimo configurado.
-- RN05: Trazabilidad. Registrar usuario, medicamento, cantidad, fecha y hora del movimiento.
+- RN01: Control de existencias. Validar que stock actual y stock mínimo sean >= 0.
+- RN02: Stock mínimo. Generar alerta cuando la existencia esté igual o por debajo del nivel mínimo configurado.
+- RN03: Actualización de inventario. El ajuste se realiza por edición directa del medicamento.
+- RN04: Estado del medicamento. Permitir activo/inactivo para control de catálogo.
+- RN05: Alcance parcial. El despacho real por orden médica queda pendiente hasta contar con modelo de líneas de despacho y movimientos de inventario.
 
 ## Requerimientos suplementarios o no funcionales
 - Disponibilidad 99.5% mensual.
@@ -741,19 +747,19 @@ Permitir registrar turnos, disponibilidad y asistencia del personal para apoyar 
 
 | CU | Caso de uso | Fuente Word principal | Observación para Cursor |
 |---|---|---|---|
-| CU01 | Portal Web del Hospital | CU01_Portal_Web.docx | Incluye menú, buscador, servicios, especialidades, médicos, contacto, registro/reserva por redirección. |
+| CU01 | Portal Web del Hospital | CU01_Portal_Web.docx | Portal institucional informativo: menú, buscador público, servicios, especialidades, médicos, contacto y acceso personal. Sin registro/reserva pública. |
 | CU02 | Registro de Paciente | CU02_Registro_de_Paciente.docx | Incluye datos mínimos, consentimiento y seguro opcional. |
 | CU03 | Mantenimiento de Usuarios | CU03_Mantenimiento_de_Usuarios.docx | Incluye usuarios, roles, estados, política de contraseña y MFA opcional. |
 | CU04 | Mantenimiento de Consultas / Citas | CU04_Mantenimiento_de_Consultas.docx | Incluye agenda, disponibilidad, conflictos y notificaciones. |
 | CU05 | Reglas de Negocio Consolidado | CU05_Reglas_de_Negocio.docx | Documento transversal de reglas; no es flujo operativo. |
-| CU06 | Muestras Médicas | CU06_Muestras_Medicas.docx | Incluye solicitud, expediente, solicitante interno/externo y soporte. |
+| CU06 | Muestras Médicas | CU06_Muestras_Medicas.docx | Flujo absorbido en CU07 (laboratorio) mediante órdenes médicas tipo LABORATORIO. |
 | CU07 | Laboratorio | CU07_Laboratorio.docx | Incluye recepción, resultados, adjuntos y notificación. |
-| CU08 | Reportes | CU08_Reportes.docx | Incluye catálogo, filtros y exportación PDF/Excel. |
+| CU08 | Reportes | CU08_Reportes.docx | Incluye catálogo y filtros; en implementación actual la exportación habilitada es CSV. |
 | CU09 | Pagos y Seguros | CU09_Pagos_y_Seguros.docx | Incluye validación de seguro, descuentos, copago y medios de pago. |
 | CU10 | Atención de Emergencias y Triage | CU10_Emergencias_y_Triage.docx | Incluye signos vitales, prioridad y tiempo objetivo. |
 | CU11 | Admisión de Paciente | CU11_Admisión_de_Paciente.docx | Incluye validación financiera previa a la admisión. |
 | CU12 | Atención Médica | CU12_Atención_Médica.docx | Incluye expediente, evaluación, diagnóstico y órdenes. |
-| CU13 | Farmacia e Inventario | CU13_Farmacia_e_Inventario.docx | El flujo oficial inicia desde órdenes médicas pendientes de despacho. |
+| CU13 | Farmacia e Inventario | CU13_Farmacia_e_Inventario.docx | Implementado como inventario básico y alertas; despacho real pendiente por falta de modelo de líneas/movimientos. |
 | CU14 | Gestión de Horarios y Asistencia | CU14_Gestión_de_Horarios_y_Asistencia.docx | Incluye horarios, asistencia, conflictos y personal activo. |
 
 # Instrucción sugerida para Cursor

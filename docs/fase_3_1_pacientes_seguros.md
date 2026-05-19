@@ -6,7 +6,7 @@
 
 - `PatientCreateRequest`, `PatientUpdateRequest`, `PatientController`: sin cambio de rutas ni nombres de campos.
 - `PatientService`: revisión de reglas DPI/NIT y código duplicado; alta/baja/consulta con carga explícita de entidad antes de borrar para auditoría.
-- Sin cambios de esquema de base de datos.
+- El script de referencia `hospital_postgresql_15_tablas_es.sql` del repositorio incluye `CHECK` de teléfonos de paciente como **8 dígitos** locales (Guatemala), alineado con DTOs; no implica migraciones Flyway adicionales nombradas en esta fase.
 
 ### Backend — Seguros
 
@@ -16,7 +16,7 @@
 ### Frontend — Pacientes
 
 - Lista, formulario crear/editar, detalle (`PatientDetailDialogComponent`).
-- Confirmación de privaciedad obligatoria en **creación** (`Validators.requiredTrue` + POST con `privacyAccepted: true`).
+- Confirmación de privaciedad obligatoria en **creación** (`Validators.requiredTrue` + POST con `privacyAccepted` según casilla); enlace independiente abre modal con texto legal (`PrivacyNoticeDialogComponent`, `environment.privacyNotice`).
 - Validaciones CU02 ya alineadas (nombres, teléfono, correo, fecha de nacimiento, DPI/NIT).
 - Sugerencia de código `PAC-nnnn` existente + botón **Renovar sugerencia** que avanza el correlativo tratando el código actual como “ocupado” (solo UI; el contrato sigue exigiendo `patientCode` en el body).
 
@@ -48,7 +48,7 @@ Textos más explícitos para duplicados de código y DPI/NIT (misma clase de err
 
 ## Qué no se modificó y por qué
 
-- **Esquema SQL / migraciones**: requisito explícito de la fase.
+- **Migraciones Flyway numeradas en esta fase**: requisito explícito de no introducir cambios adicionales más allá del script de referencia ya versionado en repo.
 - **Contratos REST** (rutas, nombres de campos JSON, códigos de estado): solo se mejoró el contenido textual de algunos mensajes `400`; la forma de la respuesta no cambia.
 - **JWT, login, CU01**, citas, admisiones, triage, atención, pagos, farmacia y reportes: fuera de alcance.
 - **Validación automática de seguro en pagos**: no implementada (restricción).
@@ -56,9 +56,9 @@ Textos más explícitos para duplicados de código y DPI/NIT (misma clase de err
 
 ## Estado final de CU02 (Registro de paciente)
 
-- Alta con privacidad obligatoria en API (`@AssertTrue` + UI).
+- Alta con privacidad obligatoria en API (`@AssertTrue` + casilla en UI); lectura del aviso vía modal no sustituye el marcado de la casilla (documentado en CU02 FA03 / `docs/cu02_aviso_privacidad_modal.md`).
 - DPI/NIT y código siguen únicos a nivel servidor; mensajes más claros en conflicto.
-- Teléfono, correo, fecha de nacimiento y nombres alineados con validaciones Jakarta + espello en Angular.
+- Teléfono (exactamente **8** dígitos 0–9, sin `+` ni código de país), correo, fecha de nacimiento y nombres alineados con validaciones Jakarta + espejo en Angular.
 - Código de paciente: entrada manual conservada; sugerencia y “Renovar sugerencia” solo en cliente (sin cambiar contrato).
 
 ## Estado de RN07 (Seguro del paciente)
@@ -86,6 +86,12 @@ Textos más explícitos para duplicados de código y DPI/NIT (misma clase de err
 | `frontend/src/app/features/patients/components/patient-form-dialog.component.ts` |
 | `frontend/src/app/features/patients/components/patient-form-dialog.component.html` |
 | `frontend/src/app/features/patients/components/patient-form-dialog.component.scss` |
+| `frontend/src/app/features/patients/components/privacy-notice-dialog.component.ts` (nuevo) |
+| `frontend/src/app/features/patients/components/privacy-notice-dialog.component.html` (nuevo) |
+| `frontend/src/app/features/patients/components/privacy-notice-dialog.component.scss` (nuevo) |
+| `frontend/src/environments/environment.ts` |
+| `frontend/src/environments/environment.development.ts` |
+| `docs/cu02_aviso_privacidad_modal.md` (nuevo) |
 | `docs/fase_3_1_pacientes_seguros.md` |
 
 ## Pruebas obligatorias — resultados
@@ -101,7 +107,7 @@ Comandos ejecutados (Windows, PowerShell):
 |-----------|---------------------|
 | Crear paciente válido | `201`; listado actualizado; detalle muestra datos. |
 | DPI/NIT duplicado | `400` con mensaje que indica expediente existente / revisar número; snackbar muestra el mensaje del servidor. |
-| Privacidad no aceptada | Formulario Angular bloquea envío; API rechaza si `privacyAccepted` es falso/null. |
+| Privacidad no aceptada | Formulario Angular bloquea envío; API rechaza si `privacyAccepted` es falso/null; abrir modal no marca la casilla. |
 | Teléfono/correo inválidos | Validación cliente + Jakarta en servidor. |
 | Crear/editar/eliminar seguro | Desde **Ver detalle** del paciente con rol que muta; usa POST/PUT/DELETE existentes. |
 | Listar seguros | GET al abrir detalle; cajero puede ver sin botones si no tiene rol de mutación. |

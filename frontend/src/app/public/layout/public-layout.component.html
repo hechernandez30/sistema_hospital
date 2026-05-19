@@ -13,14 +13,14 @@
       <a mat-button class="nav-link" routerLink="/p/medicos" routerLinkActive="nav-active">Médicos</a>
       <div class="nav-search-wrap" role="search">
         <mat-form-field appearance="outline" class="nav-search-field" subscriptSizing="dynamic">
-          <mat-label>Buscar</mat-label>
           <input
             matInput
             [(ngModel)]="q"
             (input)="runSearch()"
             (focus)="open = !!q.trim()"
             (keyup.enter)="runSearch()"
-            placeholder="Servicios, especialidades, médicos…"
+            placeholder="Buscar información pública"
+            aria-label="Buscar información pública"
             autocomplete="off"
           />
           @if (q) {
@@ -43,7 +43,7 @@
                     @if (q.trim() && results.length === 0) {
                       <div class="panel-empty">
                         <mat-icon aria-hidden="true">search_off</mat-icon>
-                        <div>
+                        <div class="panel-empty-text">
                           <p class="panel-empty-title">Sin resultados</p>
                           <p class="panel-empty-sub">
                             No encontramos resultados para tu búsqueda. Intenta con otro servicio, especialidad o médico.

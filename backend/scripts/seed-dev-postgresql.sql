@@ -25,7 +25,7 @@ SELECT
     'DEV-DPI-0000000001',
     DATE '1995-06-15',
     'M',
-    '+50255550001',
+    '55550001',
     'dev.paciente@example.com',
     TRUE,
     TRUE

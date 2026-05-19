@@ -23,7 +23,7 @@ Referencia: `docs/casos_de_uso_detallados_corregido.md` — CU05.
 | Regla CU05 | Descripción breve | Estado | Backend | Frontend | Observación | Acción recomendada (Fase 1.1+) |
 |------------|-------------------|--------|---------|----------|-------------|--------------------------------|
 | RN01 | Formato correo tipo usuario@dominio | **Parcial** | `@Email` en paciente/usuario; SQL CHECK en BD | `optionalEmail` / `Validators.email` en algunos formularios | Mensajes default Jakarta a menudo en inglés | Mensajes `@Email`/`@Pattern` en español; unificar función email opcional/obligatorio |
-| RN02 | Teléfono: solo dígitos, 8–15, opcional `+` | **Implementada diferente** | Regex `^\+?[0-9]{8,15}$` paciente/usuario coincide con idea RN02 | `PHONE_BACKEND_PATTERN` alineado en pacientes | Vacío vs `null` en JSON puede chocar con `@Pattern` si se envía `""` desde cliente | Documentar payloads; opcional usar `@Pattern(..., regexp="^$|...")` donde aplique sin romper contrato |
+| RN02 | Teléfono paciente Guatemala: solo dígitos 0–9, **exactamente 8**, sin código de país | **Actualizado (2026)** | Paciente: regex ocho dígitos; emergencia: vacío u ocho dígitos (`PatientCreateRequest`/`PatientUpdateRequest`); SQL CHECK alineado | `PHONE_BACKEND_PATTERN` (`^[0-9]{8}$`) en pacientes | Vacío vs `null` en JSON: enviar `null` para omitir teléfono en alta | Emergencia: cadena vacía o 8 dígitos; principal en edición debe cumplir 8 dígitos |
 | RN03 | Identificación única (DPI/NIT) | **Parcial** | Unicidad en `PatientService` | Frontend: patrón alfanumérico `DPI_NIT_PATTERN`; sin unicidad hasta respuesta servidor | CU pide unicidad DPI; no hay formato DPI fijo en CU vs patrón amplio en Angular | Mantener unicidad en backend; alinear mensajes duplicado en español |
 | RN04 | Trazabilidad: usuario, fecha, operación en auditoría | **Parcial** | `SecurityAuditService` → bitácora para login/JWT/denegado | N/A | Auditoría de **operaciones de negocio** (CRUD clínico/financiero) no homogénea en servicios | Fase 2+ o 1.1 solo si se acota “mensaje” sin nuevos eventos |
 | RN05 | RBAC en módulos críticos | **Implementada** | `SecurityConfig` + JWT | `roleGuard` + constantes `role-routes.ts` | Coincidencia documentada en Fase 0; 403 body `"Forbidden"` en inglés | Fase 1.1: mensaje 403/401 en español para usuarios internos |
@@ -41,10 +41,10 @@ Resumen por módulo (campos representativos; no lista exhaustiva campo a campo d
 | Paciente | `PatientCreateRequest` / `PatientUpdateRequest` | `patientCode` | `@NotBlank` `@Size(max=30)` | Parcial CU02 | CU habla de generación de número expediente — decisión pendiente fuera Fase 1.1 |
 | Paciente | idem | `firstName` / `lastName` | `@NotBlank` `@Size(max=100)` | Parcial CU02 RN02 | Sin regex 2–100 “alfabético” del CU |
 | Paciente | idem | `dpiNit` | `@NotBlank` `@Size(max=30)` | Parcial RN03 | Formato DPI no validado en DTO (solo unicidad en servicio) |
-| Paciente | idem | `phone` | `@Pattern(^\+?[0-9]{8,15}$)` | Sí RN02 | Opcional solo si `null`; cadena vacía puede fallar |
+| Paciente | idem | `phone` | `@Pattern(^[0-9]{8}$)` cuando se envía; `null` omitido válido si no hay `@NotBlank` | Sí RN02 GT | Alta: opcional solo si `null`; edición/UI exige 8 dígitos al guardar número |
 | Paciente | idem | `email` | `@Email` `@Size(max=150)` | Sí RN01 | Mensaje inglés típico de `@Email` |
 | Paciente | idem | `birthDate` | `@NotNull` `@Past` | Sí | — |
-| Paciente | idem | `privacyAccepted` | `@NotNull` `@AssertTrue` | Sí CU02 RN06 | Mensaje ya en inglés con texto usable |
+| Paciente | idem | `privacyAccepted` | `@NotNull` `@AssertTrue` | Sí CU02 RN06 | UI intranet: aviso íntegro en modal vía enlace; casilla separada obligatoria en alta (`docs/cu02_aviso_privacidad_modal.md`) |
 | Usuario | `UserCreateRequest` | `password` | `@NotBlank` `@Size(min=8,max=255)` | **No** CU03 RN04 | Falta mayúscula/minúscula/dígito en validación |
 | Usuario | `UserUpdateRequest` | `password` | `@Size(min=8,max=255)` opcional | **No** | Igual |
 | Usuario | `UserUpdateRequest` | `state` | `@Pattern(ACTIVO\|…)` | Sí | Mensaje en inglés |
@@ -113,7 +113,7 @@ Muestra representativa; patrón general: **raíz en inglés** + detalles de camp
 
 | Pantalla / módulo | Campo | Validación frontend | Coincide con backend | Observación |
 |-------------------|-------|---------------------|----------------------|-------------|
-| Pacientes | Código, nombres, DPI, fecha, sexo, consentimiento | Requeridos, tamaños, `DPI_NIT_PATTERN`, `@Past`-like | **Parcial** | Frontend exige formato DPI más restrictivo que DTO backend; teléfono opcional creación pero obligatorio edición si tenía valor |
+| Pacientes | Código, nombres, DPI, fecha, sexo, consentimiento | Requeridos, tamaños, `DPI_NIT_PATTERN`, `@Past`-like | **Parcial** | Frontend exige formato DPI más restrictivo que DTO backend; teléfono alta opcional pero si se envía debe ser **8 dígitos** locales (GT); en edición se validan 8 dígitos al guardar |
 | Usuarios | email, nombre, rol, estado, contraseña | `Validators.email`, `minLength(8)` creación | **Parcial** | Sin regla mayúsc/minúc/dígito CU03 |
 | Citas | fechas, estado, motivo | `required` fechas/estado; `maxLength(250)` motivo | **Parcial** | Backend `@Future` puede rechazar fechas que UI permite en escenarios históricos |
 | Admisiones | IDs, tipo, estado (edición), check financiero | Enteros positivos; listas desplegables | **Parcial** | Reglas financieras finas en backend; UI no obliga texto de error backend en español |
@@ -140,7 +140,7 @@ Muestra representativa; patrón general: **raíz en inglés** + detalles de camp
 - Alineación **nombre paciente** con RN02 CU02 (regex/ longitud mínima) sin cambiar tamaño BD.
 - **`@Future`** en citas vs escenarios de carga de datos históricos o reprogramación.
 - **Orden médica:** prioridad obligatoria en `MedicalOrderUpdateRequest` pero opcional en create.
-- **Teléfono vacío `""`** vs null en payloads JSON frente a `@Pattern`.
+- **Teléfono vacío `""`** vs `null`: omitir con `null`; si se envía número, **8 dígitos** (`^[0-9]{8}$`). Emergencia: vacío u 8 dígitos según DTO.
 
 ### Baja prioridad
 

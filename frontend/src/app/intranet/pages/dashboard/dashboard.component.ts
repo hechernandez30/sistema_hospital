@@ -8,7 +8,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/services/auth.service';
-import { MenuService } from '../../../core/services/menu.service';
 import {
   ROLES_ADMISSIONS_TRIAGE,
   ROLES_APPOINTMENTS,
@@ -53,7 +52,6 @@ export interface DashboardStatCard {
 })
 export class DashboardComponent implements OnInit {
   private readonly auth = inject(AuthService);
-  private readonly menu = inject(MenuService);
   private readonly patientApi = inject(PatientApiService);
   private readonly appointmentApi = inject(AppointmentApiService);
   private readonly admissionApi = inject(AdmissionApiService);
@@ -62,8 +60,6 @@ export class DashboardComponent implements OnInit {
   private readonly auditApi = inject(AuditLogApiService);
 
   readonly user = this.auth.getUsername();
-  readonly roles = this.auth.getRoles();
-  readonly menuPreview = this.menu.visibleMenuItems();
 
   loading = true;
   loadError: string | null = null;
@@ -181,9 +177,5 @@ export class DashboardComponent implements OnInit {
         this.loadError = getHttpErrorMessage(err, 'No se pudieron cargar los datos del panel.');
       },
     });
-  }
-
-  roleLabel(role: string): string {
-    return role.replace(/^ROLE_/, '').replace(/_/g, ' ');
   }
 }

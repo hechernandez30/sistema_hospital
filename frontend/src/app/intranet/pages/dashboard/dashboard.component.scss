@@ -164,17 +164,6 @@
   font-size: 1.02rem;
 }
 
-.dash-columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  align-items: stretch;
-}
-
-.dash-panel {
-  height: 100%;
-}
-
 .dash-panel mat-card-title {
   font-weight: 700 !important;
   font-size: 1.12rem !important;
