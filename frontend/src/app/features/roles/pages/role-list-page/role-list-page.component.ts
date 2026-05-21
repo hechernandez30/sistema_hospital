@@ -11,6 +11,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { RoleApiService } from '../../services/role-api.service';
 import { RoleResponse } from '../../models/role.models';
 import { RoleFormDialogComponent, RoleFormDialogData } from '../../components/role-form-dialog.component';
@@ -36,6 +37,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
     MatProgressSpinnerModule,
     MatFormFieldModule,
     MatInputModule,
+    MatCheckboxModule,
   ],
   templateUrl: './role-list-page.component.html',
   styleUrl: './role-list-page.component.scss',
@@ -48,9 +50,10 @@ export class RoleListPageComponent implements OnInit, AfterViewInit {
 
   readonly canMutate = this.auth.hasAnyRole(ROLES_ADMIN_ONLY);
 
-  displayedColumns = ['id', 'name', 'description', 'actions'];
+  displayedColumns = ['id', 'name', 'description', 'active', 'actions'];
   dataSource = new MatTableDataSource<RoleResponse>([]);
   loading = false;
+  includeInactive = false;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -81,7 +84,7 @@ export class RoleListPageComponent implements OnInit, AfterViewInit {
 
   reload(): void {
     this.loading = true;
-    this.api.list().subscribe({
+    this.api.list(this.includeInactive).subscribe({
       next: (rows) => {
         this.loading = false;
         this.dataSource.data = rows;
@@ -91,6 +94,11 @@ export class RoleListPageComponent implements OnInit, AfterViewInit {
         this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar roles.'), 'Cerrar', { duration: 7000 });
       },
     });
+  }
+
+  setIncludeInactive(checked: boolean): void {
+    this.includeInactive = checked;
+    this.reload();
   }
 
   applyFilter(value: string): void {
@@ -131,9 +139,9 @@ export class RoleListPageComponent implements OnInit, AfterViewInit {
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
-          title: 'Eliminar rol',
-          message: `¿Eliminar el rol "${row.name}" (#${row.id})?\n\nSi existen usuarios u otras referencias en la base de datos, el sistema rechazará la operación y se mostrará el motivo.\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Desactivar rol',
+          message: `¿Desactivar el rol "${row.name}" (#${row.id})?\n\nEl registro permanecerá en el sistema para auditoría e historial.`,
+          confirmLabel: 'Desactivar',
         },
       })
       .afterClosed()
@@ -144,11 +152,11 @@ export class RoleListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Rol eliminado.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Rol desactivado.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
             this.snackBar.open(
-              getHttpErrorMessage(err, 'No se pudo eliminar el rol (puede tener referencias en la base de datos).'),
+              getHttpErrorMessage(err, 'No se pudo desactivar el rol.'),
               'Cerrar',
               { duration: 12000 },
             );

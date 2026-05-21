@@ -25,7 +25,8 @@ import java.util.Set;
 public class LaboratoryService {
 
     private static final String ORDER_TYPE_LAB = "LABORATORIO";
-    private static final Set<String> ALLOWED_LAB_STATUS = Set.of("PENDIENTE", "EN_PROCESO", "COMPLETADO", "RECHAZADO");
+    private static final Set<String> ALLOWED_LAB_STATUS =
+            Set.of("PENDIENTE", "EN_PROCESO", "COMPLETADO", "RECHAZADO", "ANULADO");
 
     private final LaboratoryRepository laboratoryRepository;
     private final MedicalOrderRepository medicalOrderRepository;
@@ -109,19 +110,24 @@ public class LaboratoryService {
         return toResponse(saved);
     }
 
+    /** Anulación lógica (Fase 8.2): {@code estado = ANULADO}. */
     @Transactional
     public void delete(Long id) {
         Laboratory lab = laboratoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el registro de laboratorio: " + id));
+        if ("ANULADO".equalsIgnoreCase(lab.getStatus())) {
+            return;
+        }
         Map<String, Object> prior = snapshotLaboratoryMinimal(lab);
-        laboratoryRepository.deleteById(id);
+        lab.setStatus("ANULADO");
+        Laboratory saved = laboratoryRepository.save(lab);
         businessAuditRecorder.safeRecord(
                 "laboratory",
                 "Laboratory",
                 String.valueOf(id),
-                BusinessAuditActions.DELETE,
+                BusinessAuditActions.UPDATE,
                 prior,
-                null);
+                snapshotLaboratoryMinimal(saved));
     }
 
     private void applyCreate(Laboratory lab, LaboratoryCreateRequest request) {
@@ -160,7 +166,7 @@ public class LaboratoryService {
     private static void ensureLaboratoryStatus(String status) {
         if (!ALLOWED_LAB_STATUS.contains(status)) {
             throw new BusinessRuleException(
-                    "Estado de laboratorio no válido: use PENDIENTE, EN_PROCESO, COMPLETADO o RECHAZADO.");
+                    "Estado de laboratorio no válido: use PENDIENTE, EN_PROCESO, COMPLETADO, RECHAZADO o ANULADO.");
         }
     }
 

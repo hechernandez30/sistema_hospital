@@ -2,6 +2,7 @@ package com.hospital.role.service;
 
 import com.hospital.auditlog.BusinessAuditActions;
 import com.hospital.auditlog.BusinessAuditRecorder;
+import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.role.dto.RoleRequest;
 import com.hospital.role.dto.RoleResponse;
@@ -26,8 +27,9 @@ public class RoleService {
     }
 
     @Transactional(readOnly = true)
-    public List<RoleResponse> findAll() {
-        return roleRepository.findAll().stream().map(this::toResponse).toList();
+    public List<RoleResponse> findAll(boolean includeInactive) {
+        var rows = includeInactive ? roleRepository.findAll() : roleRepository.findByActiveTrue();
+        return rows.stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -41,6 +43,7 @@ public class RoleService {
         Role role = new Role();
         role.setName(request.name().trim());
         role.setDescription(request.description());
+        role.setActive(true);
         Role saved = roleRepository.save(role);
         businessAuditRecorder.safeRecord(
                 "roles",
@@ -70,17 +73,33 @@ public class RoleService {
         return toResponse(saved);
     }
 
+    /** Baja lógica (Fase 8.2): {@code activo = false}. */
     @Transactional
     public void delete(Long id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el rol: " + id));
+        if (!role.isActive()) {
+            return;
+        }
         Map<String, Object> prior = snapshotRoleMinimal(role);
-        roleRepository.deleteById(id);
-        businessAuditRecorder.safeRecord("roles", "Role", String.valueOf(id), BusinessAuditActions.DELETE, prior, null);
+        int updated = roleRepository.deactivateById(id);
+        if (updated != 1) {
+            throw new BusinessRuleException(
+                    "No se pudo desactivar el rol. Actualice la lista e intente de nuevo.");
+        }
+        Role after = roleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el rol: " + id));
+        businessAuditRecorder.safeRecord(
+                "roles",
+                "Role",
+                String.valueOf(id),
+                BusinessAuditActions.UPDATE,
+                prior,
+                snapshotRoleMinimal(after));
     }
 
     private RoleResponse toResponse(Role role) {
-        return new RoleResponse(role.getId(), role.getName(), role.getDescription());
+        return new RoleResponse(role.getId(), role.getName(), role.getDescription(), role.isActive());
     }
 
     private static Map<String, Object> snapshotRoleMinimal(Role r) {
@@ -89,6 +108,7 @@ public class RoleService {
             m.put("roleId", r.getId());
         }
         m.put("name", r.getName());
+        m.put("active", r.isActive());
         return m;
     }
 }

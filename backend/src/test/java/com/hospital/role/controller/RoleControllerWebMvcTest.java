@@ -32,7 +32,7 @@ class RoleControllerWebMvcTest {
 
     @Test
     void listRolesReturnsOk() throws Exception {
-        when(roleService.findAll()).thenReturn(List.of(new RoleResponse(1L, "ADMINISTRADOR", "Admin")));
+        when(roleService.findAll(false)).thenReturn(List.of(new RoleResponse(1L, "ADMINISTRADOR", "Admin", true)));
 
         mockMvc.perform(get("/api/roles"))
                 .andExpect(status().isOk())

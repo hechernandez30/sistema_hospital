@@ -164,9 +164,9 @@ export class ImagingListPageComponent implements OnInit, AfterViewInit {
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
-          title: 'Eliminar estudio de imagen',
-          message: `¿Eliminar el estudio #${row.id}?\n\n${row.studyType} · Orden médica #${row.medicalOrderId} · Estado: ${row.status}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Anular estudio de imagen',
+          message: `¿Anular el estudio #${row.id}?\n\n${row.studyType} · Orden médica #${row.medicalOrderId} · Estado: ${row.status}\n\nEl registro permanecerá en el sistema para auditoría e historial. La orden médica no se elimina.`,
+          confirmLabel: 'Anular',
         },
       })
       .afterClosed()
@@ -177,10 +177,10 @@ export class ImagingListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Estudio eliminado.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Estudio de imagen anulado.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar.'), 'Cerrar', { duration: 7000 });
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo anular el estudio.'), 'Cerrar', { duration: 7000 });
           },
         });
       });

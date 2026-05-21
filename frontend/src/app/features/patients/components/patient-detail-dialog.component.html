@@ -26,10 +26,9 @@
   </div>
 
   <mat-divider />
-  <h3 class="sub">Seguros (RN07)</h3>
+  <h3 class="sub">Seguros</h3>
   <p class="hint">
-    Registro de coberturas en intranet. El alta y la vigencia sirven como referencia; la validación con aseguradora y el uso en
-    cobros siguen las reglas de negocio del hospital.
+    Registro de coberturas en intranet. El alta y la vigencia sirven como referencia.
   </p>
   @if (insuranceLoading) {
     <div class="centered">
@@ -45,6 +44,9 @@
           <mat-icon>add</mat-icon>
           Agregar seguro
         </button>
+        <mat-checkbox [checked]="includeInactiveInsurances" (change)="setIncludeInactiveInsurances($event.checked)">
+          Incluir inactivos
+        </mat-checkbox>
       </div>
     }
     @if (insurances.length === 0) {
@@ -67,7 +69,7 @@
                 <button mat-icon-button type="button" (click)="openInsuranceEdit(row)" aria-label="Editar seguro">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button type="button" (click)="confirmDeleteInsurance(row)" aria-label="Eliminar seguro">
+                <button mat-icon-button type="button" (click)="confirmDeleteInsurance(row)" aria-label="Desactivar seguro" matTooltip="Desactivar seguro">
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>

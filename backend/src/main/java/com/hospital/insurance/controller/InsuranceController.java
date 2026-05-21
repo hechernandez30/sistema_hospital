@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,8 +29,10 @@ public class InsuranceController {
     }
 
     @GetMapping
-    public List<InsuranceResponse> list(@PathVariable Long patientId) {
-        return insuranceService.findByPatient(patientId);
+    public List<InsuranceResponse> list(
+            @PathVariable Long patientId,
+            @RequestParam(name = "includeInactive", defaultValue = "false") boolean includeInactive) {
+        return insuranceService.findByPatient(patientId, includeInactive);
     }
 
     @GetMapping("/{insuranceId}")

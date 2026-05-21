@@ -1,5 +1,6 @@
 package com.hospital.triage.service;
 
+import com.hospital.admission.AdmissionStatusRules;
 import com.hospital.admission.entity.Admission;
 import com.hospital.admission.repository.AdmissionRepository;
 import com.hospital.auditlog.BusinessAuditActions;
@@ -123,9 +124,11 @@ public class TriageService {
 
         Admission admission = admissionRepository.findById(admissionId)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la admisión: " + admissionId));
-        if (admission.getStatus() != null && "RECHAZADO".equalsIgnoreCase(admission.getStatus().trim())) {
+        if (AdmissionStatusRules.isClosedForNewAssistance(admission.getStatus())) {
             throw new BusinessRuleException(
-                    "No se puede registrar ni modificar triage para una admisión en estado RECHAZADO.");
+                    "No se puede registrar ni modificar triage para una admisión en estado "
+                            + admission.getStatus().trim().toUpperCase()
+                            + ".");
         }
         Staff responsible = resolveStaff(responsibleStaffId);
 

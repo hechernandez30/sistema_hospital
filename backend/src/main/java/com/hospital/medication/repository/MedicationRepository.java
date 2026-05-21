@@ -10,4 +10,6 @@ public interface MedicationRepository extends JpaRepository<Medication, Long> {
 
     @Query("select m from Medication m where m.currentStock <= m.minimumStock order by m.currentStock asc, m.id asc")
     List<Medication> findLowStock();
+
+    List<Medication> findByActiveTrue();
 }

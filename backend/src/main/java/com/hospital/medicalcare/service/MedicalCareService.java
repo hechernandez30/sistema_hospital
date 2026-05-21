@@ -1,5 +1,6 @@
 package com.hospital.medicalcare.service;
 
+import com.hospital.admission.AdmissionStatusRules;
 import com.hospital.admission.entity.Admission;
 import com.hospital.admission.repository.AdmissionRepository;
 import com.hospital.appointment.entity.Appointment;
@@ -179,6 +180,12 @@ public class MedicalCareService {
         if (!hasAdmission) {
             throw new BusinessRuleException(
                     "Si asocia una cita programada debe indicar también la admisión del mismo paciente para ese episodio.");
+        }
+        if (AdmissionStatusRules.isClosedForNewAssistance(admission.getStatus())) {
+            throw new BusinessRuleException(
+                    "No se puede registrar atención médica para una admisión en estado "
+                            + admission.getStatus().trim().toUpperCase()
+                            + ".");
         }
         if (hasAppointment && !isActiveAppointmentStatus(appointment.getStatus())) {
             throw new BusinessRuleException(

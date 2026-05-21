@@ -13,6 +13,7 @@
         </button>
       }
       <span class="spacer"></span>
+      <mat-checkbox [checked]="includeInactive" (change)="setIncludeInactive($event.checked)">Incluir inactivos</mat-checkbox>
       <mat-form-field appearance="outline" class="filter-field" subscriptSizing="dynamic">
         <mat-label>Buscar</mat-label>
         <input matInput (keyup)="applyFilter($any($event.target).value)" placeholder="Nombre, descripción…" />
@@ -51,6 +52,10 @@
             <th mat-header-cell *matHeaderCellDef mat-sort-header="description">Descripción</th>
             <td mat-cell *matCellDef="let row">{{ row.description ?? '—' }}</td>
           </ng-container>
+          <ng-container matColumnDef="active">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="active">Activo</th>
+            <td mat-cell *matCellDef="let row">{{ row.active ? 'Sí' : 'No' }}</td>
+          </ng-container>
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef class="col-actions">Acciones</th>
             <td mat-cell *matCellDef="let row" class="col-actions">
@@ -61,7 +66,7 @@
                 <button mat-icon-button type="button" (click)="openEdit(row)" matTooltip="Editar">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button type="button" color="warn" (click)="confirmDelete(row)" matTooltip="Eliminar">
+                <button mat-icon-button type="button" color="warn" (click)="confirmDelete(row)" matTooltip="Desactivar rol" [disabled]="!row.active">
                   <mat-icon>delete</mat-icon>
                 </button>
               }

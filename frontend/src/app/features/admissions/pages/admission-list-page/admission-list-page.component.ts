@@ -192,9 +192,9 @@ export class AdmissionListPageComponent implements OnInit, AfterViewInit {
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
-          title: 'Eliminar admisión',
-          message: `¿Eliminar la admisión #${row.id}?\n\n${row.patientLabel}\nTipo: ${row.admissionType} · Estado: ${row.status}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Anular admisión',
+          message: `¿Anular la admisión #${row.id}?\n\n${row.patientLabel}\nTipo: ${row.admissionType} · Estado: ${row.status}\n\nEl registro permanecerá en el sistema para auditoría e historial. No podrá usarse para nuevos flujos asistenciales.`,
+          confirmLabel: 'Anular',
         },
       })
       .afterClosed()
@@ -205,10 +205,10 @@ export class AdmissionListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Admisión eliminada.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Admisión anulada.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar.'), 'Cerrar', { duration: 7000 });
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo anular la admisión.'), 'Cerrar', { duration: 7000 });
           },
         });
       });

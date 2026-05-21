@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
@@ -9,8 +9,12 @@ export class StaffApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/api/staff`;
 
-  list(): Observable<StaffResponse[]> {
-    return this.http.get<StaffResponse[]>(this.base);
+  list(includeInactive = false): Observable<StaffResponse[]> {
+    let params = new HttpParams();
+    if (includeInactive) {
+      params = params.set('includeInactive', 'true');
+    }
+    return this.http.get<StaffResponse[]>(this.base, { params });
   }
 
   getById(id: number): Observable<StaffResponse> {

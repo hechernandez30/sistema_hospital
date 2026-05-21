@@ -24,8 +24,8 @@ public record LaboratoryCreateRequest(
         String result,
         String attachment,
         @Pattern(
-                regexp = "PENDIENTE|EN_PROCESO|COMPLETADO|RECHAZADO",
-                message = "El estado debe ser PENDIENTE, EN_PROCESO, COMPLETADO o RECHAZADO")
+                regexp = "PENDIENTE|EN_PROCESO|COMPLETADO|RECHAZADO|ANULADO",
+                message = "El estado debe ser PENDIENTE, EN_PROCESO, COMPLETADO, RECHAZADO o ANULADO")
         String status,
         Long responsibleStaffId
 ) {}

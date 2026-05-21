@@ -1,4 +1,4 @@
-export const IMAGING_STATUSES = ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'RECHAZADO'] as const;
+export const IMAGING_STATUSES = ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'RECHAZADO', 'ANULADO'] as const;
 
 export interface ImagingStudyResponse {
   id: number;

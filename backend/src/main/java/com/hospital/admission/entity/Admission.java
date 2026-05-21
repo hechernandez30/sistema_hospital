@@ -1,5 +1,6 @@
 package com.hospital.admission.entity;
 
+import com.hospital.exception.BusinessRuleException;
 import com.hospital.appointment.entity.Appointment;
 import com.hospital.patient.entity.Patient;
 import com.hospital.user.entity.User;
@@ -12,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreRemove;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -81,5 +83,11 @@ public class Admission {
         if (admissionDate == null) {
             admissionDate = LocalDateTime.now();
         }
+    }
+
+    @PreRemove
+    void onPreRemove() {
+        throw new BusinessRuleException(
+                "No se permite eliminar físicamente una admisión. Use anulación (estado = ANULADO).");
     }
 }

@@ -1,5 +1,6 @@
 package com.hospital.admission.service;
 
+import com.hospital.admission.AdmissionStatusRules;
 import com.hospital.admission.dto.AdmissionCreateRequest;
 import com.hospital.admission.dto.AdmissionResponse;
 import com.hospital.admission.dto.AdmissionUpdateRequest;
@@ -29,7 +30,7 @@ import java.util.Set;
 @Service
 public class AdmissionService {
 
-    private static final Set<String> STATUS_VALUES = Set.of("PENDIENTE", "ADMITIDO", "ALTA", "TRANSFERIDO", "RECHAZADO");
+    private static final Set<String> STATUS_VALUES = AdmissionStatusRules.ALL_STATUSES;
 
     private final AdmissionRepository admissionRepository;
     private final PatientRepository patientRepository;
@@ -125,19 +126,25 @@ public class AdmissionService {
         return updated;
     }
 
+    /** Anulación lógica (Fase 8.2): {@code estado = ANULADO}. */
     @Transactional
     public void delete(Long id) {
         Admission admission = admissionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la admisión: " + id));
+        if ("ANULADO".equalsIgnoreCase(admission.getStatus())) {
+            return;
+        }
         AdmissionResponse prior = toResponse(admission);
-        admissionRepository.delete(admission);
+        admission.setStatus("ANULADO");
+        Admission saved = admissionRepository.save(admission);
+        AdmissionResponse after = toResponse(saved);
         businessAuditRecorder.safeRecord(
                 "admissions",
                 "Admission",
                 String.valueOf(id),
-                BusinessAuditActions.DELETE,
+                BusinessAuditActions.UPDATE,
                 snapshotAdmissionMinimal(prior),
-                null);
+                snapshotAdmissionMinimal(after));
     }
 
     private void mapCommon(
@@ -208,7 +215,7 @@ public class AdmissionService {
     }
 
     private void ensureFinancialValidation(Long patientId, boolean financialValidationOk, String validationSource, String status) {
-        if ("RECHAZADO".equals(status)) {
+        if ("RECHAZADO".equals(status) || "ANULADO".equals(status)) {
             return;
         }
         if (!financialValidationOk) {

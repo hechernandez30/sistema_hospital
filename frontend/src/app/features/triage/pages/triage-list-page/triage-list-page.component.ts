@@ -23,7 +23,6 @@ import { PatientApiService } from '../../../patients/services/patient-api.servic
 import { PatientResponse } from '../../../patients/models/patient.models';
 import { TriageFormDialogComponent, TriageFormDialogData } from '../../components/triage-form-dialog.component';
 import { TriageDetailDialogComponent } from '../../components/triage-detail-dialog.component';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog.component';
 import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
 
 export interface TriageRow extends TriageResponse {
@@ -169,32 +168,6 @@ export class TriageListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(TriageDetailDialogComponent, { width: '520px', maxWidth: '95vw', data: row });
   }
 
-  confirmDelete(row: TriageRow): void {
-    this.dialog
-      .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
-        width: '480px',
-        data: {
-          title: 'Eliminar triage',
-          message: `¿Eliminar el registro de triage #${row.id}?\n\n${row.admissionLabel}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
-        },
-      })
-      .afterClosed()
-      .subscribe((confirmed) => {
-        if (!confirmed) {
-          return;
-        }
-        this.api.delete(row.id).subscribe({
-          next: () => {
-            this.reload();
-            this.snackBar.open('Triage eliminado.', 'Cerrar', { duration: 4000 });
-          },
-          error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar.'), 'Cerrar', { duration: 7000 });
-          },
-        });
-      });
-  }
 }
 
 function labelAdmission(a: AdmissionResponse | undefined, pmap: Map<number, PatientResponse>): string {

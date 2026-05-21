@@ -13,6 +13,7 @@
         </button>
       }
       <span class="spacer"></span>
+      <mat-checkbox [checked]="includeInactive" (change)="setIncludeInactive($event.checked)">Incluir inactivos</mat-checkbox>
       <mat-form-field appearance="outline" class="filter-field" subscriptSizing="dynamic">
         <mat-label>Buscar</mat-label>
         <input
@@ -85,7 +86,7 @@
                 <button mat-icon-button type="button" (click)="openEdit(row)" matTooltip="Editar">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button type="button" color="warn" (click)="confirmDelete(row)" matTooltip="Eliminar">
+                <button mat-icon-button type="button" color="warn" (click)="confirmDelete(row)" matTooltip="Dar de baja">
                   <mat-icon>delete</mat-icon>
                 </button>
               }

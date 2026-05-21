@@ -4,7 +4,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ROLES_PATIENTS_MUTATE } from '../../../core/constants/role-routes';
 import { AuthService } from '../../../core/services/auth.service';
@@ -27,8 +29,10 @@ import {
     MatButtonModule,
     MatDividerModule,
     MatIconModule,
+    MatTooltipModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    MatCheckboxModule,
   ],
   templateUrl: './patient-detail-dialog.component.html',
   styleUrl: './patient-detail-dialog.component.scss',
@@ -45,6 +49,10 @@ export class PatientDetailDialogComponent implements OnInit {
   insurances: InsuranceResponse[] = [];
   insuranceLoading = false;
   insuranceError: string | null = null;
+  includeInactiveInsurances = false;
+
+  private static readonly AUDIT_RETAIN =
+    'El registro permanecerá en el sistema para auditoría e historial.';
 
   ngOnInit(): void {
     this.loadInsurances();
@@ -53,7 +61,7 @@ export class PatientDetailDialogComponent implements OnInit {
   loadInsurances(): void {
     this.insuranceLoading = true;
     this.insuranceError = null;
-    this.api.listInsurances(this.data.id).subscribe({
+    this.api.listInsurances(this.data.id, this.includeInactiveInsurances).subscribe({
       next: (rows) => {
         this.insuranceLoading = false;
         this.insurances = rows;
@@ -109,14 +117,19 @@ export class PatientDetailDialogComponent implements OnInit {
       });
   }
 
+  setIncludeInactiveInsurances(checked: boolean): void {
+    this.includeInactiveInsurances = checked;
+    this.loadInsurances();
+  }
+
   confirmDeleteInsurance(row: InsuranceResponse): void {
     this.dialog
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '440px',
         data: {
-          title: 'Eliminar seguro',
-          message: `¿Eliminar el seguro de «${row.insurerName}» (póliza ${row.policyNumber})?`,
-          confirmLabel: 'Eliminar',
+          title: 'Desactivar seguro',
+          message: `¿Desactivar el seguro de «${row.insurerName}» (póliza ${row.policyNumber})?\n\n${PatientDetailDialogComponent.AUDIT_RETAIN}`,
+          confirmLabel: 'Desactivar',
         },
       })
       .afterClosed()
@@ -126,11 +139,11 @@ export class PatientDetailDialogComponent implements OnInit {
         }
         this.api.deleteInsurance(this.data.id, row.id).subscribe({
           next: () => {
-            this.snackBar.open('Seguro eliminado.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Seguro desactivado.', 'Cerrar', { duration: 4000 });
             this.loadInsurances();
           },
           error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar el seguro.'), 'Cerrar', {
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo desactivar el seguro.'), 'Cerrar', {
               duration: 7000,
             });
           },

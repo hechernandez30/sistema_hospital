@@ -208,9 +208,9 @@ export class LaboratoryListPageComponent implements OnInit, AfterViewInit {
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
-          title: 'Eliminar registro de laboratorio',
-          message: `¿Eliminar el registro #${row.id}?\n\nOrden médica #${row.medicalOrderId} · Estado: ${row.status}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Anular registro de laboratorio',
+          message: `¿Anular el registro #${row.id}?\n\nOrden médica #${row.medicalOrderId} · Estado: ${row.status}\n\nEl registro permanecerá en el sistema para auditoría e historial. La orden médica no se elimina.`,
+          confirmLabel: 'Anular',
         },
       })
       .afterClosed()
@@ -221,10 +221,10 @@ export class LaboratoryListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Registro eliminado.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Registro de laboratorio anulado.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar.'), 'Cerrar', { duration: 7000 });
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo anular el registro.'), 'Cerrar', { duration: 7000 });
           },
         });
       });

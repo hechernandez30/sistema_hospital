@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
@@ -10,8 +10,12 @@ export class PatientApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/api/patients`;
 
-  list(): Observable<PatientResponse[]> {
-    return this.http.get<PatientResponse[]>(this.base);
+  list(includeInactive = false): Observable<PatientResponse[]> {
+    let params = new HttpParams();
+    if (includeInactive) {
+      params = params.set('includeInactive', 'true');
+    }
+    return this.http.get<PatientResponse[]>(this.base, { params });
   }
 
   getById(id: number): Observable<PatientResponse> {
@@ -30,8 +34,12 @@ export class PatientApiService {
     return this.http.delete<void>(`${this.base}/${id}`);
   }
 
-  listInsurances(patientId: number): Observable<InsuranceResponse[]> {
-    return this.http.get<InsuranceResponse[]>(`${this.base}/${patientId}/insurances`);
+  listInsurances(patientId: number, includeInactive = false): Observable<InsuranceResponse[]> {
+    let params = new HttpParams();
+    if (includeInactive) {
+      params = params.set('includeInactive', 'true');
+    }
+    return this.http.get<InsuranceResponse[]>(`${this.base}/${patientId}/insurances`, { params });
   }
 
   createInsurance(patientId: number, body: InsurancePayload): Observable<InsuranceResponse> {

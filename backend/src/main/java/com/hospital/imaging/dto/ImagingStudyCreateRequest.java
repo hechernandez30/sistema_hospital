@@ -18,8 +18,8 @@ public record ImagingStudyCreateRequest(
         String reportResult,
         String resultFile,
         @Pattern(
-                regexp = "PENDIENTE|EN_PROCESO|COMPLETADO|RECHAZADO",
-                message = "El estado debe ser PENDIENTE, EN_PROCESO, COMPLETADO o RECHAZADO")
+                regexp = "PENDIENTE|EN_PROCESO|COMPLETADO|RECHAZADO|ANULADO",
+                message = "El estado debe ser PENDIENTE, EN_PROCESO, COMPLETADO, RECHAZADO o ANULADO")
         String status,
         Long responsibleStaffId
 ) {}

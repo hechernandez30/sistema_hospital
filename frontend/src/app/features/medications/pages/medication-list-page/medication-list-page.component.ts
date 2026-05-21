@@ -11,6 +11,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MedicationApiService } from '../../services/medication-api.service';
 import { MedicationResponse } from '../../models/medication.models';
 import { MedicationFormDialogComponent, MedicationFormDialogData } from '../../components/medication-form-dialog.component';
@@ -36,6 +37,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
     MatProgressSpinnerModule,
     MatFormFieldModule,
     MatInputModule,
+    MatCheckboxModule,
   ],
   templateUrl: './medication-list-page.component.html',
   styleUrl: './medication-list-page.component.scss',
@@ -51,6 +53,10 @@ export class MedicationListPageComponent implements OnInit, AfterViewInit {
   displayedColumns = ['id', 'name', 'presentation', 'unit', 'currentStock', 'minimumStock', 'active', 'actions'];
   dataSource = new MatTableDataSource<MedicationResponse>([]);
   loading = false;
+  includeInactive = false;
+
+  private static readonly AUDIT_RETAIN =
+    'El registro permanecerá en el sistema para auditoría e historial.';
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -93,7 +99,7 @@ export class MedicationListPageComponent implements OnInit, AfterViewInit {
 
   reload(): void {
     this.loading = true;
-    this.api.list().subscribe({
+    this.api.list(this.includeInactive).subscribe({
       next: (rows) => {
         this.loading = false;
         this.dataSource.data = rows;
@@ -143,14 +149,19 @@ export class MedicationListPageComponent implements OnInit, AfterViewInit {
     return row.currentStock <= row.minimumStock;
   }
 
+  setIncludeInactive(checked: boolean): void {
+    this.includeInactive = checked;
+    this.reload();
+  }
+
   confirmDelete(row: MedicationResponse): void {
     this.dialog
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
-          title: 'Eliminar medicamento',
-          message: `¿Eliminar "${row.name}" del catálogo?\n\nPresentación: ${row.presentation ?? '—'} · Stock actual: ${row.currentStock}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Desactivar medicamento',
+          message: `¿Desactivar "${row.name}" del catálogo?\n\nPresentación: ${row.presentation ?? '—'} · Stock actual: ${row.currentStock}\n\n${MedicationListPageComponent.AUDIT_RETAIN}`,
+          confirmLabel: 'Desactivar',
         },
       })
       .afterClosed()
@@ -161,10 +172,10 @@ export class MedicationListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Medicamento eliminado.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Medicamento desactivado.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar.'), 'Cerrar', { duration: 7000 });
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo desactivar.'), 'Cerrar', { duration: 7000 });
           },
         });
       });

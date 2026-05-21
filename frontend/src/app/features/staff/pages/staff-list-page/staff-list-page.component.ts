@@ -11,6 +11,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { forkJoin } from 'rxjs';
 import { StaffApiService } from '../../services/staff-api.service';
 import { StaffResponse } from '../../models/staff.models';
@@ -41,6 +42,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
     MatProgressSpinnerModule,
     MatFormFieldModule,
     MatInputModule,
+    MatCheckboxModule,
   ],
   templateUrl: './staff-list-page.component.html',
   styleUrl: './staff-list-page.component.scss',
@@ -62,6 +64,10 @@ export class StaffListPageComponent implements OnInit, AfterViewInit {
   displayedColumns = ['id', 'employeeCode', 'staffType', 'user', 'specialty', 'attendance', 'active', 'actions'];
   dataSource = new MatTableDataSource<StaffResponse>([]);
   loading = false;
+  includeInactive = false;
+
+  private static readonly AUDIT_RETAIN =
+    'El registro permanecerá en el sistema para auditoría e historial.';
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -146,7 +152,7 @@ export class StaffListPageComponent implements OnInit, AfterViewInit {
 
     if (this.isAdmin) {
       forkJoin({
-        staff: this.api.list(),
+        staff: this.api.list(this.includeInactive),
         specialties: this.specialtyApi.list(),
         users: this.userApi.list(),
       }).subscribe({
@@ -157,7 +163,7 @@ export class StaffListPageComponent implements OnInit, AfterViewInit {
         },
       });
     } else {
-      forkJoin({ staff: this.api.list(), specialties: this.specialtyApi.list() }).subscribe({
+      forkJoin({ staff: this.api.list(this.includeInactive), specialties: this.specialtyApi.list() }).subscribe({
         next: ({ staff, specialties }) => apply(staff, specialties, null),
         error: (err: unknown) => {
           this.loading = false;
@@ -203,14 +209,19 @@ export class StaffListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(StaffDetailDialogComponent, { width: '480px', maxWidth: '95vw', data: row });
   }
 
+  setIncludeInactive(checked: boolean): void {
+    this.includeInactive = checked;
+    this.reload();
+  }
+
   confirmDelete(row: StaffResponse): void {
     this.dialog
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
-          title: 'Eliminar personal',
-          message: `¿Eliminar el registro #${row.id}?\n\nCódigo ${row.employeeCode} · ${row.staffType}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Dar de baja personal',
+          message: `¿Dar de baja el registro #${row.id}?\n\nCódigo ${row.employeeCode} · ${row.staffType}\n\n${StaffListPageComponent.AUDIT_RETAIN}`,
+          confirmLabel: 'Dar de baja',
         },
       })
       .afterClosed()
@@ -221,10 +232,10 @@ export class StaffListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Registro eliminado.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Personal dado de baja.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar.'), 'Cerrar', { duration: 7000 });
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo dar de baja.'), 'Cerrar', { duration: 7000 });
           },
         });
       });

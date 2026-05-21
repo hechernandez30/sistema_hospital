@@ -40,8 +40,9 @@ public class StaffService {
     }
 
     @Transactional(readOnly = true)
-    public List<StaffResponse> findAll() {
-        return staffRepository.findAll().stream().map(this::toResponse).toList();
+    public List<StaffResponse> findAll(boolean includeInactive) {
+        var rows = includeInactive ? staffRepository.findAll() : staffRepository.findByActiveTrue();
+        return rows.stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -112,9 +113,19 @@ public class StaffService {
     public void delete(Long id) {
         Staff staff = staffRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el personal: " + id));
+        if (!staff.isActive()) {
+            return;
+        }
         Map<String, Object> prior = snapshotStaffMinimal(staff);
-        staffRepository.deleteById(id);
-        businessAuditRecorder.safeRecord("staff", "Staff", String.valueOf(id), BusinessAuditActions.DELETE, prior, null);
+        staff.setActive(false);
+        Staff saved = staffRepository.save(staff);
+        businessAuditRecorder.safeRecord(
+                "staff",
+                "Staff",
+                String.valueOf(id),
+                BusinessAuditActions.UPDATE,
+                prior,
+                snapshotStaffMinimal(saved));
     }
 
     private void attachUser(Staff staff, Long userId, Long currentStaffId) {

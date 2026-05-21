@@ -147,15 +147,19 @@ public class AppointmentService {
     public void delete(Long id) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la cita: " + id));
+        if ("CANCELADA".equalsIgnoreCase(appointment.getStatus())) {
+            return;
+        }
         Map<String, Object> prior = snapshotAppointmentMinimal(appointment);
-        appointmentRepository.deleteById(id);
+        appointment.setStatus("CANCELADA");
+        Appointment saved = appointmentRepository.save(appointment);
         businessAuditRecorder.safeRecord(
                 "appointments",
                 "Appointment",
                 String.valueOf(id),
-                BusinessAuditActions.DELETE,
+                BusinessAuditActions.UPDATE,
                 prior,
-                null);
+                snapshotAppointmentMinimal(saved));
     }
 
     private void mapCommon(

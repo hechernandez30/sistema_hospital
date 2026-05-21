@@ -93,15 +93,19 @@ public class MedicalOrderService {
     public void delete(Long id) {
         MedicalOrder medicalOrder = medicalOrderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la orden médica: " + id));
+        if ("ANULADO".equalsIgnoreCase(medicalOrder.getStatus())) {
+            return;
+        }
         Map<String, Object> prior = snapshotMedicalOrderMinimal(medicalOrder);
-        medicalOrderRepository.deleteById(id);
+        medicalOrder.setStatus("ANULADO");
+        MedicalOrder saved = medicalOrderRepository.save(medicalOrder);
         businessAuditRecorder.safeRecord(
                 "medical-order",
                 "MedicalOrder",
                 String.valueOf(id),
-                BusinessAuditActions.DELETE,
+                BusinessAuditActions.UPDATE,
                 prior,
-                null);
+                snapshotMedicalOrderMinimal(saved));
     }
 
     private void mapCommon(

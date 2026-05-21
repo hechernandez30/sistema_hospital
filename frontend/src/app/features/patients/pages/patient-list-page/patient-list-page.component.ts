@@ -12,6 +12,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { PatientApiService } from '../../services/patient-api.service';
 import { PatientResponse } from '../../models/patient.models';
 import { PatientFormDialogComponent, PatientFormDialogData } from '../../components/patient-form-dialog.component';
@@ -37,6 +38,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
     MatProgressSpinnerModule,
     MatFormFieldModule,
     MatInputModule,
+    MatCheckboxModule,
     DatePipe,
   ],
   templateUrl: './patient-list-page.component.html',
@@ -53,6 +55,10 @@ export class PatientListPageComponent implements OnInit, AfterViewInit {
   displayedColumns = ['patientCode', 'fullName', 'dpiNit', 'birthDate', 'phone', 'active', 'actions'];
   dataSource = new MatTableDataSource<PatientResponse>([]);
   loading = false;
+  includeInactive = false;
+
+  private static readonly AUDIT_RETAIN =
+    'El registro permanecerá en el sistema para auditoría e historial.';
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -98,7 +104,7 @@ export class PatientListPageComponent implements OnInit, AfterViewInit {
 
   reload(): void {
     this.loading = true;
-    this.api.list().subscribe({
+    this.api.list(this.includeInactive).subscribe({
       next: (rows) => {
         this.loading = false;
         this.dataSource.data = rows;
@@ -160,14 +166,19 @@ export class PatientListPageComponent implements OnInit, AfterViewInit {
     });
   }
 
+  setIncludeInactive(checked: boolean): void {
+    this.includeInactive = checked;
+    this.reload();
+  }
+
   confirmDelete(row: PatientResponse): void {
     this.dialog
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
-          title: 'Eliminar paciente',
-          message: `¿Eliminar el expediente #${row.id}?\n\n${row.firstName} ${row.lastName}\nCódigo: ${row.patientCode} · DPI/NIT: ${row.dpiNit}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Dar de baja paciente',
+          message: `¿Dar de baja el expediente #${row.id}?\n\n${row.firstName} ${row.lastName}\nCódigo: ${row.patientCode} · DPI/NIT: ${row.dpiNit}\n\n${PatientListPageComponent.AUDIT_RETAIN}`,
+          confirmLabel: 'Dar de baja',
         },
       })
       .afterClosed()
@@ -178,10 +189,10 @@ export class PatientListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Paciente eliminado.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Paciente dado de baja.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar el paciente.'), 'Cerrar', {
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo dar de baja el paciente.'), 'Cerrar', {
               duration: 7000,
             });
           },

@@ -11,6 +11,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { SpecialtyApiService } from '../../services/specialty-api.service';
 import { SpecialtyResponse } from '../../models/specialty.models';
 import { SpecialtyFormDialogComponent, SpecialtyFormDialogData } from '../../components/specialty-form-dialog.component';
@@ -36,6 +37,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
     MatProgressSpinnerModule,
     MatFormFieldModule,
     MatInputModule,
+    MatCheckboxModule,
   ],
   templateUrl: './specialty-list-page.component.html',
   styleUrl: './specialty-list-page.component.scss',
@@ -48,9 +50,10 @@ export class SpecialtyListPageComponent implements OnInit, AfterViewInit {
 
   readonly canMutate = this.auth.hasAnyRole(ROLES_RRHH_SPECIALTIES);
 
-  displayedColumns = ['id', 'name', 'durationMinutes', 'actions'];
+  displayedColumns = ['id', 'name', 'durationMinutes', 'active', 'actions'];
   dataSource = new MatTableDataSource<SpecialtyResponse>([]);
   loading = false;
+  includeInactive = false;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -81,7 +84,7 @@ export class SpecialtyListPageComponent implements OnInit, AfterViewInit {
 
   reload(): void {
     this.loading = true;
-    this.api.list().subscribe({
+    this.api.list(this.includeInactive).subscribe({
       next: (rows) => {
         this.loading = false;
         this.dataSource.data = rows;
@@ -93,6 +96,11 @@ export class SpecialtyListPageComponent implements OnInit, AfterViewInit {
         });
       },
     });
+  }
+
+  setIncludeInactive(checked: boolean): void {
+    this.includeInactive = checked;
+    this.reload();
   }
 
   applyFilter(value: string): void {
@@ -133,9 +141,9 @@ export class SpecialtyListPageComponent implements OnInit, AfterViewInit {
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
-          title: 'Eliminar especialidad',
-          message: `¿Eliminar "${row.name}" (#${row.id})?\n\nSi hay personal u otras referencias enlazadas, el sistema rechazará la operación y se mostrará el motivo.\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Desactivar especialidad',
+          message: `¿Desactivar "${row.name}" (#${row.id})?\n\nEl registro permanecerá en el sistema para auditoría e historial.`,
+          confirmLabel: 'Desactivar',
         },
       })
       .afterClosed()
@@ -146,14 +154,11 @@ export class SpecialtyListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Especialidad eliminada.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Especialidad desactivada.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
             this.snackBar.open(
-              getHttpErrorMessage(
-                err,
-                'No se pudo eliminar la especialidad (puede tener referencias en la base de datos).',
-              ),
+              getHttpErrorMessage(err, 'No se pudo desactivar la especialidad.'),
               'Cerrar',
               { duration: 12000 },
             );

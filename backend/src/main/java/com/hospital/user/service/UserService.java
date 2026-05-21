@@ -119,15 +119,19 @@ public class UserService {
     public void delete(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario: " + id));
+        if ("DESHABILITADO".equalsIgnoreCase(user.getState())) {
+            return;
+        }
         UserResponse prior = toResponse(user);
-        userRepository.delete(user);
+        user.setState("DESHABILITADO");
+        UserResponse updated = toResponse(userRepository.save(user));
         businessAuditRecorder.safeRecord(
                 "users",
                 "User",
                 String.valueOf(id),
-                BusinessAuditActions.DELETE,
+                BusinessAuditActions.UPDATE,
                 summaryUserAudit(prior),
-                null);
+                summaryUserAudit(updated));
     }
 
     /** Sin correo ni contraseña — solo datos mínimos para trazabilidad. */

@@ -1,5 +1,6 @@
 package com.hospital.payment.service;
 
+import com.hospital.admission.AdmissionStatusRules;
 import com.hospital.admission.entity.Admission;
 import com.hospital.admission.repository.AdmissionRepository;
 import com.hospital.auditlog.BusinessAuditActions;
@@ -147,15 +148,19 @@ public class PaymentService {
     public void delete(Long id) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el pago: " + id));
+        if ("ANULADO".equalsIgnoreCase(payment.getStatus())) {
+            return;
+        }
         PaymentResponse priorSnap = toResponse(payment);
-        paymentRepository.delete(payment);
+        payment.setStatus("ANULADO");
+        PaymentResponse updated = toResponse(paymentRepository.save(payment));
         businessAuditRecorder.safeRecord(
                 "payments",
                 "Payment",
                 String.valueOf(id),
-                BusinessAuditActions.DELETE,
+                BusinessAuditActions.UPDATE,
                 summaryPaymentAudit(priorSnap),
-                null);
+                summaryPaymentAudit(updated));
     }
 
     private static Map<String, Object> summaryPaymentAudit(PaymentResponse r) {
@@ -226,8 +231,15 @@ public class PaymentService {
         if (admissionId == null) {
             return null;
         }
-        return admissionRepository.findById(admissionId)
+        Admission admission = admissionRepository.findById(admissionId)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la admisión: " + admissionId));
+        if (AdmissionStatusRules.isClosedForNewAssistance(admission.getStatus())) {
+            throw new BusinessRuleException(
+                    "No se puede registrar un pago para una admisión en estado "
+                            + admission.getStatus().trim().toUpperCase()
+                            + ".");
+        }
+        return admission;
     }
 
     private MedicalOrder resolveOrder(Long orderId) {

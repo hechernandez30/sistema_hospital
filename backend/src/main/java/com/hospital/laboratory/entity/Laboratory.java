@@ -1,5 +1,6 @@
 package com.hospital.laboratory.entity;
 
+import com.hospital.exception.BusinessRuleException;
 import com.hospital.medicalorder.entity.MedicalOrder;
 import com.hospital.staff.entity.Staff;
 import jakarta.persistence.Column;
@@ -12,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreRemove;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -80,5 +82,11 @@ public class Laboratory {
         if (status == null) {
             status = "PENDIENTE";
         }
+    }
+
+    @PreRemove
+    void onPreRemove() {
+        throw new BusinessRuleException(
+                "No se permite eliminar físicamente un registro de laboratorio. Use anulación (estado = ANULADO).");
     }
 }

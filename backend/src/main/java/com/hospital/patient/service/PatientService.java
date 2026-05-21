@@ -29,8 +29,9 @@ public class PatientService {
     }
 
     @Transactional(readOnly = true)
-    public List<PatientResponse> findAll() {
-        return patientRepository.findAll().stream().map(this::toResponse).toList();
+    public List<PatientResponse> findAll(boolean includeInactive) {
+        var rows = includeInactive ? patientRepository.findAll() : patientRepository.findByActiveTrue();
+        return rows.stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -90,14 +91,31 @@ public class PatientService {
         return toResponse(saved);
     }
 
+    /**
+     * Baja lógica (Fase 8.1): {@code activo = false}. No usa {@code repository.delete} ni {@code deleteById}.
+     */
     @Transactional
     public void delete(Long id) {
         Patient p = patientRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el paciente: " + id));
+        if (!p.isActive()) {
+            return;
+        }
         Map<String, Object> prior = snapshotPatientMinimal(p);
-        patientRepository.deleteById(id);
+        int updated = patientRepository.deactivateById(id);
+        if (updated != 1) {
+            throw new BusinessRuleException(
+                    "No se pudo dar de baja el paciente. Actualice la lista e intente de nuevo.");
+        }
+        Patient after = patientRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el paciente: " + id));
         businessAuditRecorder.safeRecord(
-                "patients", "Patient", String.valueOf(id), BusinessAuditActions.DELETE, prior, null);
+                "patients",
+                "Patient",
+                String.valueOf(id),
+                BusinessAuditActions.UPDATE,
+                prior,
+                snapshotPatientMinimal(after));
     }
 
     private Patient mapNew(PatientCreateRequest request, String code, String dpi) {

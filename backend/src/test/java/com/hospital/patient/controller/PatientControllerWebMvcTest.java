@@ -14,7 +14,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -55,10 +57,18 @@ class PatientControllerWebMvcTest {
                 true,
                 LocalDateTime.now(),
                 LocalDateTime.now());
-        when(patientService.findAll()).thenReturn(List.of(row));
+        when(patientService.findAll(false)).thenReturn(List.of(row));
 
         mockMvc.perform(get("/api/patients"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].patientCode").value("P-001"));
+    }
+
+    @Test
+    void deletePatientDelegatesToServiceSoftDelete() throws Exception {
+        mockMvc.perform(delete("/api/patients/42"))
+                .andExpect(status().isNoContent());
+
+        verify(patientService).delete(42L);
     }
 }

@@ -27,8 +27,9 @@ public class MedicationService {
     }
 
     @Transactional(readOnly = true)
-    public List<MedicationResponse> findAll() {
-        return medicationRepository.findAll().stream().map(this::toResponse).toList();
+    public List<MedicationResponse> findAll(boolean includeInactive) {
+        var rows = includeInactive ? medicationRepository.findAll() : medicationRepository.findByActiveTrue();
+        return rows.stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -73,15 +74,19 @@ public class MedicationService {
     public void delete(Long id) {
         Medication m = medicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el medicamento: " + id));
+        if (!m.isActive()) {
+            return;
+        }
         MedicationResponse prior = toResponse(m);
-        medicationRepository.delete(m);
+        m.setActive(false);
+        MedicationResponse updated = toResponse(medicationRepository.save(m));
         businessAuditRecorder.safeRecord(
                 "medications",
                 "Medication",
                 String.valueOf(id),
-                BusinessAuditActions.DELETE,
+                BusinessAuditActions.UPDATE,
                 summaryMedicationAudit(prior),
-                null);
+                summaryMedicationAudit(updated));
     }
 
     private static Map<String, Object> summaryMedicationAudit(MedicationResponse r) {

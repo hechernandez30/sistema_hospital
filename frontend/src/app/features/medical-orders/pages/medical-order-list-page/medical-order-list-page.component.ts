@@ -221,6 +221,9 @@ export class MedicalOrderListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(MedicalOrderDetailDialogComponent, { width: '520px', maxWidth: '95vw', data: row });
   }
 
+  private static readonly AUDIT_RETAIN =
+    'El registro permanecerá en el sistema para auditoría e historial.';
+
   confirmDelete(row: MedicalOrderResponse): void {
     const desc = (row.description ?? '').trim();
     const descShort = desc.length > 120 ? `${desc.slice(0, 120)}…` : desc;
@@ -228,9 +231,9 @@ export class MedicalOrderListPageComponent implements OnInit, AfterViewInit {
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
-          title: 'Eliminar orden médica',
-          message: `¿Eliminar la orden #${row.id}?\n\nAtención médica #${row.medicalCareId} · ${row.orderType}\n${descShort || '(Sin descripción)'}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Anular orden médica',
+          message: `¿Anular la orden #${row.id}?\n\nAtención médica #${row.medicalCareId} · ${row.orderType}\n${descShort || '(Sin descripción)'}\n\n${MedicalOrderListPageComponent.AUDIT_RETAIN}`,
+          confirmLabel: 'Anular orden',
         },
       })
       .afterClosed()
@@ -241,10 +244,10 @@ export class MedicalOrderListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Orden eliminada.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Orden anulada.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar.'), 'Cerrar', { duration: 7000 });
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo anular la orden.'), 'Cerrar', { duration: 7000 });
           },
         });
       });

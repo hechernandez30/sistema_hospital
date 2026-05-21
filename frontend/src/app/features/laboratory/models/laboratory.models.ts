@@ -1,4 +1,4 @@
-export const LABORATORY_STATUSES = ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'RECHAZADO'] as const;
+export const LABORATORY_STATUSES = ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'RECHAZADO', 'ANULADO'] as const;
 export type LaboratoryStatus = (typeof LABORATORY_STATUSES)[number];
 
 export const LABORATORY_STATUS_LABELS: Record<LaboratoryStatus, string> = {
@@ -6,6 +6,7 @@ export const LABORATORY_STATUS_LABELS: Record<LaboratoryStatus, string> = {
   EN_PROCESO: 'En proceso',
   COMPLETADO: 'Completado',
   RECHAZADO: 'Rechazado',
+  ANULADO: 'Anulado',
 };
 
 export function laboratoryStatusLabel(code: string): string {

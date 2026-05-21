@@ -21,7 +21,6 @@ import {
   MedicalCareFormDialogData,
 } from '../../components/medical-care-form-dialog.component';
 import { MedicalCareDetailDialogComponent } from '../../components/medical-care-detail-dialog.component';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog.component';
 import { PatientApiService } from '../../../patients/services/patient-api.service';
 import { PatientResponse } from '../../../patients/models/patient.models';
 import { StaffApiService } from '../../../staff/services/staff-api.service';
@@ -213,35 +212,6 @@ export class MedicalCareListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(MedicalCareDetailDialogComponent, { width: '560px', maxWidth: '95vw', data: row });
   }
 
-  confirmDelete(row: MedicalCareView): void {
-    const ctx = `${row.patientLabel} · ${this.clip(row.diagnosis, 80)}`;
-    this.dialog
-      .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
-        width: '480px',
-        data: {
-          title: 'Eliminar atención médica',
-          message: `¿Eliminar la atención #${row.id}?\n\n${ctx}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
-        },
-      })
-      .afterClosed()
-      .subscribe((confirmed) => {
-        if (!confirmed) {
-          return;
-        }
-        this.api.delete(row.id).subscribe({
-          next: () => {
-            this.reload();
-            this.snackBar.open('Atención eliminada.', 'Cerrar', { duration: 4000 });
-          },
-          error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar la atención.'), 'Cerrar', {
-              duration: 7000,
-            });
-          },
-        });
-      });
-  }
 }
 
 function labelPatient(p: PatientResponse | undefined, id: number): string {

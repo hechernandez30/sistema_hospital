@@ -187,14 +187,17 @@ export class UserListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(UserDetailDialogComponent, { width: '480px', maxWidth: '95vw', data: row });
   }
 
+  private static readonly AUDIT_RETAIN =
+    'El registro permanecerá en el sistema para auditoría e historial.';
+
   confirmDelete(row: UserResponse): void {
     this.dialog
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
-          title: 'Eliminar usuario',
-          message: `¿Eliminar el usuario #${row.id}?\n\n${row.username} · ${row.email}\nEstado: ${row.state}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Deshabilitar usuario',
+          message: `¿Deshabilitar el usuario #${row.id}?\n\n${row.username} · ${row.email}\nEstado actual: ${row.state}\n\n${UserListPageComponent.AUDIT_RETAIN}`,
+          confirmLabel: 'Deshabilitar',
         },
       })
       .afterClosed()
@@ -205,10 +208,10 @@ export class UserListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Usuario eliminado.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Usuario deshabilitado.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar el usuario.'), 'Cerrar', {
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo deshabilitar el usuario.'), 'Cerrar', {
               duration: 7000,
             });
           },

@@ -49,7 +49,7 @@ export interface AdmissionUpdatePayload {
 }
 
 export const ADMISSION_TYPES = ['CONSULTA', 'EMERGENCIA', 'HOSPITALIZACION'] as const;
-export const ADMISSION_STATUSES = ['PENDIENTE', 'ADMITIDO', 'ALTA', 'TRANSFERIDO', 'RECHAZADO'] as const;
+export const ADMISSION_STATUSES = ['PENDIENTE', 'ADMITIDO', 'ALTA', 'TRANSFERIDO', 'RECHAZADO', 'ANULADO'] as const;
 export const VALIDATION_SOURCES = ['SEGURO', 'PAGO_SITIO'] as const;
 
 /** Etiquetas UI (valores backend sin cambiar). */
@@ -65,6 +65,7 @@ export const ADMISSION_STATUS_LABELS: Record<(typeof ADMISSION_STATUSES)[number]
   ALTA: 'Alta',
   TRANSFERIDO: 'Transferido',
   RECHAZADO: 'Rechazado',
+  ANULADO: 'Anulado',
 };
 
 export const VALIDATION_SOURCE_LABELS: Record<(typeof VALIDATION_SOURCES)[number], string> = {

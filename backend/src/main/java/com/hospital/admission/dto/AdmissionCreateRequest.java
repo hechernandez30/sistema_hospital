@@ -17,8 +17,8 @@ public record AdmissionCreateRequest(
                 message = "El tipo de admisión debe ser CONSULTA, EMERGENCIA u HOSPITALIZACION")
         String admissionType,
         @Pattern(
-                regexp = "PENDIENTE|ADMITIDO|ALTA|TRANSFERIDO|RECHAZADO",
-                message = "El estado debe ser PENDIENTE, ADMITIDO, ALTA, TRANSFERIDO o RECHAZADO")
+                regexp = "PENDIENTE|ADMITIDO|ALTA|TRANSFERIDO|RECHAZADO|ANULADO",
+                message = "El estado debe ser PENDIENTE, ADMITIDO, ALTA, TRANSFERIDO, RECHAZADO o ANULADO")
         String status,
         @Size(max = 100, message = "El área actual no debe superar 100 caracteres")
         String currentArea,

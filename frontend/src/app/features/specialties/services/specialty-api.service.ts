@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
@@ -9,8 +9,9 @@ export class SpecialtyApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/api/specialties`;
 
-  list(): Observable<SpecialtyResponse[]> {
-    return this.http.get<SpecialtyResponse[]>(this.base);
+  list(includeInactive = false): Observable<SpecialtyResponse[]> {
+    const params = includeInactive ? new HttpParams().set('includeInactive', 'true') : undefined;
+    return this.http.get<SpecialtyResponse[]>(this.base, { params });
   }
 
   getById(id: number): Observable<SpecialtyResponse> {

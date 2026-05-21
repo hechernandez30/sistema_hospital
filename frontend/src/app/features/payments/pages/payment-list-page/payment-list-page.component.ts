@@ -197,15 +197,18 @@ export class PaymentListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(PaymentDetailDialogComponent, { width: '520px', maxWidth: '95vw', data: row });
   }
 
+  private static readonly AUDIT_RETAIN =
+    'El registro permanecerá en el sistema para auditoría e historial.';
+
   confirmDelete(row: PaymentView): void {
     const ctx = `${row.patientLabel} · ${this.clip(row.concept, 80)}`;
     this.dialog
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
-          title: 'Eliminar pago',
-          message: `¿Eliminar el pago #${row.id}?\n\n${ctx}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Anular pago',
+          message: `¿Anular el pago #${row.id}?\n\n${ctx}\n\n${PaymentListPageComponent.AUDIT_RETAIN}`,
+          confirmLabel: 'Anular pago',
         },
       })
       .afterClosed()
@@ -216,10 +219,10 @@ export class PaymentListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Pago eliminado.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Pago anulado.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar el pago.'), 'Cerrar', { duration: 7000 });
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo anular el pago.'), 'Cerrar', { duration: 7000 });
           },
         });
       });

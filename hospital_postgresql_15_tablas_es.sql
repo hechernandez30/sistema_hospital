@@ -16,7 +16,8 @@ SET search_path TO hospital;
 CREATE TABLE IF NOT EXISTS roles (
     id_rol              BIGSERIAL PRIMARY KEY,
     nombre              VARCHAR(50) NOT NULL UNIQUE,
-    descripcion         VARCHAR(200)
+    descripcion         VARCHAR(200),
+    activo              BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- =========================================================
@@ -45,7 +46,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
 CREATE TABLE IF NOT EXISTS especialidades (
     id_especialidad     BIGSERIAL PRIMARY KEY,
     nombre              VARCHAR(100) NOT NULL UNIQUE,
-    duracion_minutos    INTEGER NOT NULL DEFAULT 30 CHECK (duracion_minutos BETWEEN 20 AND 60)
+    duracion_minutos    INTEGER NOT NULL DEFAULT 30 CHECK (duracion_minutos BETWEEN 20 AND 60),
+    activo              BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- =========================================================
@@ -147,7 +149,7 @@ CREATE TABLE IF NOT EXISTS admisiones (
     tipo_ingreso                VARCHAR(20) NOT NULL
                                     CHECK (tipo_ingreso IN ('CONSULTA', 'EMERGENCIA', 'HOSPITALIZACION')),
     estado                      VARCHAR(20) NOT NULL DEFAULT 'ADMITIDO'
-                                    CHECK (estado IN ('PENDIENTE', 'ADMITIDO', 'ALTA', 'TRANSFERIDO', 'RECHAZADO')),
+                                    CHECK (estado IN ('PENDIENTE', 'ADMITIDO', 'ALTA', 'TRANSFERIDO', 'RECHAZADO', 'ANULADO')),
     area_actual                 VARCHAR(100),
     habitacion                  VARCHAR(30),
     validacion_financiera_ok    BOOLEAN NOT NULL DEFAULT FALSE,
@@ -233,7 +235,7 @@ CREATE TABLE IF NOT EXISTS laboratorio (
     resultado                   TEXT,
     adjunto                     TEXT,
     estado                      VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE'
-                                    CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'RECHAZADO')),
+                                    CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'RECHAZADO', 'ANULADO')),
     fecha_recepcion             TIMESTAMP,
     fecha_resultado             TIMESTAMP,
     id_personal_responsable     BIGINT REFERENCES personal(id_personal)
@@ -251,7 +253,7 @@ CREATE TABLE IF NOT EXISTS imagenes (
     informe_resultado           TEXT,
     archivo_resultado           TEXT,
     estado                      VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE'
-                                    CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'RECHAZADO')),
+                                    CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'RECHAZADO', 'ANULADO')),
     id_personal_responsable     BIGINT REFERENCES personal(id_personal)
 );
 
@@ -381,6 +383,21 @@ INSERT INTO especialidades (nombre, duracion_minutos) VALUES
 ON CONFLICT (nombre) DO NOTHING;
 
 COMMIT;
+
+-- =========================================================
+-- MIGRACIÓN FASE 8.2 (bases ya creadas — ejecutar manualmente si aplica)
+-- =========================================================
+-- ALTER TABLE hospital.roles ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE;
+-- ALTER TABLE hospital.especialidades ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE;
+-- ALTER TABLE hospital.admisiones DROP CONSTRAINT IF EXISTS admisiones_estado_check;
+-- ALTER TABLE hospital.admisiones ADD CONSTRAINT admisiones_estado_check
+--     CHECK (estado IN ('PENDIENTE', 'ADMITIDO', 'ALTA', 'TRANSFERIDO', 'RECHAZADO', 'ANULADO'));
+-- ALTER TABLE hospital.laboratorio DROP CONSTRAINT IF EXISTS laboratorio_estado_check;
+-- ALTER TABLE hospital.laboratorio ADD CONSTRAINT laboratorio_estado_check
+--     CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'RECHAZADO', 'ANULADO'));
+-- ALTER TABLE hospital.imagenes DROP CONSTRAINT IF EXISTS imagenes_estado_check;
+-- ALTER TABLE hospital.imagenes ADD CONSTRAINT imagenes_estado_check
+--     CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'RECHAZADO', 'ANULADO'));
 
 -- =========================================================
 -- NOTAS DE DISEÑO

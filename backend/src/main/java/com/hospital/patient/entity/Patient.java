@@ -1,11 +1,13 @@
 package com.hospital.patient.entity;
 
+import com.hospital.exception.BusinessRuleException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreRemove;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -94,5 +96,12 @@ public class Patient {
     @PreUpdate
     void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    /** Impide borrado físico vía JPA/Hibernate (DELETE debe ser baja lógica en {@code PatientService}). */
+    @PreRemove
+    void onPreRemove() {
+        throw new BusinessRuleException(
+                "No se permite eliminar físicamente un paciente. Use la baja lógica (activo = false).");
     }
 }

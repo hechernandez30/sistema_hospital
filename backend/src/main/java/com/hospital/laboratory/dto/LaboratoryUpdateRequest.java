@@ -25,8 +25,8 @@ public record LaboratoryUpdateRequest(
         String attachment,
         @NotBlank(message = "El estado es obligatorio")
         @Pattern(
-                regexp = "PENDIENTE|EN_PROCESO|COMPLETADO|RECHAZADO",
-                message = "El estado debe ser PENDIENTE, EN_PROCESO, COMPLETADO o RECHAZADO")
+                regexp = "PENDIENTE|EN_PROCESO|COMPLETADO|RECHAZADO|ANULADO",
+                message = "El estado debe ser PENDIENTE, EN_PROCESO, COMPLETADO, RECHAZADO o ANULADO")
         String status,
         LocalDateTime receptionAt,
         LocalDateTime resultAt,

@@ -192,15 +192,18 @@ export class AppointmentListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(AppointmentDetailDialogComponent, { width: '520px', maxWidth: '95vw', data: row });
   }
 
+  private static readonly AUDIT_RETAIN =
+    'El registro permanecerá en el sistema para auditoría e historial.';
+
   confirmDelete(row: AppointmentView): void {
     const ctx = `${row.patientLabel} · ${row.startAt ? new Date(row.startAt).toLocaleString() : 'cita #' + row.id}`;
     this.dialog
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '460px',
         data: {
-          title: 'Eliminar cita',
-          message: `¿Eliminar la cita #${row.id}?\n\n${ctx}\n\nEsta acción no se puede deshacer.`,
-          confirmLabel: 'Eliminar',
+          title: 'Cancelar cita',
+          message: `¿Cancelar la cita #${row.id}?\n\n${ctx}\n\n${AppointmentListPageComponent.AUDIT_RETAIN}`,
+          confirmLabel: 'Cancelar cita',
         },
       })
       .afterClosed()
@@ -211,10 +214,10 @@ export class AppointmentListPageComponent implements OnInit, AfterViewInit {
         this.api.delete(row.id).subscribe({
           next: () => {
             this.reload();
-            this.snackBar.open('Cita eliminada.', 'Cerrar', { duration: 4000 });
+            this.snackBar.open('Cita cancelada.', 'Cerrar', { duration: 4000 });
           },
           error: (err: unknown) => {
-            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo eliminar la cita.'), 'Cerrar', { duration: 7000 });
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cancelar la cita.'), 'Cerrar', { duration: 7000 });
           },
         });
       });

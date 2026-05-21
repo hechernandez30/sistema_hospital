@@ -34,9 +34,12 @@ public class InsuranceService {
     }
 
     @Transactional(readOnly = true)
-    public List<InsuranceResponse> findByPatient(Long patientId) {
+    public List<InsuranceResponse> findByPatient(Long patientId, boolean includeInactive) {
         ensurePatient(patientId);
-        return insuranceRepository.findByPatient_Id(patientId).stream().map(this::toResponse).toList();
+        var rows = includeInactive
+                ? insuranceRepository.findByPatient_Id(patientId)
+                : insuranceRepository.findByPatient_IdAndActiveTrue(patientId);
+        return rows.stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -86,10 +89,19 @@ public class InsuranceService {
         Insurance i = insuranceRepository
                 .findByIdAndPatient_Id(insuranceId, patientId)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el seguro: " + insuranceId));
+        if (!i.isActive()) {
+            return;
+        }
         Map<String, Object> prior = snapshotInsuranceMinimal(i);
-        insuranceRepository.delete(i);
+        i.setActive(false);
+        Insurance saved = insuranceRepository.save(i);
         businessAuditRecorder.safeRecord(
-                "insurances", "Insurance", String.valueOf(insuranceId), BusinessAuditActions.DELETE, prior, null);
+                "insurances",
+                "Insurance",
+                String.valueOf(insuranceId),
+                BusinessAuditActions.UPDATE,
+                prior,
+                snapshotInsuranceMinimal(saved));
     }
 
     private Patient ensurePatient(Long patientId) {

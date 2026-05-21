@@ -8,6 +8,7 @@ export function admissionStatusChipClass(status: string): string {
     ALTA: 'adm-status-alta',
     TRANSFERIDO: 'adm-status-transferido',
     RECHAZADO: 'adm-status-rechazado',
+    ANULADO: 'adm-status-anulado',
   };
   return m[status as (typeof ADMISSION_STATUSES)[number]] ?? 'adm-status-rechazado';
 }
