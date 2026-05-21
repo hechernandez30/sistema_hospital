@@ -12,30 +12,34 @@
     <mat-dialog-content class="form-scroll">
       <p class="hint">
         <mat-icon>info</mat-icon>
-        Use el <strong>ID numérico</strong> del paciente y del médico (staff). Especialidad opcional.
-        Estados: <strong>PROGRAMADA · REPROGRAMADA · CANCELADA · ATENDIDA · NO_ASISTIO</strong>. El servidor evita traslapamiento de agenda en citas activas del mismo médico.
+        Busque paciente y médico por nombre, DPI o código. Estados:
+        <strong>PROGRAMADA · REPROGRAMADA · CANCELADA · ATENDIDA · NO_ASISTIO</strong>. El servidor evita traslapamiento en citas activas del mismo médico.
       </p>
       <div class="row two">
-        <mat-form-field appearance="outline">
-          <mat-label>ID paciente</mat-label>
-          <input matInput formControlName="patientId" inputmode="numeric" autocomplete="off" />
-          @if (form.controls.patientId.hasError('required') && form.controls.patientId.touched) {
-            <mat-error>Requerido</mat-error>
-          }
-          @if (form.controls.patientId.hasError('positiveInteger') && form.controls.patientId.touched) {
-            <mat-error>Solo dígitos, ID entero positivo</mat-error>
-          }
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>ID médico (staff)</mat-label>
-          <input matInput formControlName="doctorId" inputmode="numeric" autocomplete="off" />
-          @if (form.controls.doctorId.hasError('required') && form.controls.doctorId.touched) {
-            <mat-error>Requerido</mat-error>
-          }
-          @if (form.controls.doctorId.hasError('positiveInteger') && form.controls.doctorId.touched) {
-            <mat-error>Solo dígitos, ID entero positivo</mat-error>
-          }
-        </mat-form-field>
+        <app-entity-autocomplete
+          formControlName="patientId"
+          label="Paciente"
+          hint="Nombre, apellido, DPI/NIT o código de paciente"
+          [options]="patientOptions"
+          [loading]="loading"
+          [loadError]="catalogError"
+          emptyMessage="No hay pacientes activos. Registre un expediente primero."
+        />
+        @if (form.controls.patientId.hasError('required') && form.controls.patientId.touched) {
+          <p class="field-error">Seleccione un paciente.</p>
+        }
+        <app-entity-autocomplete
+          formControlName="doctorId"
+          label="Médico"
+          hint="Código de empleado o especialidad"
+          [options]="doctorOptions"
+          [loading]="loading"
+          [loadError]="catalogError"
+          emptyMessage="No hay médicos activos en personal."
+        />
+        @if (form.controls.doctorId.hasError('required') && form.controls.doctorId.touched) {
+          <p class="field-error">Seleccione un médico.</p>
+        }
       </div>
       @if (canPickSpecialtyCatalog) {
         <mat-form-field appearance="outline" class="full">

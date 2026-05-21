@@ -30,6 +30,13 @@ import { SpecialtyResponse } from '../../specialties/models/specialty.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { ROLES_RRHH_SPECIALTIES } from '../../../core/constants/role-routes';
 import { appointmentStatusChipClass } from '../appointment-status-chip';
+import { PatientApiService } from '../../patients/services/patient-api.service';
+import { PatientResponse } from '../../patients/models/patient.models';
+import { StaffResponse } from '../../staff/models/staff.models';
+import { StaffApiService } from '../../staff/services/staff-api.service';
+import { EntityPickerOption } from '../../shared/entity-picker.models';
+import { buildDoctorOptions, buildPatientOptions } from '../../shared/entity-picker.utils';
+import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
 
 export interface AppointmentFormDialogData {
   mode: 'create' | 'edit';
@@ -66,6 +73,7 @@ function rangeValidator(group: AbstractControl): ValidationErrors | null {
     MatDividerModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    EntityAutocompleteComponent,
   ],
   templateUrl: './appointment-form-dialog.component.html',
   styleUrl: './appointment-form-dialog.component.scss',
@@ -74,6 +82,8 @@ export class AppointmentFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(AppointmentApiService);
   private readonly specialtyApi = inject(SpecialtyApiService);
+  private readonly patientApi = inject(PatientApiService);
+  private readonly staffApi = inject(StaffApiService);
   private readonly auth = inject(AuthService);
   private readonly dialogRef = inject(MatDialogRef<AppointmentFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
@@ -82,6 +92,9 @@ export class AppointmentFormDialogComponent implements OnInit {
   readonly canPickSpecialtyCatalog = this.auth.hasAnyRole(ROLES_RRHH_SPECIALTIES);
   readonly statuses = [...APPOINTMENT_STATUSES];
   specialties: SpecialtyResponse[] = [];
+  patientOptions: EntityPickerOption[] = [];
+  doctorOptions: EntityPickerOption[] = [];
+  catalogError: string | null = null;
 
   loading = false;
   saving = false;
@@ -105,14 +118,19 @@ export class AppointmentFormDialogComponent implements OnInit {
 
   ngOnInit(): void {
     const specs$ = this.canPickSpecialtyCatalog ? this.specialtyApi.list() : of([]);
+    const catalog$ = forkJoin({
+      patients: this.patientApi.list(),
+      staff: this.staffApi.list(),
+      specialties: specs$,
+    });
     if (this.dialogData.mode === 'edit' && this.dialogData.appointmentId != null) {
       this.loading = true;
       forkJoin({
-        specialties: specs$,
+        catalog: catalog$,
         apt: this.api.getById(this.dialogData.appointmentId),
       }).subscribe({
-        next: ({ specialties, apt }) => {
-          this.specialties = specialties;
+        next: ({ catalog, apt }) => {
+          this.applyCatalog(catalog.patients, catalog.staff, catalog.specialties);
           this.form.patchValue({
             patientId: String(apt.patientId),
             doctorId: String(apt.doctorId),
@@ -138,20 +156,27 @@ export class AppointmentFormDialogComponent implements OnInit {
       });
     } else {
       this.loading = true;
-      specs$.subscribe({
-        next: (s) => {
-          this.specialties = s;
+      catalog$.subscribe({
+        next: ({ patients, staff, specialties }) => {
+          this.applyCatalog(patients, staff, specialties);
           this.loading = false;
         },
         error: (err: unknown) => {
           this.loading = false;
-          this.snackBar.open(getHttpErrorMessage(err, 'No se pudieron cargar especialidades.'), 'Cerrar', {
+          this.snackBar.open(getHttpErrorMessage(err, 'No se pudieron cargar pacientes o personal.'), 'Cerrar', {
             duration: 7000,
           });
           this.dialogRef.close(false);
         },
       });
     }
+  }
+
+  private applyCatalog(patients: PatientResponse[], staff: StaffResponse[], specialties: SpecialtyResponse[]): void {
+    this.specialties = specialties;
+    this.catalogError = null;
+    this.patientOptions = buildPatientOptions(patients);
+    this.doctorOptions = buildDoctorOptions(staff, specialties);
   }
 
   statusChip(status: string): string {

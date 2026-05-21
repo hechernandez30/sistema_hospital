@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -20,6 +21,11 @@ import {
   parsePositiveInt,
   requiredPositiveInteger,
 } from '../../shared/form-validators';
+import { AdmissionApiService } from '../../admissions/services/admission-api.service';
+import { PatientApiService } from '../../patients/services/patient-api.service';
+import { EntityPickerOption } from '../../shared/entity-picker.models';
+import { buildAdmissionOptions, patientsToMap } from '../../shared/entity-picker.utils';
+import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
 
 export interface TriageFormDialogData {
   mode: 'create' | 'edit';
@@ -39,6 +45,7 @@ export interface TriageFormDialogData {
     MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    EntityAutocompleteComponent,
   ],
   templateUrl: './triage-form-dialog.component.html',
   styleUrl: './triage-form-dialog.component.scss',
@@ -46,11 +53,15 @@ export interface TriageFormDialogData {
 export class TriageFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(TriageApiService);
+  private readonly admissionApi = inject(AdmissionApiService);
+  private readonly patientApi = inject(PatientApiService);
   private readonly dialogRef = inject(MatDialogRef<TriageFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<TriageFormDialogData>(MAT_DIALOG_DATA);
 
   readonly priorityOptions = TRIAGE_PRIORITY_OPTIONS;
+  admissionOptions: EntityPickerOption[] = [];
+  catalogError: string | null = null;
   loading = false;
   saving = false;
 
@@ -70,12 +81,33 @@ export class TriageFormDialogComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    if (this.dialogData.mode === 'edit' && this.dialogData.triageId != null) {
-      this.loading = true;
-      this.api.getById(this.dialogData.triageId).subscribe({
-        next: (t) => {
+    this.loading = true;
+    forkJoin({ patients: this.patientApi.list(), admissions: this.admissionApi.list() }).subscribe({
+      next: ({ patients, admissions }) => {
+        this.admissionOptions = buildAdmissionOptions(admissions, patientsToMap(patients), {
+          excludeClosed: true,
+        });
+        this.catalogError = null;
+        if (this.dialogData.mode === 'edit' && this.dialogData.triageId != null) {
+          this.loadTriage(this.dialogData.triageId);
+        } else {
           this.loading = false;
-          this.form.patchValue({
+        }
+      },
+      error: (err: unknown) => {
+        this.loading = false;
+        this.catalogError = 'No se pudieron cargar admisiones.';
+        this.snackBar.open(getHttpErrorMessage(err, this.catalogError), 'Cerrar', { duration: 7000 });
+        this.dialogRef.close(false);
+      },
+    });
+  }
+
+  private loadTriage(id: number): void {
+    this.api.getById(id).subscribe({
+      next: (t) => {
+        this.loading = false;
+        this.form.patchValue({
             admissionId: t.admissionId != null ? String(t.admissionId) : '',
             heartRate: t.heartRate != null ? String(t.heartRate) : '',
             respiratoryRate: t.respiratoryRate != null ? String(t.respiratoryRate) : '',
@@ -90,13 +122,12 @@ export class TriageFormDialogComponent implements OnInit {
             responsibleStaffId: t.responsibleStaffId != null ? String(t.responsibleStaffId) : '',
           });
         },
-        error: (err: unknown) => {
-          this.loading = false;
-          this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar el triage.'), 'Cerrar', { duration: 6000 });
-          this.dialogRef.close(false);
-        },
-      });
-    }
+      error: (err: unknown) => {
+        this.loading = false;
+        this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar el triage.'), 'Cerrar', { duration: 6000 });
+        this.dialogRef.close(false);
+      },
+    });
   }
 
   submit(): void {

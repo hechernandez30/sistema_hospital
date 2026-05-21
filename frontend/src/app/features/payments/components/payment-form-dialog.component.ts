@@ -10,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DecimalPipe } from '@angular/common';
+import { forkJoin } from 'rxjs';
 import { PaymentApiService } from '../services/payment-api.service';
 import { PatientInsuranceApiService } from '../services/patient-insurance-api.service';
 import {
@@ -32,6 +33,21 @@ import {
   parsePositiveInt,
   requiredPositiveInteger,
 } from '../../shared/form-validators';
+import { PatientApiService } from '../../patients/services/patient-api.service';
+import { AdmissionApiService } from '../../admissions/services/admission-api.service';
+import { MedicalOrderApiService } from '../../medical-orders/services/medical-order-api.service';
+import { MedicalCareApiService } from '../../medical-cares/services/medical-care-api.service';
+import { EntityPickerOption } from '../../shared/entity-picker.models';
+import {
+  buildAdmissionOptions,
+  buildMedicalOrderOptions,
+  buildPatientOptions,
+  patientsToMap,
+} from '../../shared/entity-picker.utils';
+import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
+import { AdmissionResponse } from '../../admissions/models/admission.models';
+import { MedicalCareResponse } from '../../medical-cares/models/medical-care.models';
+import { MedicalOrderResponse } from '../../medical-orders/models/medical-order.models';
 
 export interface PaymentFormDialogData {
   mode: 'create' | 'edit';
@@ -59,6 +75,7 @@ function parseMoneyToNumber(raw: string): number {
     MatProgressSpinnerModule,
     MatSnackBarModule,
     DecimalPipe,
+    EntityAutocompleteComponent,
   ],
   templateUrl: './payment-form-dialog.component.html',
   styleUrl: './payment-form-dialog.component.scss',
@@ -67,6 +84,10 @@ export class PaymentFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(PaymentApiService);
   private readonly patientInsuranceApi = inject(PatientInsuranceApiService);
+  private readonly patientApi = inject(PatientApiService);
+  private readonly admissionApi = inject(AdmissionApiService);
+  private readonly medicalOrderApi = inject(MedicalOrderApiService);
+  private readonly medicalCareApi = inject(MedicalCareApiService);
   private readonly dialogRef = inject(MatDialogRef<PaymentFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
@@ -74,6 +95,15 @@ export class PaymentFormDialogComponent implements OnInit {
 
   readonly statuses = [...PAYMENT_STATUSES];
   readonly methodOptions = [...PAYMENT_METHOD_OPTIONS];
+
+  patientOptions: EntityPickerOption[] = [];
+  admissionOptions: EntityPickerOption[] = [];
+  medicalOrderOptions: EntityPickerOption[] = [];
+  catalogError: string | null = null;
+  private patientMap = new Map<number, import('../../patients/models/patient.models').PatientResponse>();
+  private allAdmissions: AdmissionResponse[] = [];
+  private allOrders: MedicalOrderResponse[] = [];
+  private careById = new Map<number, MedicalCareResponse>();
 
   loading = false;
   saving = false;
@@ -100,17 +130,63 @@ export class PaymentFormDialogComponent implements OnInit {
     });
     this.syncPaymentMethodValidator();
 
-    if (this.dialogData.mode === 'edit' && this.dialogData.paymentId != null) {
-      this.loading = true;
-      this.api.getById(this.dialogData.paymentId).subscribe({
-        next: (p) => this.patchFrom(p),
-        error: (err: unknown) => {
+    this.loading = true;
+    forkJoin({
+      patients: this.patientApi.list(),
+      admissions: this.admissionApi.list(),
+      orders: this.medicalOrderApi.list(),
+      cares: this.medicalCareApi.list(),
+    }).subscribe({
+      next: ({ patients, admissions, orders, cares }) => {
+        this.patientMap = patientsToMap(patients);
+        this.allAdmissions = admissions;
+        this.allOrders = orders;
+        this.careById = new Map(cares.map((c) => [c.id, c] as const));
+        this.patientOptions = buildPatientOptions(patients);
+        this.catalogError = null;
+        if (this.dialogData.mode === 'edit' && this.dialogData.paymentId != null) {
+          this.api.getById(this.dialogData.paymentId).subscribe({
+            next: (p) => this.patchFrom(p),
+            error: (err: unknown) => this.failLoad(err),
+          });
+        } else {
           this.loading = false;
-          this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar el pago.'), 'Cerrar', { duration: 6000 });
-          this.dialogRef.close(false);
-        },
-      });
+        }
+      },
+      error: (err: unknown) => this.failLoad(err),
+    });
+
+    this.form.controls.patientId.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.refreshPaymentContext();
+      this.form.controls.admissionId.setValue('');
+      this.form.controls.medicalOrderId.setValue('');
+    });
+  }
+
+  private failLoad(err: unknown): void {
+    this.loading = false;
+    this.catalogError = 'No se pudieron cargar catálogos.';
+    this.snackBar.open(getHttpErrorMessage(err, this.catalogError), 'Cerrar', { duration: 7000 });
+    this.dialogRef.close(false);
+  }
+
+  private refreshPaymentContext(): void {
+    const patientId = parsePositiveInt(this.form.controls.patientId.value);
+    if (patientId == null) {
+      this.admissionOptions = [];
+      this.medicalOrderOptions = [];
+      return;
     }
+    this.admissionOptions = buildAdmissionOptions(this.allAdmissions, this.patientMap, {
+      excludeClosed: true,
+    }).filter((o) => this.allAdmissions.find((a) => a.id === o.id)?.patientId === patientId);
+    const careIds = new Set(
+      [...this.careById.values()].filter((c) => c.patientId === patientId).map((c) => c.id),
+    );
+    const ordersForPatient = this.allOrders.filter((o) => careIds.has(o.medicalCareId));
+    this.medicalOrderOptions = buildMedicalOrderOptions(ordersForPatient, this.patientMap, this.careById, {
+      excludeAnulled: true,
+    });
   }
 
   private syncPaymentMethodValidator(): void {
@@ -179,19 +255,23 @@ export class PaymentFormDialogComponent implements OnInit {
 
   private patchFrom(p: PaymentResponse): void {
     this.loading = false;
-    this.form.patchValue({
-      patientId: String(p.patientId),
-      admissionId: p.admissionId != null ? String(p.admissionId) : '',
-      medicalOrderId: p.medicalOrderId != null ? String(p.medicalOrderId) : '',
-      concept: p.concept,
-      subtotal: String(p.subtotal),
-      insurancePercent: String(p.insurancePercent),
-      copay: String(p.copay),
-      paymentMethod: (p.paymentMethod ?? '') as '' | 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA',
-      status: p.status as (typeof PAYMENT_STATUSES)[number],
-      receiptNumber: p.receiptNumber ?? '',
-      registeredByUserId: p.registeredByUserId != null ? String(p.registeredByUserId) : '',
-    });
+    this.form.patchValue(
+      {
+        patientId: String(p.patientId),
+        admissionId: p.admissionId != null ? String(p.admissionId) : '',
+        medicalOrderId: p.medicalOrderId != null ? String(p.medicalOrderId) : '',
+        concept: p.concept,
+        subtotal: String(p.subtotal),
+        insurancePercent: String(p.insurancePercent),
+        copay: String(p.copay),
+        paymentMethod: (p.paymentMethod ?? '') as '' | 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA',
+        status: p.status as (typeof PAYMENT_STATUSES)[number],
+        receiptNumber: p.receiptNumber ?? '',
+        registeredByUserId: p.registeredByUserId != null ? String(p.registeredByUserId) : '',
+      },
+      { emitEvent: false },
+    );
+    this.refreshPaymentContext();
   }
 
   submit(): void {

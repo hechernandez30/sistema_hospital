@@ -18,24 +18,22 @@
         Opcionalmente puede vincular un <strong>ID de cita</strong>; debe ser la cita del <em>mismo</em> paciente.
       </p>
       <div class="row two">
-        <mat-form-field appearance="outline">
-          <mat-label>ID paciente</mat-label>
-          <input matInput formControlName="patientId" inputmode="numeric" autocomplete="off" />
-          @if (form.controls.patientId.hasError('required') && form.controls.patientId.touched) {
-            <mat-error>Requerido</mat-error>
-          }
-          @if (form.controls.patientId.hasError('positiveInteger') && form.controls.patientId.touched) {
-            <mat-error>ID entero positivo</mat-error>
-          }
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>ID cita (opcional)</mat-label>
-          <input matInput formControlName="appointmentId" inputmode="numeric" autocomplete="off" />
-          <mat-hint>Si informa cita, el backend exige que corresponda al paciente indicado.</mat-hint>
-          @if (form.controls.appointmentId.hasError('positiveInteger') && form.controls.appointmentId.touched) {
-            <mat-error>ID entero positivo o vacío</mat-error>
-          }
-        </mat-form-field>
+        <app-entity-autocomplete
+          formControlName="patientId"
+          label="Paciente"
+          hint="Nombre, DPI/NIT o código"
+          [options]="patientOptions"
+          [loading]="loading"
+          [loadError]="catalogError"
+        />
+        <app-entity-autocomplete
+          formControlName="appointmentId"
+          label="Cita (opcional)"
+          hint="Solo citas PROGRAMADA/REPROGRAMADA del paciente"
+          [options]="appointmentOptions"
+          [loading]="loading"
+          emptyMessage="Seleccione un paciente para ver sus citas activas."
+        />
       </div>
       <div class="row two">
         <mat-form-field appearance="outline">

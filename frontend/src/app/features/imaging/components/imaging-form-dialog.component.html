@@ -15,16 +15,14 @@
         Tipo de estudio y estado son obligatorios. En alta se requiere orden médica existente.
       </p>
       @if (!isEdit) {
-        <mat-form-field appearance="outline" class="full">
-          <mat-label>ID orden médica</mat-label>
-          <input matInput formControlName="medicalOrderId" inputmode="numeric" autocomplete="off" />
-          @if (form.controls.medicalOrderId.hasError('required') && form.controls.medicalOrderId.touched) {
-            <mat-error>Requerido</mat-error>
-          }
-          @if (form.controls.medicalOrderId.hasError('positiveInteger') && form.controls.medicalOrderId.touched) {
-            <mat-error>Entero positivo</mat-error>
-          }
-        </mat-form-field>
+        <app-entity-autocomplete
+          formControlName="medicalOrderId"
+          label="Orden médica (IMAGEN)"
+          [options]="medicalOrderOptions"
+          [loading]="loading"
+          [loadError]="catalogError"
+          emptyMessage="No hay órdenes tipo IMAGEN activas."
+        />
       }
       <mat-form-field appearance="outline" class="full">
         <mat-label>Tipo de estudio</mat-label>

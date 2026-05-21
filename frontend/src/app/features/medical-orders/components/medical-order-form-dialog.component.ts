@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -21,6 +22,11 @@ import {
 } from '../models/medical-order.models';
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
 import { parsePositiveInt, requiredPositiveInteger } from '../../shared/form-validators';
+import { MedicalCareApiService } from '../../medical-cares/services/medical-care-api.service';
+import { PatientApiService } from '../../patients/services/patient-api.service';
+import { EntityPickerOption } from '../../shared/entity-picker.models';
+import { buildMedicalCareOptions, patientsToMap } from '../../shared/entity-picker.utils';
+import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
 
 export interface MedicalOrderFormDialogData {
   mode: 'create' | 'edit';
@@ -40,6 +46,7 @@ export interface MedicalOrderFormDialogData {
     MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    EntityAutocompleteComponent,
   ],
   templateUrl: './medical-order-form-dialog.component.html',
   styleUrl: './medical-order-form-dialog.component.scss',
@@ -47,6 +54,8 @@ export interface MedicalOrderFormDialogData {
 export class MedicalOrderFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(MedicalOrderApiService);
+  private readonly medicalCareApi = inject(MedicalCareApiService);
+  private readonly patientApi = inject(PatientApiService);
   private readonly dialogRef = inject(MatDialogRef<MedicalOrderFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<MedicalOrderFormDialogData>(MAT_DIALOG_DATA);
@@ -56,6 +65,9 @@ export class MedicalOrderFormDialogComponent implements OnInit {
   readonly priorityPresets = [...MEDICAL_ORDER_PRIORITY_PRESETS];
   /** Prioridades fuera del catálogo (datos legacy) para poder editar sin perder valor. */
   extraPriorities: string[] = [];
+
+  medicalCareOptions: EntityPickerOption[] = [];
+  catalogError: string | null = null;
 
   loading = false;
   saving = false;
@@ -73,17 +85,32 @@ export class MedicalOrderFormDialogComponent implements OnInit {
     if (this.dialogData.mode === 'create') {
       this.extraPriorities = [];
     }
-    if (this.dialogData.mode === 'edit' && this.dialogData.medicalOrderId != null) {
-      this.loading = true;
-      this.api.getById(this.dialogData.medicalOrderId).subscribe({
-        next: (o) => this.patchFrom(o),
-        error: (err: unknown) => {
+    this.loading = true;
+    forkJoin({
+      cares: this.medicalCareApi.list(),
+      patients: this.patientApi.list(),
+    }).subscribe({
+      next: ({ cares, patients }) => {
+        this.medicalCareOptions = buildMedicalCareOptions(cares, patientsToMap(patients));
+        this.catalogError = null;
+        if (this.dialogData.mode === 'edit' && this.dialogData.medicalOrderId != null) {
+          this.api.getById(this.dialogData.medicalOrderId).subscribe({
+            next: (o) => this.patchFrom(o),
+            error: (err: unknown) => this.failLoad(err),
+          });
+        } else {
           this.loading = false;
-          this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar la orden.'), 'Cerrar', { duration: 6000 });
-          this.dialogRef.close(false);
-        },
-      });
-    }
+        }
+      },
+      error: (err: unknown) => this.failLoad(err),
+    });
+  }
+
+  private failLoad(err: unknown): void {
+    this.loading = false;
+    this.catalogError = 'No se pudieron cargar atenciones médicas.';
+    this.snackBar.open(getHttpErrorMessage(err, this.catalogError), 'Cerrar', { duration: 7000 });
+    this.dialogRef.close(false);
   }
 
   private patchFrom(o: MedicalOrderResponse): void {

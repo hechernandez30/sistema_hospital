@@ -26,44 +26,40 @@
         </p>
       }
       <div class="row two">
-        <mat-form-field appearance="outline">
-          <mat-label>ID paciente</mat-label>
-          <input matInput formControlName="patientId" inputmode="numeric" autocomplete="off" />
-          @if (form.controls.patientId.hasError('required') && form.controls.patientId.touched) {
-            <mat-error>Requerido</mat-error>
-          }
-          @if (form.controls.patientId.hasError('positiveInteger') && form.controls.patientId.touched) {
-            <mat-error>ID entero positivo</mat-error>
-          }
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>ID médico (staff)</mat-label>
-          <input matInput formControlName="doctorId" inputmode="numeric" autocomplete="off" />
-          @if (form.controls.doctorId.hasError('required') && form.controls.doctorId.touched) {
-            <mat-error>Requerido</mat-error>
-          }
-          @if (form.controls.doctorId.hasError('positiveInteger') && form.controls.doctorId.touched) {
-            <mat-error>ID entero positivo</mat-error>
-          }
-        </mat-form-field>
+        <app-entity-autocomplete
+          formControlName="patientId"
+          label="Paciente"
+          [options]="patientOptions"
+          [loading]="loading"
+          [loadError]="catalogError"
+        />
+        <app-entity-autocomplete
+          formControlName="doctorId"
+          label="Médico"
+          [options]="doctorOptions"
+          [loading]="loading"
+          [loadError]="catalogError"
+        />
       </div>
       <div class="row two">
-        <mat-form-field appearance="outline">
-          <mat-label>ID admisión</mat-label>
-          <input matInput formControlName="admissionId" inputmode="numeric" autocomplete="off" />
-          <mat-hint>Obligatoria (episodio / ingreso).</mat-hint>
-          @if (form.controls.admissionId.hasError('positiveInteger') && form.controls.admissionId.touched) {
-            <mat-error>ID válido o vacío</mat-error>
-          }
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>ID cita (opcional)</mat-label>
-          <input matInput formControlName="appointmentId" inputmode="numeric" autocomplete="off" />
-          <mat-hint>Solo PROGRAMADA o REPROGRAMADA.</mat-hint>
-          @if (form.controls.appointmentId.hasError('positiveInteger') && form.controls.appointmentId.touched) {
-            <mat-error>ID válido o vacío</mat-error>
-          }
-        </mat-form-field>
+        <app-entity-autocomplete
+          formControlName="admissionId"
+          label="Admisión"
+          [options]="admissionOptions"
+          [loading]="loading"
+          [loadError]="catalogError"
+          hint="Seleccione paciente primero. Sin RECHAZADO/ANULADO."
+          emptyMessage="No hay admisiones válidas para este paciente."
+        />
+        <app-entity-autocomplete
+          formControlName="appointmentId"
+          label="Cita (opcional)"
+          [options]="appointmentOptions"
+          [loading]="loading"
+          [loadError]="catalogError"
+          hint="Solo PROGRAMADA o REPROGRAMADA."
+          emptyMessage="No hay citas activas para este contexto."
+        />
       </div>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Motivo consulta</mat-label>

@@ -16,16 +16,14 @@
         después cree el registro en el módulo <strong>Laboratorio</strong> usando el ID de una orden tipo
         <strong>LABORATORIO</strong>. Tipos de orden y estado son valores cerrados. Prioridad habitual: NORMAL o URGENTE.
       </p>
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>ID atención médica</mat-label>
-        <input matInput formControlName="medicalCareId" inputmode="numeric" autocomplete="off" />
-        @if (form.controls.medicalCareId.hasError('required') && form.controls.medicalCareId.touched) {
-          <mat-error>Requerido</mat-error>
-        }
-        @if (form.controls.medicalCareId.hasError('positiveInteger') && form.controls.medicalCareId.touched) {
-          <mat-error>ID entero positivo</mat-error>
-        }
-      </mat-form-field>
+      <app-entity-autocomplete
+        formControlName="medicalCareId"
+        label="Atención médica"
+        [options]="medicalCareOptions"
+        [loading]="loading"
+        [loadError]="catalogError"
+        emptyMessage="No hay atenciones médicas registradas."
+      />
       <div class="row two">
         <mat-form-field appearance="outline">
           <mat-label>Tipo de orden</mat-label>

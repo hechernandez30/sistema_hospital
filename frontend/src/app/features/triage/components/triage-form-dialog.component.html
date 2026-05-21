@@ -18,17 +18,18 @@
         ingrese.
         Decimales: use punto o coma. Staff responsable: ID opcional.
       </p>
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>ID admisión</mat-label>
-        <input matInput formControlName="admissionId" inputmode="numeric" autocomplete="off" />
-        @if (form.controls.admissionId.hasError('required') && form.controls.admissionId.touched) {
-          <mat-error>Requerido</mat-error>
-        }
-        @if (form.controls.admissionId.hasError('positiveInteger') && form.controls.admissionId.touched) {
-          <mat-error>Solo dígitos, sin 0 a la izquierda</mat-error>
-        }
-        <mat-hint>ID de admisión existente</mat-hint>
-      </mat-form-field>
+      <app-entity-autocomplete
+        formControlName="admissionId"
+        label="Admisión"
+        hint="Paciente, tipo de ingreso y estado (no ANULADA/RECHAZADA)"
+        [options]="admissionOptions"
+        [loading]="loading"
+        [loadError]="catalogError"
+        emptyMessage="No hay admisiones válidas para triage."
+      />
+      @if (form.controls.admissionId.hasError('required') && form.controls.admissionId.touched) {
+        <p class="field-error">Seleccione una admisión.</p>
+      }
       <div class="row three">
         <mat-form-field appearance="outline">
           <mat-label>FC (lpm)</mat-label>

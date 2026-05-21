@@ -1,4 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -20,6 +22,21 @@ import {
   parsePositiveInt,
   requiredPositiveInteger,
 } from '../../shared/form-validators';
+import { PatientApiService } from '../../patients/services/patient-api.service';
+import { StaffApiService } from '../../staff/services/staff-api.service';
+import { AdmissionApiService } from '../../admissions/services/admission-api.service';
+import { AppointmentApiService } from '../../appointments/services/appointment-api.service';
+import { SpecialtyApiService } from '../../specialties/services/specialty-api.service';
+import { EntityPickerOption } from '../../shared/entity-picker.models';
+import {
+  buildAdmissionOptions,
+  buildAppointmentOptions,
+  buildDoctorOptions,
+  buildPatientOptions,
+  patientsToMap,
+  staffToMap,
+} from '../../shared/entity-picker.utils';
+import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
 
 /** CU12: al menos admisión o cita; si hay cita, el backend exige admisión del mismo paciente. */
 function medicalCareEpisodeContextValidator(): ValidatorFn {
@@ -54,6 +71,7 @@ export interface MedicalCareFormDialogData {
     MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    EntityAutocompleteComponent,
   ],
   templateUrl: './medical-care-form-dialog.component.html',
   styleUrl: './medical-care-form-dialog.component.scss',
@@ -61,9 +79,25 @@ export interface MedicalCareFormDialogData {
 export class MedicalCareFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(MedicalCareApiService);
+  private readonly patientApi = inject(PatientApiService);
+  private readonly staffApi = inject(StaffApiService);
+  private readonly admissionApi = inject(AdmissionApiService);
+  private readonly appointmentApi = inject(AppointmentApiService);
+  private readonly specialtyApi = inject(SpecialtyApiService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialogRef = inject(MatDialogRef<MedicalCareFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<MedicalCareFormDialogData>(MAT_DIALOG_DATA);
+
+  patientOptions: EntityPickerOption[] = [];
+  doctorOptions: EntityPickerOption[] = [];
+  admissionOptions: EntityPickerOption[] = [];
+  appointmentOptions: EntityPickerOption[] = [];
+  catalogError: string | null = null;
+  private patientMap = new Map<number, import('../../patients/models/patient.models').PatientResponse>();
+  private staffMap = new Map<number, import('../../staff/models/staff.models').StaffResponse>();
+  private allAdmissions: import('../../admissions/models/admission.models').AdmissionResponse[] = [];
+  private allAppointments: import('../../appointments/models/appointment.models').AppointmentResponse[] = [];
 
   loading = false;
   saving = false;
@@ -84,32 +118,100 @@ export class MedicalCareFormDialogComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    if (this.dialogData.mode === 'edit' && this.dialogData.medicalCareId != null) {
-      this.loading = true;
-      this.api.getById(this.dialogData.medicalCareId).subscribe({
-        next: (c) => this.patchFrom(c),
-        error: (err: unknown) => {
+    this.loading = true;
+    forkJoin({
+      patients: this.patientApi.list(),
+      staff: this.staffApi.list(),
+      admissions: this.admissionApi.list(),
+      appointments: this.appointmentApi.list(),
+      specialties: this.specialtyApi.list(),
+    }).subscribe({
+      next: ({ patients, staff, admissions, appointments, specialties }) => {
+        this.patientMap = patientsToMap(patients);
+        this.staffMap = staffToMap(staff);
+        this.allAdmissions = admissions;
+        this.allAppointments = appointments;
+        this.patientOptions = buildPatientOptions(patients);
+        this.doctorOptions = buildDoctorOptions(staff, specialties);
+        this.refreshContextOptions();
+        this.catalogError = null;
+        if (this.dialogData.mode === 'edit' && this.dialogData.medicalCareId != null) {
+          this.api.getById(this.dialogData.medicalCareId).subscribe({
+            next: (c) => this.patchFrom(c),
+            error: (err: unknown) => this.failLoad(err),
+          });
+        } else {
           this.loading = false;
-          this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar la atención.'), 'Cerrar', { duration: 6000 });
-          this.dialogRef.close(false);
-        },
-      });
+        }
+      },
+      error: (err: unknown) => this.failLoad(err),
+    });
+
+    this.form.controls.patientId.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.refreshContextOptions();
+      this.form.controls.admissionId.setValue('');
+      this.form.controls.appointmentId.setValue('');
+    });
+    this.form.controls.admissionId.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.refreshAppointmentOptions();
+      this.form.controls.appointmentId.setValue('');
+    });
+  }
+
+  private failLoad(err: unknown): void {
+    this.loading = false;
+    this.catalogError = 'No se pudieron cargar catálogos.';
+    this.snackBar.open(getHttpErrorMessage(err, this.catalogError), 'Cerrar', { duration: 7000 });
+    this.dialogRef.close(false);
+  }
+
+  private refreshContextOptions(): void {
+    const patientId = parsePositiveInt(this.form.controls.patientId.value);
+    if (patientId == null) {
+      this.admissionOptions = [];
+      this.appointmentOptions = [];
+      return;
     }
+    this.admissionOptions = buildAdmissionOptions(this.allAdmissions, this.patientMap, {
+      excludeClosed: true,
+    }).filter((o) => this.allAdmissions.find((a) => a.id === o.id)?.patientId === patientId);
+    this.refreshAppointmentOptions();
+  }
+
+  private refreshAppointmentOptions(): void {
+    const patientId = parsePositiveInt(this.form.controls.patientId.value);
+    const admissionId = parsePositiveInt(this.form.controls.admissionId.value);
+    let aptPatientId = patientId;
+    if (admissionId != null) {
+      const adm = this.allAdmissions.find((a) => a.id === admissionId);
+      if (adm) {
+        aptPatientId = adm.patientId;
+      }
+    }
+    this.appointmentOptions = buildAppointmentOptions(this.allAppointments, this.patientMap, this.staffMap, {
+      patientId: aptPatientId ?? undefined,
+      activeOnly: true,
+    });
   }
 
   private patchFrom(c: MedicalCareResponse): void {
     this.loading = false;
-    this.form.patchValue({
-      patientId: String(c.patientId),
-      admissionId: c.admissionId != null ? String(c.admissionId) : '',
-      appointmentId: c.appointmentId != null ? String(c.appointmentId) : '',
-      doctorId: String(c.doctorId),
-      consultationReason: c.consultationReason,
-      clinicalEvaluation: c.clinicalEvaluation,
-      diagnosis: c.diagnosis,
-      treatmentPlan: c.treatmentPlan ?? '',
-      requiresHospitalization: c.requiresHospitalization,
-    });
+    this.form.patchValue(
+      {
+        patientId: String(c.patientId),
+        admissionId: c.admissionId != null ? String(c.admissionId) : '',
+        appointmentId: c.appointmentId != null ? String(c.appointmentId) : '',
+        doctorId: String(c.doctorId),
+        consultationReason: c.consultationReason,
+        clinicalEvaluation: c.clinicalEvaluation,
+        diagnosis: c.diagnosis,
+        treatmentPlan: c.treatmentPlan ?? '',
+        requiresHospitalization: c.requiresHospitalization,
+      },
+      { emitEvent: false },
+    );
+    this.refreshContextOptions();
+    this.refreshAppointmentOptions();
   }
 
   submit(): void {

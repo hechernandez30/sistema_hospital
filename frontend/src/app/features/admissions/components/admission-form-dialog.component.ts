@@ -1,5 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DestroyRef } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -24,6 +27,17 @@ import {
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
 import { datetimeLocalToApi } from '../../shared/datetime-local';
 import { optionalPositiveInteger, parsePositiveInt, requiredPositiveInteger } from '../../shared/form-validators';
+import { PatientApiService } from '../../patients/services/patient-api.service';
+import { AppointmentApiService } from '../../appointments/services/appointment-api.service';
+import { EntityPickerOption } from '../../shared/entity-picker.models';
+import {
+  buildAppointmentOptions,
+  buildPatientOptions,
+  patientsToMap,
+  staffToMap,
+} from '../../shared/entity-picker.utils';
+import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
+import { StaffApiService } from '../../staff/services/staff-api.service';
 
 export interface AdmissionFormDialogData {
   mode: 'create' | 'edit';
@@ -45,6 +59,7 @@ export interface AdmissionFormDialogData {
     MatDividerModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    EntityAutocompleteComponent,
   ],
   templateUrl: './admission-form-dialog.component.html',
   styleUrl: './admission-form-dialog.component.scss',
@@ -52,6 +67,10 @@ export interface AdmissionFormDialogData {
 export class AdmissionFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(AdmissionApiService);
+  private readonly patientApi = inject(PatientApiService);
+  private readonly appointmentApi = inject(AppointmentApiService);
+  private readonly staffApi = inject(StaffApiService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialogRef = inject(MatDialogRef<AdmissionFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<AdmissionFormDialogData>(MAT_DIALOG_DATA);
@@ -63,6 +82,13 @@ export class AdmissionFormDialogComponent implements OnInit {
   readonly typeLabel = ADMISSION_TYPE_LABELS;
   readonly statusLabel = ADMISSION_STATUS_LABELS;
   readonly validationLabel = VALIDATION_SOURCE_LABELS;
+
+  patientOptions: EntityPickerOption[] = [];
+  appointmentOptions: EntityPickerOption[] = [];
+  catalogError: string | null = null;
+  private allAppointments: import('../../appointments/models/appointment.models').AppointmentResponse[] = [];
+  private patientMap = new Map<number, import('../../patients/models/patient.models').PatientResponse>();
+  private staffMap = new Map<number, import('../../staff/models/staff.models').StaffResponse>();
 
   loading = false;
   saving = false;
@@ -83,12 +109,54 @@ export class AdmissionFormDialogComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    if (this.dialogData.mode === 'edit' && this.dialogData.admissionId != null) {
-      this.loading = true;
-      this.api.getById(this.dialogData.admissionId).subscribe({
-        next: (a) => {
+    this.loading = true;
+    forkJoin({
+      patients: this.patientApi.list(),
+      appointments: this.appointmentApi.list(),
+      staff: this.staffApi.list(),
+    }).subscribe({
+      next: ({ patients, appointments, staff }) => {
+        this.patientMap = patientsToMap(patients);
+        this.staffMap = staffToMap(staff);
+        this.allAppointments = appointments;
+        this.patientOptions = buildPatientOptions(patients);
+        this.refreshAppointmentOptions(this.form.controls.patientId.value);
+        this.catalogError = null;
+        if (this.dialogData.mode === 'edit' && this.dialogData.admissionId != null) {
+          this.loadAdmission(this.dialogData.admissionId);
+        } else {
+          this.form.controls.status.clearValidators();
+          this.form.controls.status.updateValueAndValidity();
           this.loading = false;
-          this.form.patchValue({
+        }
+      },
+      error: (err: unknown) => {
+        this.loading = false;
+        this.catalogError = 'No se pudieron cargar catálogos.';
+        this.snackBar.open(getHttpErrorMessage(err, this.catalogError), 'Cerrar', { duration: 7000 });
+        this.dialogRef.close(false);
+      },
+    });
+
+    this.form.controls.patientId.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((pid) => {
+      this.refreshAppointmentOptions(pid);
+      const apt = parsePositiveInt(this.form.controls.appointmentId.value);
+      if (apt != null) {
+        const patientId = parsePositiveInt(pid);
+        const row = this.allAppointments.find((a) => a.id === apt);
+        if (patientId == null || !row || row.patientId !== patientId) {
+          this.form.controls.appointmentId.setValue('');
+        }
+      }
+    });
+  }
+
+  private loadAdmission(id: number): void {
+    this.api.getById(id).subscribe({
+      next: (a) => {
+        this.loading = false;
+        this.refreshAppointmentOptions(String(a.patientId));
+        this.form.patchValue({
             patientId: String(a.patientId),
             appointmentId: a.appointmentId != null ? String(a.appointmentId) : '',
             admissionType: a.admissionType,
@@ -105,16 +173,20 @@ export class AdmissionFormDialogComponent implements OnInit {
           this.form.controls.status.setValidators([Validators.required]);
           this.form.controls.status.updateValueAndValidity();
         },
-        error: (err: unknown) => {
-          this.loading = false;
-          this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar la admisión.'), 'Cerrar', { duration: 6000 });
-          this.dialogRef.close(false);
-        },
-      });
-    } else {
-      this.form.controls.status.clearValidators();
-      this.form.controls.status.updateValueAndValidity();
-    }
+      error: (err: unknown) => {
+        this.loading = false;
+        this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar la admisión.'), 'Cerrar', { duration: 6000 });
+        this.dialogRef.close(false);
+      },
+    });
+  }
+
+  private refreshAppointmentOptions(patientIdRaw: unknown): void {
+    const patientId = parsePositiveInt(patientIdRaw);
+    this.appointmentOptions = buildAppointmentOptions(this.allAppointments, this.patientMap, this.staffMap, {
+      patientId: patientId ?? undefined,
+      activeOnly: true,
+    });
   }
 
   submit(): void {

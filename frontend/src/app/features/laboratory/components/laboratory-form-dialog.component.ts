@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -22,6 +23,13 @@ import {
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
 import { optionalPositiveInteger, parsePositiveInt, requiredPositiveInteger } from '../../shared/form-validators';
 import { apiToDatetimeLocal, datetimeLocalToApi } from '../../shared/datetime-local';
+import { MedicalOrderApiService } from '../../medical-orders/services/medical-order-api.service';
+import { MedicalCareApiService } from '../../medical-cares/services/medical-care-api.service';
+import { PatientApiService } from '../../patients/services/patient-api.service';
+import { EntityPickerOption } from '../../shared/entity-picker.models';
+import { buildMedicalOrderOptions, patientsToMap } from '../../shared/entity-picker.utils';
+import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
+import { MedicalCareResponse } from '../../medical-cares/models/medical-care.models';
 
 export interface LaboratoryFormDialogData {
   mode: 'create' | 'edit';
@@ -42,6 +50,7 @@ export interface LaboratoryFormDialogData {
     MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    EntityAutocompleteComponent,
   ],
   templateUrl: './laboratory-form-dialog.component.html',
   styleUrl: './laboratory-form-dialog.component.scss',
@@ -49,6 +58,9 @@ export interface LaboratoryFormDialogData {
 export class LaboratoryFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(LaboratoryApiService);
+  private readonly medicalOrderApi = inject(MedicalOrderApiService);
+  private readonly medicalCareApi = inject(MedicalCareApiService);
+  private readonly patientApi = inject(PatientApiService);
   private readonly dialogRef = inject(MatDialogRef<LaboratoryFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<LaboratoryFormDialogData>(MAT_DIALOG_DATA);
@@ -61,6 +73,10 @@ export class LaboratoryFormDialogComponent implements OnInit {
     { value: 'true', label: 'Sí' },
     { value: 'false', label: 'No' },
   ];
+
+  medicalOrderOptions: EntityPickerOption[] = [];
+  catalogError: string | null = null;
+  private careById = new Map<number, MedicalCareResponse>();
 
   loading = false;
   saving = false;
@@ -92,18 +108,42 @@ export class LaboratoryFormDialogComponent implements OnInit {
     if (this.dialogData.mode === 'edit') {
       this.form.controls.medicalOrderId.clearValidators();
       this.form.controls.medicalOrderId.updateValueAndValidity({ emitEvent: false });
+      if (this.dialogData.laboratoryId != null) {
+        this.loading = true;
+        this.api.getById(this.dialogData.laboratoryId).subscribe({
+          next: (r) => this.patchFrom(r),
+          error: (err: unknown) => {
+            this.loading = false;
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar el registro.'), 'Cerrar', { duration: 6000 });
+            this.dialogRef.close(false);
+          },
+        });
+      }
+      return;
     }
-    if (this.dialogData.mode === 'edit' && this.dialogData.laboratoryId != null) {
-      this.loading = true;
-      this.api.getById(this.dialogData.laboratoryId).subscribe({
-        next: (r) => this.patchFrom(r),
-        error: (err: unknown) => {
-          this.loading = false;
-          this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar el registro.'), 'Cerrar', { duration: 6000 });
-          this.dialogRef.close(false);
-        },
-      });
-    }
+
+    this.loading = true;
+    forkJoin({
+      orders: this.medicalOrderApi.list(),
+      cares: this.medicalCareApi.list(),
+      patients: this.patientApi.list(),
+    }).subscribe({
+      next: ({ orders, cares, patients }) => {
+        this.careById = new Map(cares.map((c) => [c.id, c] as const));
+        this.medicalOrderOptions = buildMedicalOrderOptions(orders, patientsToMap(patients), this.careById, {
+          orderType: 'LABORATORIO',
+          excludeAnulled: true,
+        });
+        this.catalogError = null;
+        this.loading = false;
+      },
+      error: (err: unknown) => {
+        this.loading = false;
+        this.catalogError = 'No se pudieron cargar órdenes de laboratorio.';
+        this.snackBar.open(getHttpErrorMessage(err, this.catalogError), 'Cerrar', { duration: 7000 });
+        this.dialogRef.close(false);
+      },
+    });
   }
 
   private patchFrom(r: LaboratoryResponse): void {

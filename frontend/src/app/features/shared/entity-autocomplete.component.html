@@ -1,0 +1,45 @@
+<mat-form-field appearance="outline" class="entity-ac full">
+  <mat-label>{{ label }}</mat-label>
+  <input
+    matInput
+    type="text"
+    [placeholder]="placeholder"
+    [formControl]="inputControl"
+    [matAutocomplete]="auto"
+    [disabled]="disabled"
+    (input)="onInput($any($event.target).value)"
+    (blur)="onBlur()"
+  />
+  @if (loading) {
+    <mat-spinner matSuffix diameter="20" />
+  } @else if (showClear && storedId && !disabled) {
+    <button mat-icon-button matSuffix type="button" (click)="clear()" aria-label="Limpiar selección">
+      <mat-icon>close</mat-icon>
+    </button>
+  } @else {
+    <mat-icon matSuffix>search</mat-icon>
+  }
+  @if (hint) {
+    <mat-hint>{{ hint }}</mat-hint>
+  }
+  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionPicked($event.option.value)">
+    @if (loadError) {
+      <mat-option disabled>{{ loadError }}</mat-option>
+    } @else if (loading) {
+      <mat-option disabled>Cargando…</mat-option>
+    } @else if (!options.length) {
+      <mat-option disabled>{{ emptyMessage }}</mat-option>
+    } @else if (filteredOptions.length === 0) {
+      <mat-option disabled>{{ noResultsMessage }}</mat-option>
+    } @else {
+      @for (opt of filteredOptions; track opt.id) {
+        <mat-option [value]="opt">
+          <span class="opt-label">{{ opt.label }}</span>
+          @if (opt.sublabel) {
+            <span class="opt-sub">{{ opt.sublabel }}</span>
+          }
+        </mat-option>
+      }
+    }
+  </mat-autocomplete>
+</mat-form-field>

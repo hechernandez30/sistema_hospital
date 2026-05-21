@@ -18,16 +18,13 @@
         <strong>0,00</strong> (FA02). En estado <strong>PAGADO</strong> debe indicarse método de pago.
       </p>
       <div class="row two">
-        <mat-form-field appearance="outline">
-          <mat-label>ID paciente</mat-label>
-          <input matInput formControlName="patientId" inputmode="numeric" autocomplete="off" />
-          @if (form.controls.patientId.hasError('required') && form.controls.patientId.touched) {
-            <mat-error>Requerido</mat-error>
-          }
-          @if (form.controls.patientId.hasError('positiveInteger') && form.controls.patientId.touched) {
-            <mat-error>Entero positivo</mat-error>
-          }
-        </mat-form-field>
+        <app-entity-autocomplete
+          formControlName="patientId"
+          label="Paciente"
+          [options]="patientOptions"
+          [loading]="loading"
+          [loadError]="catalogError"
+        />
         <mat-form-field appearance="outline">
           <mat-label>Estado</mat-label>
           <mat-select formControlName="status">
@@ -41,20 +38,24 @@
         </mat-form-field>
       </div>
       <div class="row two">
-        <mat-form-field appearance="outline">
-          <mat-label>ID admisión (opcional)</mat-label>
-          <input matInput formControlName="admissionId" inputmode="numeric" autocomplete="off" />
-          @if (form.controls.admissionId.hasError('positiveInteger') && form.controls.admissionId.touched) {
-            <mat-error>ID válido o vacío</mat-error>
-          }
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>ID orden médica (opcional)</mat-label>
-          <input matInput formControlName="medicalOrderId" inputmode="numeric" autocomplete="off" />
-          @if (form.controls.medicalOrderId.hasError('positiveInteger') && form.controls.medicalOrderId.touched) {
-            <mat-error>ID válido o vacío</mat-error>
-          }
-        </mat-form-field>
+        <app-entity-autocomplete
+          formControlName="admissionId"
+          label="Admisión (opcional)"
+          [options]="admissionOptions"
+          [loading]="loading"
+          [loadError]="catalogError"
+          hint="Seleccione paciente primero. Sin RECHAZADO/ANULADO."
+          emptyMessage="No hay admisiones válidas para este paciente."
+        />
+        <app-entity-autocomplete
+          formControlName="medicalOrderId"
+          label="Orden médica (opcional)"
+          [options]="medicalOrderOptions"
+          [loading]="loading"
+          [loadError]="catalogError"
+          hint="Órdenes del paciente, sin ANULADO."
+          emptyMessage="No hay órdenes válidas para este paciente."
+        />
       </div>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Concepto</mat-label>
