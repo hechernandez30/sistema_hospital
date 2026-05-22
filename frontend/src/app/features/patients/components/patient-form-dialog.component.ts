@@ -152,7 +152,7 @@ export class PatientFormDialogComponent implements OnInit {
         conditions: emptyToNull(raw.conditions),
         medicalHistory: emptyToNull(raw.medicalHistory),
         currentMedications: emptyToNull(raw.currentMedications),
-        active: raw.active,
+        active: true,
       };
       this.api.create(body).subscribe({
         next: () => this.closeOk(),

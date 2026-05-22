@@ -38,9 +38,17 @@ import { EntityPickerOption } from '../../shared/entity-picker.models';
 import { buildDoctorOptions, buildPatientOptions } from '../../shared/entity-picker.utils';
 import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
 
+export interface AppointmentFormPrefill {
+  doctorId?: number;
+  specialtyId?: number | null;
+  startAt?: string;
+  endAt?: string;
+}
+
 export interface AppointmentFormDialogData {
   mode: 'create' | 'edit';
   appointmentId?: number;
+  prefill?: AppointmentFormPrefill;
 }
 
 function rangeValidator(group: AbstractControl): ValidationErrors | null {
@@ -159,6 +167,7 @@ export class AppointmentFormDialogComponent implements OnInit {
       catalog$.subscribe({
         next: ({ patients, staff, specialties }) => {
           this.applyCatalog(patients, staff, specialties);
+          this.applyCreatePrefill();
           this.loading = false;
         },
         error: (err: unknown) => {
@@ -177,6 +186,34 @@ export class AppointmentFormDialogComponent implements OnInit {
     this.catalogError = null;
     this.patientOptions = buildPatientOptions(patients);
     this.doctorOptions = buildDoctorOptions(staff, specialties);
+  }
+
+  private applyCreatePrefill(): void {
+    const pre = this.dialogData.prefill;
+    if (this.dialogData.mode !== 'create' || !pre) {
+      return;
+    }
+    const patch: Record<string, string> = {};
+    if (pre.doctorId != null) {
+      patch['doctorId'] = String(pre.doctorId);
+    }
+    if (pre.specialtyId != null) {
+      patch['specialtyId'] = String(pre.specialtyId);
+    }
+    if (pre.startAt) {
+      patch['startAt'] = pre.startAt;
+    }
+    if (pre.endAt) {
+      patch['endAt'] = pre.endAt;
+    } else if (pre.startAt) {
+      const suggested = addMinutesToDatetimeLocal(pre.startAt, 30);
+      if (suggested) {
+        patch['endAt'] = suggested;
+      }
+    }
+    if (Object.keys(patch).length) {
+      this.form.patchValue(patch);
+    }
   }
 
   statusChip(status: string): string {

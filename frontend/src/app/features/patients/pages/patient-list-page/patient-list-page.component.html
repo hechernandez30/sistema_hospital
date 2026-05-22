@@ -13,7 +13,7 @@
         </button>
       }
       <span class="spacer"></span>
-      <!-- <mat-checkbox [checked]="includeInactive" (change)="setIncludeInactive($event.checked)">Incluir inactivos</mat-checkbox> --> <!-- Habilitar si se quiere un filtro para inactivos -->
+      <mat-checkbox [checked]="includeInactive" (change)="setIncludeInactive($event.checked)">Incluir inactivos</mat-checkbox>
       <mat-form-field appearance="outline" class="filter-field" subscriptSizing="dynamic">
         <mat-label>Buscar</mat-label>
         <input matInput (keyup)="applyFilter($any($event.target).value)" placeholder="Código, nombre o DPI" />

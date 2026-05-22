@@ -35,7 +35,7 @@ Los endpoints `DELETE` existentes se conservan; en backend dejan de borrar físi
 - **Decisión:** Baja lógica viable — columna `activo BOOLEAN DEFAULT TRUE`.
 - **DELETE** → `activo = false` vía `RoleRepository.deactivateById`.
 - **Listado:** `GET /api/roles?includeInactive=false` (default) oculta inactivos.
-- **UI:** «Desactivar rol»; mensaje de auditoría e historial.
+- **UI:** «Desactivar rol»; confirmación con datos del registro (sin mensaje técnico de retención en BD; alineado con ajuste UI 2026-05-21 en Fase 8.1).
 - **`@PreRemove`:** bloquea borrado físico JPA.
 
 ### 2. Especialidades
@@ -109,6 +109,10 @@ No se eliminaron columnas ni se renombraron tablas.
 - Admisiones / laboratorio / imágenes: textos Anular, constantes y etiquetas `ANULADO`, botón deshabilitado si ya anulado.
 - Triage / atenciones médicas: sin botón eliminar.
 - Modelos API: `active` en roles/especialidades; `list(includeInactive?)` en servicios.
+
+### Ajuste UI 2026-05-21 (confirmaciones)
+
+En roles, especialidades, admisiones, laboratorio e imágenes (y el resto de módulos con baja/anulación ya cubiertos en 8.1), los diálogos de confirmación ya no incluyen la frase sobre permanencia del registro para auditoría. Detalle y listado de archivos: `docs/fase_8_1_baja_logica_segura.md` → *Ajustes UI posteriores (2026-05-21)*.
 
 ---
 

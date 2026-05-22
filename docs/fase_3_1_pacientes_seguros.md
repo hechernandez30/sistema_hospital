@@ -66,6 +66,39 @@ Textos más explícitos para duplicados de código y DPI/NIT (misma clase de err
 - Los datos de póliza y cobertura se gestionan en intranet en el contexto del expediente (`/api/patients/{id}/insurances`), con UI mínima en detalle del paciente.
 - No se enlaza aquí validación contra aseguradora ni automatismos en pagos (pendiente para fases posteriores según roadmap).
 
+## Campo `activo` y formulario (actualización 2026-05-21)
+
+Referencia de baja lógica: `docs/fase_8_1_baja_logica_segura.md`.
+
+### Significado de `activo` en pacientes
+
+- Indica si el **expediente maestro** está habilitado en el catálogo operativo (`pacientes.activo`).
+- **No** representa si el paciente está hospitalizado ni el egreso clínico (eso corresponde a **admisiones** y sus estados/fechas).
+- **Dar de baja** en lista → `DELETE /api/patients/{id}` → `activo = false` (baja lógica; la fila permanece en BD).
+- Expediente inactivo: no aparece en listados/combos por defecto; el backend bloquea **nuevas admisiones** (`AdmissionService`).
+
+### Motivos habituales de baja (operación)
+
+- Expediente duplicado o creado por error.
+- Registro de prueba o que no debe usarse en flujos nuevos.
+- Cierre administrativo del catálogo sin borrar historial (citas, admisiones y pagos previos conservan el `patientId`).
+
+### UI — formulario `PatientFormDialogComponent`
+
+| Modo | Checkbox «Paciente activo» | Valor enviado al API |
+|------|----------------------------|----------------------|
+| Crear | **Oculto** | `active: true` (fijo en cliente) |
+| Editar | **Visible** | `active` según casilla (permite **reactivar** tras baja) |
+
+La baja sigue haciéndose desde la lista (**Dar de baja**), no desmarcando el checkbox en alta.
+
+### UI — lista y detalle
+
+- Columna **Estado** (Activo / Inactivo) en `patient-list-page`.
+- Por defecto el listado carga solo activos (`GET` sin `includeInactive`).
+- Checkbox **Incluir inactivos** implementado en TypeScript pero **comentado** en plantilla; habilitarlo permite ver y editar expedientes dados de baja.
+- Detalle: muestra Activo Sí/No; confirmación de desactivar seguro sin mensaje técnico de retención en BD (ver Fase 8.1, ajustes UI 2026-05-21).
+
 ## Archivos modificados o nuevos
 
 | Ruta |
@@ -94,6 +127,11 @@ Textos más explícitos para duplicados de código y DPI/NIT (misma clase de err
 | `docs/cu02_aviso_privacidad_modal.md` (nuevo) |
 | `docs/fase_3_1_pacientes_seguros.md` |
 
+### Actualización documental 2026-05-21
+
+- `patient-form-dialog.*`: checkbox activo solo en edición; alta con `active: true` fijo.
+- Confirmaciones de baja/anulación en frontend: sin frase de retención para auditoría (ver Fase 8.1).
+
 ## Pruebas obligatorias — resultados
 
 Comandos ejecutados (Windows, PowerShell):
@@ -111,6 +149,9 @@ Comandos ejecutados (Windows, PowerShell):
 | Teléfono/correo inválidos | Validación cliente + Jakarta en servidor. |
 | Crear/editar/eliminar seguro | Desde **Ver detalle** del paciente con rol que muta; usa POST/PUT/DELETE existentes. |
 | Listar seguros | GET al abrir detalle; cajero puede ver sin botones si no tiene rol de mutación. |
+| Alta paciente | Formulario **sin** checkbox activo; expediente creado como activo. |
+| Editar paciente inactivo | Con «Incluir inactivos» (si se habilita en UI) o por id conocido; marcar «Paciente activo» y guardar reactiva. |
+| Dar de baja paciente | Lista → confirmación → desaparece del listado por defecto; historial conservado en BD. |
 
 ## Riesgos pendientes
 

@@ -1,0 +1,165 @@
+<div class="agenda-shell">
+  <div class="agenda-nav">
+    <button mat-stroked-button type="button" (click)="navigatePrev()" matTooltip="Anterior">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <button mat-stroked-button type="button" (click)="goToday()">Hoy</button>
+    <button mat-stroked-button type="button" (click)="navigateNext()" matTooltip="Siguiente">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+    <span class="range-title">{{ rangeLabel }}</span>
+  </div>
+
+  @if (rangeMode === 'day') {
+    @if (doctorColumns.length === 0) {
+      <div class="agenda-empty">
+        <mat-icon>person_off</mat-icon>
+        <p>No hay médicos que coincidan con los filtros.</p>
+      </div>
+    } @else {
+      <div class="agenda-scroll">
+        <div class="schedule-layout" [style.--col-count]="doctorColumns.length">
+          <div class="schedule-headers">
+            <div class="corner-cell"></div>
+            @for (doc of doctorColumns; track trackDoctor($index, doc)) {
+              <div class="col-header">{{ doc.label }}</div>
+            }
+          </div>
+          <div class="schedule-body">
+            <div class="time-rail">
+              @for (slot of timeSlots; track slot.minutesFromMidnight) {
+                <div class="time-label">{{ slot.label }}</div>
+              }
+            </div>
+            @for (doc of doctorColumns; track trackDoctor($index, doc)) {
+              <div
+                class="schedule-column"
+                role="button"
+                tabindex="0"
+                (click)="onDoctorColumnClick(doc.id, $event)"
+                [attr.aria-label]="'Horario de ' + doc.label"
+              >
+                @for (slot of timeSlots; track slot.minutesFromMidnight) {
+                  <div class="slot-grid-line"></div>
+                }
+                @for (block of blocksForDoctorDay(doc.id, anchorDate); track trackApt($index, block.apt)) {
+                  <button
+                    type="button"
+                    class="apt-block"
+                    [ngClass]="statusChipClass(block.apt.status)"
+                    [style.top.%]="block.topPct"
+                    [style.height.%]="block.heightPct"
+                    [matTooltip]="blockTooltip(block.apt)"
+                    (click)="onBlockClick(block.apt, $event)"
+                  >
+                    <span class="apt-time">{{ formatAgendaTimeRange(block.apt) }}</span>
+                    <span class="apt-patient">{{ block.apt.patientLabel }}</span>
+                    <span class="apt-meta">
+                      <span class="apt-status-chip" [ngClass]="statusChipClass(block.apt.status)">{{ block.apt.status }}</span>
+                      @if (block.apt.specialtyLabel !== '—') {
+                        <span class="apt-spec">{{ block.apt.specialtyLabel }}</span>
+                      }
+                    </span>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  } @else if (rangeMode === 'week') {
+    @if (filterDoctorId == null) {
+      <p class="agenda-hint">
+        <mat-icon>info</mat-icon>
+        Seleccione un médico en los filtros para una agenda semanal más clara, o revise todas las citas del equipo.
+      </p>
+    }
+    <div class="agenda-scroll">
+      <div class="schedule-layout week-layout" [style.--col-count]="7">
+        <div class="schedule-headers">
+          <div class="corner-cell"></div>
+          @for (col of weekColumns; track trackDay($index, col)) {
+            <div class="col-header" [class.today]="col.isToday">{{ col.label }}</div>
+          }
+        </div>
+        <div class="schedule-body">
+          <div class="time-rail">
+            @for (slot of timeSlots; track slot.minutesFromMidnight) {
+              <div class="time-label">{{ slot.label }}</div>
+            }
+          </div>
+          @for (col of weekColumns; track trackDay($index, col)) {
+            <div
+              class="schedule-column"
+              [class.today]="col.isToday"
+              role="button"
+              tabindex="0"
+              (click)="onDayColumnClick(col.date, $event)"
+            >
+              @for (slot of timeSlots; track slot.minutesFromMidnight) {
+                <div class="slot-grid-line"></div>
+              }
+              @for (block of blocksForWeekDay(col.date); track trackApt($index, block.apt)) {
+                <button
+                  type="button"
+                  class="apt-block"
+                  [ngClass]="statusChipClass(block.apt.status)"
+                  [style.top.%]="block.topPct"
+                  [style.height.%]="block.heightPct"
+                  [matTooltip]="blockTooltip(block.apt)"
+                  (click)="onBlockClick(block.apt, $event)"
+                >
+                  <span class="apt-time">{{ formatAgendaTimeRange(block.apt) }}</span>
+                  <span class="apt-patient">{{ block.apt.patientLabel }}</span>
+                  <span class="apt-meta">
+                    <span class="apt-status-chip" [ngClass]="statusChipClass(block.apt.status)">{{ block.apt.status }}</span>
+                    @if (filterDoctorId == null) {
+                      <span class="apt-spec">{{ block.apt.doctorLabel }}</span>
+                    }
+                  </span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="month-grid">
+      @for (wd of monthWeekdays; track wd) {
+        <div class="month-wd">{{ wd }}</div>
+      }
+      @for (cell of monthCells; track trackCell($index, cell)) {
+        <button
+          type="button"
+          class="month-cell"
+          [class.outside]="!cell.inMonth"
+          [class.today]="cell.isToday"
+          (click)="onMonthDayClick(cell)"
+        >
+          <span class="month-day-num">{{ monthCellLabel(cell) }}</span>
+          @if (cell.appointments.length === 0) {
+            <span class="month-empty">—</span>
+          } @else {
+            <ul class="month-apt-list">
+              @for (apt of cell.appointments.slice(0, 3); track trackApt($index, apt)) {
+                <li>
+                  <span class="apt-status-chip month-chip" [ngClass]="statusChipClass(apt.status)">{{ apt.status }}</span>
+                  <span class="month-apt-text">{{ apt.startAt | date: 'shortTime' }} {{ apt.patientLabel }}</span>
+                </li>
+              }
+              @if (cell.appointments.length > 3) {
+                <li class="month-more">+{{ cell.appointments.length - 3 }} más</li>
+              }
+            </ul>
+          }
+        </button>
+      }
+    </div>
+    <p class="agenda-hint month-hint">
+      <mat-icon>touch_app</mat-icon>
+      Pulse un día para abrir la vista diaria con detalle horario.
+    </p>
+  }
+</div>

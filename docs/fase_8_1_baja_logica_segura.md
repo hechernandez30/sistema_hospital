@@ -79,7 +79,7 @@ Siguen usando `repository.delete()` (borrado físico o rechazo por FK).
 - `payments/pages/payment-list-page/*`
 - `medical-orders/pages/medical-order-list-page/*`
 
-Textos UI: títulos/confirmaciones/snacks y `matTooltip` alineados (Deshabilitar, Dar de baja, Desactivar, Cancelar, Anular). Mensaje común: *“El registro permanecerá en el sistema para auditoría e historial.”*
+Textos UI: títulos/confirmaciones/snacks y `matTooltip` alineados (Deshabilitar, Dar de baja, Desactivar, Cancelar, Anular). Los diálogos de confirmación muestran solo la pregunta y los datos del registro (sin mensaje técnico de retención en base de datos; ver [Ajustes UI posteriores](#ajustes-ui-posteriores-2026-05-21)).
 
 ---
 
@@ -257,4 +257,34 @@ Módulos **fuera de alcance** (roles, especialidades, admisiones, triage, atenci
 
 ---
 
-*Fase 8.1 cerrada — implementación 2026-05-20 · Corrección pacientes 2026-05-20 · UAT manual aprobado 2026-05-20*
+## Ajustes UI posteriores (2026-05-21)
+
+Sin cambiar rutas HTTP ni la semántica de baja lógica en backend.
+
+### Diálogos de confirmación (todos los módulos con baja/anulación en intranet)
+
+Se eliminó de los mensajes de `ConfirmDialog` la frase *“El registro permanecerá en el sistema para auditoría e historial.”* (y la constante `AUDIT_RETAIN` donde existía). El usuario ve únicamente la acción, el identificador y el contexto del registro.
+
+| Área | Archivo(s) |
+|------|------------|
+| Pacientes | `patient-list-page`, `patient-detail-dialog` (seguros) |
+| Usuarios, personal, medicamentos | `user-list-page`, `staff-list-page`, `medication-list-page` |
+| Citas, pagos, órdenes médicas | `appointment-list-page`, `payment-list-page`, `medical-order-list-page` |
+| Roles, especialidades | `role-list-page`, `specialty-list-page` |
+| Admisiones, laboratorio, imágenes | `admission-list-page`, `laboratory-list-page`, `imaging-list-page` |
+
+En admisiones, laboratorio e imágenes se conservan los avisos operativos propios del dominio (p. ej. *“No podrá usarse para nuevos flujos asistenciales”*, *“La orden médica no se elimina”*).
+
+La retención de filas en PostgreSQL y la auditoría `UPDATE` siguen igual; solo se simplificó el texto visible.
+
+### Pacientes — formulario y campo `activo`
+
+Documentado en detalle en `docs/fase_3_1_pacientes_seguros.md` (sección *Campo activo y formulario*).
+
+- **Alta:** sin checkbox; el POST envía siempre `active: true`.
+- **Edición:** checkbox «Paciente activo» visible para reactivar un expediente dado de baja (además de la acción «Dar de baja» en lista, que usa `DELETE`).
+- **Lista:** columna Estado (Activo/Inactivo); filtro «Incluir inactivos» preparado en código pero comentado en plantilla (el API admite `?includeInactive=true`).
+
+---
+
+*Fase 8.1 cerrada — implementación 2026-05-20 · Corrección pacientes 2026-05-20 · UAT manual aprobado 2026-05-20 · Ajustes UI 2026-05-21*

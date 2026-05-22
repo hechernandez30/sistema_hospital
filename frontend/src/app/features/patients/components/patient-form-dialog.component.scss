@@ -115,3 +115,9 @@ mat-dialog-actions mat-progress-spinner {
   font-size: 0.75rem;
   color: var(--mat-form-field-error-text-color, #b3261e);
 }
+
+.active-wrap {
+  display: flex;
+  align-items: center;
+  margin: 0.25rem 0 0.5rem;
+}

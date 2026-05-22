@@ -182,7 +182,11 @@
         <mat-label>Medicación actual</mat-label>
         <textarea matInput rows="2" formControlName="currentMedications" placeholder="Describe tus medicaciones actuales"></textarea>
       </mat-form-field>
-      <mat-checkbox formControlName="active">Paciente activo</mat-checkbox>
+      @if (isEdit) {
+        <div class="active-wrap">
+          <mat-checkbox formControlName="active">Paciente activo</mat-checkbox>
+        </div>
+      }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>

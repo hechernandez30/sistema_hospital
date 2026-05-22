@@ -55,7 +55,7 @@ export class PatientListPageComponent implements OnInit, AfterViewInit {
   displayedColumns = ['patientCode', 'fullName', 'dpiNit', 'birthDate', 'phone', 'active', 'actions'];
   dataSource = new MatTableDataSource<PatientResponse>([]);
   loading = false;
-  includeInactive = false;
+  includeInactive = true;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
