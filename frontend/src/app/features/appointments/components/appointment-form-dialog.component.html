@@ -12,14 +12,14 @@
     <mat-dialog-content class="form-scroll">
       <p class="hint">
         <mat-icon>info</mat-icon>
-        Busque paciente y médico por nombre, DPI o código. Estados:
+        Busque paciente por nombre, DPI o código; médico por código, nombre o especialidad. Estados:
         <strong>PROGRAMADA · REPROGRAMADA · CANCELADA · ATENDIDA · NO_ASISTIO</strong>. El servidor evita traslapamiento en citas activas del mismo médico.
       </p>
       <div class="row two">
         <app-entity-autocomplete
           formControlName="patientId"
           label="Paciente"
-          hint="Nombre, apellido, DPI/NIT o código de paciente"
+          hint="Escriba para buscar por nombre, DPI/NIT o código"
           [options]="patientOptions"
           [loading]="loading"
           [loadError]="catalogError"
@@ -31,7 +31,7 @@
         <app-entity-autocomplete
           formControlName="doctorId"
           label="Médico"
-          hint="Código de empleado o especialidad"
+          hint="Escriba para buscar por código, nombre o especialidad"
           [options]="doctorOptions"
           [loading]="loading"
           [loadError]="catalogError"

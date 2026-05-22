@@ -12,5 +12,7 @@ public record StaffResponse(
         String schedule,
         String attendance,
         boolean active,
-        LocalDate hireDate
+        LocalDate hireDate,
+        String linkedUserFirstName,
+        String linkedUserLastName
 ) {}

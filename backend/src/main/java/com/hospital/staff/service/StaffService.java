@@ -154,9 +154,10 @@ public class StaffService {
     }
 
     private StaffResponse toResponse(Staff staff) {
+        User user = staff.getUser();
         return new StaffResponse(
                 staff.getId(),
-                staff.getUser() != null ? staff.getUser().getId() : null,
+                user != null ? user.getId() : null,
                 staff.getSpecialty() != null ? staff.getSpecialty().getId() : null,
                 staff.getStaffType(),
                 staff.getEmployeeCode(),
@@ -164,7 +165,9 @@ public class StaffService {
                 staff.getSchedule(),
                 staff.getAttendance(),
                 staff.isActive(),
-                staff.getHireDate());
+                staff.getHireDate(),
+                user != null ? user.getFirstName() : null,
+                user != null ? user.getLastName() : null);
     }
 
     private static Map<String, Object> snapshotStaffMinimal(Staff s) {

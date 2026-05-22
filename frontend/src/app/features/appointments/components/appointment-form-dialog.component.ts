@@ -35,7 +35,10 @@ import { PatientResponse } from '../../patients/models/patient.models';
 import { StaffResponse } from '../../staff/models/staff.models';
 import { StaffApiService } from '../../staff/services/staff-api.service';
 import { EntityPickerOption } from '../../shared/entity-picker.models';
-import { buildDoctorOptions, buildPatientOptions } from '../../shared/entity-picker.utils';
+import {
+  buildAppointmentDoctorOptions,
+  buildAppointmentPatientOptions,
+} from '../appointment-page.utils';
 import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
 
 export interface AppointmentFormPrefill {
@@ -184,8 +187,8 @@ export class AppointmentFormDialogComponent implements OnInit {
   private applyCatalog(patients: PatientResponse[], staff: StaffResponse[], specialties: SpecialtyResponse[]): void {
     this.specialties = specialties;
     this.catalogError = null;
-    this.patientOptions = buildPatientOptions(patients);
-    this.doctorOptions = buildDoctorOptions(staff, specialties);
+    this.patientOptions = buildAppointmentPatientOptions(patients);
+    this.doctorOptions = buildAppointmentDoctorOptions(staff, specialties);
   }
 
   private applyCreatePrefill(): void {

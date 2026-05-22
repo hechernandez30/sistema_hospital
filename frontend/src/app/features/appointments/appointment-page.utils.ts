@@ -1,5 +1,95 @@
 import { AppointmentView } from './models/appointment.models';
+import { PatientResponse } from '../patients/models/patient.models';
 import { StaffResponse } from '../staff/models/staff.models';
+import { SpecialtyResponse } from '../specialties/models/specialty.models';
+import { UserResponse } from '../users/models/user.models';
+import { EntityPickerOption } from '../shared/entity-picker.models';
+import { formatPatientLabel, patientSearchBlob } from '../shared/entity-picker.utils';
+
+/** Primer token de nombre y primer token de apellido (p. ej. «María José» + «López García» → «María López»). */
+export function formatDoctorShortName(firstName?: string | null, lastName?: string | null): string {
+  const first = firstName?.trim().split(/\s+/)[0] ?? '';
+  const last = lastName?.trim().split(/\s+/)[0] ?? '';
+  return `${first} ${last}`.trim();
+}
+
+/** Etiqueta médico: `EMP-0007 — Nombre Apellido`. Con `agendaHeader`, solo primer nombre y primer apellido. */
+export function formatDoctorDisplayLabel(
+  staff: StaffResponse | undefined,
+  staffId: number,
+  userById?: ReadonlyMap<number, UserResponse>,
+  agendaHeader = false,
+): string {
+  if (!staff) {
+    return `Personal #${staffId}`;
+  }
+  const code = staff.employeeCode?.trim() || `#${staffId}`;
+  const displayName = resolveDoctorPersonName(staff, userById, agendaHeader);
+  if (displayName) {
+    return `${code} — ${displayName}`;
+  }
+  return `${code} — Médico`;
+}
+
+function resolveDoctorPersonName(
+  staff: StaffResponse,
+  userById: ReadonlyMap<number, UserResponse> | undefined,
+  shortName: boolean,
+): string | null {
+  if (staff.linkedUserFirstName || staff.linkedUserLastName) {
+    return shortName
+      ? formatDoctorShortName(staff.linkedUserFirstName, staff.linkedUserLastName) || null
+      : `${staff.linkedUserFirstName ?? ''} ${staff.linkedUserLastName ?? ''}`.trim() || null;
+  }
+  if (staff.userId != null) {
+    const user = userById?.get(staff.userId);
+    if (user) {
+      return shortName
+        ? formatDoctorShortName(user.firstName, user.lastName) || null
+        : `${user.firstName} ${user.lastName}`.trim() || null;
+    }
+  }
+  return null;
+}
+
+/** Opciones de paciente en formulario de cita: solo nombre completo visible; búsqueda por DPI/código conservada. */
+export function buildAppointmentPatientOptions(
+  patients: PatientResponse[],
+  activeOnly = true,
+): EntityPickerOption[] {
+  return patients
+    .filter((p) => !activeOnly || p.active)
+    .map((p) => ({
+      id: p.id,
+      label: formatPatientLabel(p),
+      searchText: patientSearchBlob(p),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+}
+
+/** Opciones de médico en formulario de cita: `EMP-0007 — Nombre Apellido — Especialidad`. */
+export function buildAppointmentDoctorOptions(
+  staff: StaffResponse[],
+  specialties: SpecialtyResponse[],
+  activeOnly = true,
+): EntityPickerOption[] {
+  const specMap = new Map(specialties.map((s) => [s.id, s.name] as const));
+  return staff
+    .filter((s) => (!activeOnly || s.active) && s.staffType === 'MEDICO')
+    .map((s) => {
+      const shortName = formatDoctorShortName(s.linkedUserFirstName, s.linkedUserLastName) || 'Médico';
+      const specName =
+        s.specialtyId != null ? (specMap.get(s.specialtyId) ?? 'Sin especialidad') : 'Sin especialidad';
+      const code = s.employeeCode?.trim() || `#${s.id}`;
+      const label = `${code} — ${shortName} — ${specName}`;
+      return {
+        id: s.id,
+        label,
+        searchText: [code, shortName, specName, s.licenseNumber, String(s.id)].filter(Boolean).join(' ').toLowerCase(),
+      };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+}
 
 export type PageViewMode = 'agenda' | 'list';
 export type AgendaRangeMode = 'day' | 'week' | 'month';

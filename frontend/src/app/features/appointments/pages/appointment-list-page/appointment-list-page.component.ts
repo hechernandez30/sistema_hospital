@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -35,14 +35,17 @@ import {
 } from '../../components/appointment-detail-dialog.component';
 import { AppointmentAgendaComponent } from '../../components/appointment-agenda.component';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog.component';
+import { UserApiService } from '../../../users/services/user-api.service';
+import { UserResponse } from '../../../users/models/user.models';
 import { AuthService } from '../../../../core/services/auth.service';
-import { ROLES_RRHH_SPECIALTIES } from '../../../../core/constants/role-routes';
+import { ROLE_ADMIN, ROLES_RRHH_SPECIALTIES } from '../../../../core/constants/role-routes';
 import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
 import { appointmentStatusChipClass } from '../../appointment-status-chip';
 import {
   AgendaRangeMode,
   PageViewMode,
   filterAppointments,
+  formatDoctorDisplayLabel,
   getRangeForMode,
   slotClickDatetimeLocal,
   startOfDay,
@@ -80,11 +83,14 @@ export class AppointmentListPageComponent implements OnInit, AfterViewInit {
   private readonly patientsApi = inject(PatientApiService);
   private readonly staffApi = inject(StaffApiService);
   private readonly specialtyApi = inject(SpecialtyApiService);
+  private readonly userApi = inject(UserApiService);
   private readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
   private readonly canResolveStaffSpec = this.auth.hasAnyRole(ROLES_RRHH_SPECIALTIES);
+  private readonly isAdmin = this.auth.hasAnyRole([ROLE_ADMIN]);
+  private userById = new Map<number, UserResponse>();
 
   readonly statuses = [...APPOINTMENT_STATUSES];
   readonly pageView = signal<PageViewMode>('agenda');
@@ -228,11 +234,13 @@ export class AppointmentListPageComponent implements OnInit, AfterViewInit {
         ...base,
         staff: this.staffApi.list(),
         specialties: this.specialtyApi.list(),
+        users: this.isAdmin ? this.userApi.list() : of([] as UserResponse[]),
       }).subscribe({
-        next: ({ appointments, patients, staff, specialties }) => {
+        next: ({ appointments, patients, staff, specialties, users }) => {
           this.loading = false;
           this.staffRows = staff as StaffResponse[];
           this.specialties = specialties as SpecialtyResponse[];
+          this.userById = new Map((users as UserResponse[]).map((u) => [u.id, u] as const));
           this.applyRows(appointments, patients, this.staffRows, this.specialties);
           this.syncListFromFilters();
         },
@@ -244,6 +252,7 @@ export class AppointmentListPageComponent implements OnInit, AfterViewInit {
           this.loading = false;
           this.staffRows = [];
           this.specialties = [];
+          this.userById = new Map();
           this.applyRows(appointments, patients, [], []);
           this.syncListFromFilters();
         },
@@ -269,12 +278,12 @@ export class AppointmentListPageComponent implements OnInit, AfterViewInit {
     this.doctorLabels = new Map(
       staff
         .filter((s) => s.staffType === 'MEDICO')
-        .map((s) => [s.id, labelStaff(smap.get(s.id), s.id)] as const),
+        .map((s) => [s.id, formatDoctorDisplayLabel(s, s.id, this.userById, true)] as const),
     );
     this.allAppointments = appointments.map((a) => ({
       ...a,
       patientLabel: labelPatient(pmap.get(a.patientId), a.patientId),
-      doctorLabel: labelStaff(smap.get(a.doctorId), a.doctorId),
+      doctorLabel: formatDoctorDisplayLabel(smap.get(a.doctorId), a.doctorId, this.userById),
       specialtyLabel: a.specialtyId == null ? '—' : labelSpecialty(spmap.get(a.specialtyId), a.specialtyId),
     }));
     this.syncListFromFilters();
@@ -400,13 +409,6 @@ function labelPatient(p: PatientResponse | undefined, id: number): string {
     return `Paciente #${id}`;
   }
   return `${p.firstName} ${p.lastName} (${p.patientCode})`;
-}
-
-function labelStaff(s: StaffResponse | undefined, id: number): string {
-  if (!s) {
-    return `Personal #${id}`;
-  }
-  return `${s.employeeCode} — ${s.staffType}`;
 }
 
 function labelSpecialty(s: SpecialtyResponse | undefined, id: number): string {
