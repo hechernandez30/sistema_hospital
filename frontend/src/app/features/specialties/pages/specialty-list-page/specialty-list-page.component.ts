@@ -142,7 +142,7 @@ export class SpecialtyListPageComponent implements OnInit, AfterViewInit {
         width: '480px',
         data: {
           title: 'Desactivar especialidad',
-          message: `¿Desactivar "${row.name}" (#${row.id})?\n\nEl registro permanecerá en el sistema para auditoría e historial.`,
+          message: `¿Desactivar "${row.name}" (#${row.id})?`,
           confirmLabel: 'Desactivar',
         },
       })

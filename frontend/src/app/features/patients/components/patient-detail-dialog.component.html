@@ -44,9 +44,9 @@
           <mat-icon>add</mat-icon>
           Agregar seguro
         </button>
-        <mat-checkbox [checked]="includeInactiveInsurances" (change)="setIncludeInactiveInsurances($event.checked)">
+        <!--<mat-checkbox [checked]="includeInactiveInsurances" (change)="setIncludeInactiveInsurances($event.checked)">
           Incluir inactivos
-        </mat-checkbox>
+        </mat-checkbox> --> <!-- Habilitar si se quiere un filtro para inactivos -->
       </div>
     }
     @if (insurances.length === 0) {

@@ -165,7 +165,7 @@ export class ImagingListPageComponent implements OnInit, AfterViewInit {
         width: '480px',
         data: {
           title: 'Anular estudio de imagen',
-          message: `¿Anular el estudio #${row.id}?\n\n${row.studyType} · Orden médica #${row.medicalOrderId} · Estado: ${row.status}\n\nEl registro permanecerá en el sistema para auditoría e historial. La orden médica no se elimina.`,
+          message: `¿Anular el estudio #${row.id}?\n\n${row.studyType} · Orden médica #${row.medicalOrderId} · Estado: ${row.status}\n\nLa orden médica no se elimina.`,
           confirmLabel: 'Anular',
         },
       })

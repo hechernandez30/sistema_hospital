@@ -140,7 +140,7 @@ export class RoleListPageComponent implements OnInit, AfterViewInit {
         width: '480px',
         data: {
           title: 'Desactivar rol',
-          message: `¿Desactivar el rol "${row.name}" (#${row.id})?\n\nEl registro permanecerá en el sistema para auditoría e historial.`,
+          message: `¿Desactivar el rol "${row.name}" (#${row.id})?`,
           confirmLabel: 'Desactivar',
         },
       })

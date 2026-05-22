@@ -193,7 +193,7 @@ export class AdmissionListPageComponent implements OnInit, AfterViewInit {
         width: '480px',
         data: {
           title: 'Anular admisión',
-          message: `¿Anular la admisión #${row.id}?\n\n${row.patientLabel}\nTipo: ${row.admissionType} · Estado: ${row.status}\n\nEl registro permanecerá en el sistema para auditoría e historial. No podrá usarse para nuevos flujos asistenciales.`,
+          message: `¿Anular la admisión #${row.id}?\n\n${row.patientLabel}\nTipo: ${row.admissionType} · Estado: ${row.status}\n\nNo podrá usarse para nuevos flujos asistenciales.`,
           confirmLabel: 'Anular',
         },
       })

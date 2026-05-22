@@ -192,9 +192,6 @@ export class AppointmentListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(AppointmentDetailDialogComponent, { width: '520px', maxWidth: '95vw', data: row });
   }
 
-  private static readonly AUDIT_RETAIN =
-    'El registro permanecerá en el sistema para auditoría e historial.';
-
   confirmDelete(row: AppointmentView): void {
     const ctx = `${row.patientLabel} · ${row.startAt ? new Date(row.startAt).toLocaleString() : 'cita #' + row.id}`;
     this.dialog
@@ -202,7 +199,7 @@ export class AppointmentListPageComponent implements OnInit, AfterViewInit {
         width: '460px',
         data: {
           title: 'Cancelar cita',
-          message: `¿Cancelar la cita #${row.id}?\n\n${ctx}\n\n${AppointmentListPageComponent.AUDIT_RETAIN}`,
+          message: `¿Cancelar la cita #${row.id}?\n\n${ctx}`,
           confirmLabel: 'Cancelar cita',
         },
       })

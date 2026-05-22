@@ -66,9 +66,6 @@ export class StaffListPageComponent implements OnInit, AfterViewInit {
   loading = false;
   includeInactive = false;
 
-  private static readonly AUDIT_RETAIN =
-    'El registro permanecerá en el sistema para auditoría e historial.';
-
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
@@ -220,7 +217,7 @@ export class StaffListPageComponent implements OnInit, AfterViewInit {
         width: '480px',
         data: {
           title: 'Dar de baja personal',
-          message: `¿Dar de baja el registro #${row.id}?\n\nCódigo ${row.employeeCode} · ${row.staffType}\n\n${StaffListPageComponent.AUDIT_RETAIN}`,
+          message: `¿Dar de baja el registro #${row.id}?\n\nCódigo ${row.employeeCode} · ${row.staffType}`,
           confirmLabel: 'Dar de baja',
         },
       })

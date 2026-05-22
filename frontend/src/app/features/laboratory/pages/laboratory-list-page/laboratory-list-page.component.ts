@@ -209,7 +209,7 @@ export class LaboratoryListPageComponent implements OnInit, AfterViewInit {
         width: '480px',
         data: {
           title: 'Anular registro de laboratorio',
-          message: `¿Anular el registro #${row.id}?\n\nOrden médica #${row.medicalOrderId} · Estado: ${row.status}\n\nEl registro permanecerá en el sistema para auditoría e historial. La orden médica no se elimina.`,
+          message: `¿Anular el registro #${row.id}?\n\nOrden médica #${row.medicalOrderId} · Estado: ${row.status}\n\nLa orden médica no se elimina.`,
           confirmLabel: 'Anular',
         },
       })

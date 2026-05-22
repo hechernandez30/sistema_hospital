@@ -221,9 +221,6 @@ export class MedicalOrderListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(MedicalOrderDetailDialogComponent, { width: '520px', maxWidth: '95vw', data: row });
   }
 
-  private static readonly AUDIT_RETAIN =
-    'El registro permanecerá en el sistema para auditoría e historial.';
-
   confirmDelete(row: MedicalOrderResponse): void {
     const desc = (row.description ?? '').trim();
     const descShort = desc.length > 120 ? `${desc.slice(0, 120)}…` : desc;
@@ -232,7 +229,7 @@ export class MedicalOrderListPageComponent implements OnInit, AfterViewInit {
         width: '480px',
         data: {
           title: 'Anular orden médica',
-          message: `¿Anular la orden #${row.id}?\n\nAtención médica #${row.medicalCareId} · ${row.orderType}\n${descShort || '(Sin descripción)'}\n\n${MedicalOrderListPageComponent.AUDIT_RETAIN}`,
+          message: `¿Anular la orden #${row.id}?\n\nAtención médica #${row.medicalCareId} · ${row.orderType}\n${descShort || '(Sin descripción)'}`,
           confirmLabel: 'Anular orden',
         },
       })

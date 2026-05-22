@@ -57,9 +57,6 @@ export class PatientListPageComponent implements OnInit, AfterViewInit {
   loading = false;
   includeInactive = false;
 
-  private static readonly AUDIT_RETAIN =
-    'El registro permanecerá en el sistema para auditoría e historial.';
-
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
@@ -177,7 +174,7 @@ export class PatientListPageComponent implements OnInit, AfterViewInit {
         width: '480px',
         data: {
           title: 'Dar de baja paciente',
-          message: `¿Dar de baja el expediente #${row.id}?\n\n${row.firstName} ${row.lastName}\nCódigo: ${row.patientCode} · DPI/NIT: ${row.dpiNit}\n\n${PatientListPageComponent.AUDIT_RETAIN}`,
+          message: `¿Dar de baja el expediente #${row.id}?\n\n${row.firstName} ${row.lastName}\nCódigo: ${row.patientCode} · DPI/NIT: ${row.dpiNit}`,
           confirmLabel: 'Dar de baja',
         },
       })

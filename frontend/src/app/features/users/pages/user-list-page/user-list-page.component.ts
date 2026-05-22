@@ -187,16 +187,13 @@ export class UserListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(UserDetailDialogComponent, { width: '480px', maxWidth: '95vw', data: row });
   }
 
-  private static readonly AUDIT_RETAIN =
-    'El registro permanecerá en el sistema para auditoría e historial.';
-
   confirmDelete(row: UserResponse): void {
     this.dialog
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         width: '480px',
         data: {
           title: 'Deshabilitar usuario',
-          message: `¿Deshabilitar el usuario #${row.id}?\n\n${row.username} · ${row.email}\nEstado actual: ${row.state}\n\n${UserListPageComponent.AUDIT_RETAIN}`,
+          message: `¿Deshabilitar el usuario #${row.id}?\n\n${row.username} · ${row.email}\nEstado actual: ${row.state}`,
           confirmLabel: 'Deshabilitar',
         },
       })

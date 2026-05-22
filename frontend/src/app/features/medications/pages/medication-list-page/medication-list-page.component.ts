@@ -55,9 +55,6 @@ export class MedicationListPageComponent implements OnInit, AfterViewInit {
   loading = false;
   includeInactive = false;
 
-  private static readonly AUDIT_RETAIN =
-    'El registro permanecerá en el sistema para auditoría e historial.';
-
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
@@ -160,7 +157,7 @@ export class MedicationListPageComponent implements OnInit, AfterViewInit {
         width: '480px',
         data: {
           title: 'Desactivar medicamento',
-          message: `¿Desactivar "${row.name}" del catálogo?\n\nPresentación: ${row.presentation ?? '—'} · Stock actual: ${row.currentStock}\n\n${MedicationListPageComponent.AUDIT_RETAIN}`,
+          message: `¿Desactivar "${row.name}" del catálogo?\n\nPresentación: ${row.presentation ?? '—'} · Stock actual: ${row.currentStock}`,
           confirmLabel: 'Desactivar',
         },
       })

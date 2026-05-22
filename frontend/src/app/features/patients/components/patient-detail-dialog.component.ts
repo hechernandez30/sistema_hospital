@@ -51,9 +51,6 @@ export class PatientDetailDialogComponent implements OnInit {
   insuranceError: string | null = null;
   includeInactiveInsurances = false;
 
-  private static readonly AUDIT_RETAIN =
-    'El registro permanecerá en el sistema para auditoría e historial.';
-
   ngOnInit(): void {
     this.loadInsurances();
   }
@@ -128,7 +125,7 @@ export class PatientDetailDialogComponent implements OnInit {
         width: '440px',
         data: {
           title: 'Desactivar seguro',
-          message: `¿Desactivar el seguro de «${row.insurerName}» (póliza ${row.policyNumber})?\n\n${PatientDetailDialogComponent.AUDIT_RETAIN}`,
+          message: `¿Desactivar el seguro de «${row.insurerName}» (póliza ${row.policyNumber})?`,
           confirmLabel: 'Desactivar',
         },
       })

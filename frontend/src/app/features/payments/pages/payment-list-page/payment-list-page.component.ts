@@ -197,9 +197,6 @@ export class PaymentListPageComponent implements OnInit, AfterViewInit {
     this.dialog.open(PaymentDetailDialogComponent, { width: '520px', maxWidth: '95vw', data: row });
   }
 
-  private static readonly AUDIT_RETAIN =
-    'El registro permanecerá en el sistema para auditoría e historial.';
-
   confirmDelete(row: PaymentView): void {
     const ctx = `${row.patientLabel} · ${this.clip(row.concept, 80)}`;
     this.dialog
@@ -207,7 +204,7 @@ export class PaymentListPageComponent implements OnInit, AfterViewInit {
         width: '480px',
         data: {
           title: 'Anular pago',
-          message: `¿Anular el pago #${row.id}?\n\n${ctx}\n\n${PaymentListPageComponent.AUDIT_RETAIN}`,
+          message: `¿Anular el pago #${row.id}?\n\n${ctx}`,
           confirmLabel: 'Anular pago',
         },
       })
