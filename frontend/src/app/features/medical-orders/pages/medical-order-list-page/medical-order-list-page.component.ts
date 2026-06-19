@@ -198,7 +198,7 @@ export class MedicalOrderListPageComponent implements OnInit, AfterViewInit {
   openCreate(): void {
     this.dialog
       .open<MedicalOrderFormDialogComponent, MedicalOrderFormDialogData, boolean>(MedicalOrderFormDialogComponent, {
-        width: '600px',
+        width: '680px',
         maxWidth: '95vw',
         data: { mode: 'create' },
       })
@@ -209,7 +209,7 @@ export class MedicalOrderListPageComponent implements OnInit, AfterViewInit {
   openEdit(row: MedicalOrderResponse): void {
     this.dialog
       .open<MedicalOrderFormDialogComponent, MedicalOrderFormDialogData, boolean>(MedicalOrderFormDialogComponent, {
-        width: '600px',
+        width: '680px',
         maxWidth: '95vw',
         data: { mode: 'edit', medicalOrderId: row.id },
       })

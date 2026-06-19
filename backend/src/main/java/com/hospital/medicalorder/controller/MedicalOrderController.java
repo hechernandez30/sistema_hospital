@@ -3,7 +3,10 @@ package com.hospital.medicalorder.controller;
 import com.hospital.medicalorder.dto.MedicalOrderCreateRequest;
 import com.hospital.medicalorder.dto.MedicalOrderResponse;
 import com.hospital.medicalorder.dto.MedicalOrderUpdateRequest;
+import com.hospital.medicalorder.dto.PharmacyOrderLineResponse;
+import com.hospital.medicalorder.dto.PharmacyOrderLinesReplaceRequest;
 import com.hospital.medicalorder.service.MedicalOrderService;
+import com.hospital.medicalorder.service.PharmacyOrderLineService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,9 +27,12 @@ import java.util.List;
 public class MedicalOrderController {
 
     private final MedicalOrderService medicalOrderService;
+    private final PharmacyOrderLineService pharmacyOrderLineService;
 
-    public MedicalOrderController(MedicalOrderService medicalOrderService) {
+    public MedicalOrderController(
+            MedicalOrderService medicalOrderService, PharmacyOrderLineService pharmacyOrderLineService) {
         this.medicalOrderService = medicalOrderService;
+        this.pharmacyOrderLineService = pharmacyOrderLineService;
     }
 
     @GetMapping
@@ -57,5 +63,16 @@ public class MedicalOrderController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         medicalOrderService.delete(id);
+    }
+
+    @GetMapping("/{id}/pharmacy-lines")
+    public List<PharmacyOrderLineResponse> listPharmacyLines(@PathVariable Long id) {
+        return pharmacyOrderLineService.findByMedicalOrderId(id);
+    }
+
+    @PutMapping("/{id}/pharmacy-lines")
+    public List<PharmacyOrderLineResponse> replacePharmacyLines(
+            @PathVariable Long id, @Valid @RequestBody PharmacyOrderLinesReplaceRequest request) {
+        return pharmacyOrderLineService.replaceLines(id, request);
     }
 }

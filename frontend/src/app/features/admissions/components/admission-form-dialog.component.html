@@ -10,18 +10,18 @@
 } @else {
   <form [formGroup]="form" novalidate (ngSubmit)="submit()">
     <mat-dialog-content class="form-scroll">
-      <p class="hint">
+      <!-- <p class="hint">
         <mat-icon>info</mat-icon>
-        <strong>CU11:</strong> el paciente debe estar <strong>activo</strong> y tener <strong>código</strong> y <strong>DPI/NIT</strong> en el expediente.
-        Excepto estado <strong>RECHAZADO</strong>, debe documentarse cobertura con <strong>SEGURO</strong> vigente en sistema o bien
-        <strong>PAGO_SITIO</strong> (pago / garantía en sitio).
-        Opcionalmente puede vincular un <strong>ID de cita</strong>; debe ser la cita del <em>mismo</em> paciente.
-      </p>
+        El paciente debe estar <strong>activo</strong> y tener <strong>código</strong> y <strong>DPI/NIT</strong> en el expediente.
+        Salvo admisión <strong>rechazada</strong>, documente cobertura con <strong>seguro</strong> vigente en el sistema o
+        <strong>pago en sitio</strong>.
+        Opcionalmente puede vincular una <strong>cita</strong> del <em>mismo</em> paciente.
+      </p> -->
       <div class="row two">
         <app-entity-autocomplete
           formControlName="patientId"
           label="Paciente"
-          hint="Nombre, DPI/NIT o código"
+          hint=""
           [options]="patientOptions"
           [loading]="loading"
           [loadError]="catalogError"
@@ -29,7 +29,7 @@
         <app-entity-autocomplete
           formControlName="appointmentId"
           label="Cita (opcional)"
-          hint="Solo citas PROGRAMADA/REPROGRAMADA del paciente"
+          hint=""
           [options]="appointmentOptions"
           [loading]="loading"
           emptyMessage="Seleccione un paciente para ver sus citas activas."
@@ -70,7 +70,7 @@
         </mat-form-field>
       </div>
       <mat-divider />
-      <h3 class="section">Financiero CU11</h3>
+      <h3 class="section">Cobertura y validación financiera</h3>
       <mat-checkbox formControlName="financialValidationOk">
         Validación financiera conforme al proceso interno (obligatorio salvo rechazo).
       </mat-checkbox>
@@ -82,7 +82,7 @@
             <mat-option [value]="x">{{ validationLabel[x] }}</mat-option>
           }
         </mat-select>
-        <mat-hint>SEGURO: se verifica contra póliza activa en sistema. PAGO_SITIO: garantía registrada fuera del módulo de pagos por ahora.</mat-hint>
+        <!-- <mat-hint>SEGURO: se verifica contra póliza activa en sistema. PAGO_SITIO: garantía registrada fuera del módulo de pagos por ahora.</mat-hint> -->
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Observaciones</mat-label>
@@ -96,13 +96,7 @@
         <mat-label>Área transferencia</mat-label>
         <input matInput formControlName="transferredArea" maxlength="100" />
       </mat-form-field>
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>ID usuario admisor (opcional)</mat-label>
-        <input matInput formControlName="admittedByUserId" inputmode="numeric" autocomplete="off" />
-        @if (form.controls.admittedByUserId.hasError('positiveInteger') && form.controls.admittedByUserId.touched) {
-          <mat-error>ID entero positivo o vacío</mat-error>
-        }
-      </mat-form-field>
+      <app-session-user-field label="Usuario admisor" />
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>

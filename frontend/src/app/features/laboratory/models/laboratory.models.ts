@@ -23,9 +23,24 @@ export const LAB_REQUESTER_LABELS: Record<'INTERNO' | 'EXTERNO', string> = {
 };
 
 export const LAB_REQUEST_TYPE_LABELS: Record<'MUESTRA_MEDICA' | 'LABORATORIO', string> = {
-  MUESTRA_MEDICA: 'Muestra médica (CU06)',
+  MUESTRA_MEDICA: 'Muestra médica',
   LABORATORIO: 'Solicitud de laboratorio clínico',
 };
+
+/** FA01 solicitante externo: guía en descripción de muestra (sin columnas adicionales). */
+export const EXTERNAL_REQUESTER_DESCRIPTION_HINT =
+  'Incluya en la descripción: tipo de soporte, número de soporte/factura (si aplica), teléfono y correo del solicitante externo, además del detalle de la muestra.';
+
+export const EXTERNAL_REQUESTER_DESCRIPTION_TEMPLATE =
+  'Tipo de soporte: \nNº soporte/factura: \nTeléfono: \nCorreo: \nDetalle de la muestra: ';
+
+export interface LaboratoryAttachmentMetadata {
+  originalFileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  uploadedByUserId: number | null;
+}
 
 export interface LaboratoryResponse {
   id: number;
@@ -38,7 +53,7 @@ export interface LaboratoryResponse {
   sampleValid: boolean | null;
   incident: string | null;
   result: string | null;
-  attachment: string | null;
+  attachment: LaboratoryAttachmentMetadata | null;
   status: string;
   receptionAt: string | null;
   resultAt: string | null;
@@ -55,7 +70,6 @@ export interface LaboratoryCreatePayload {
   sampleValid: boolean | null;
   incident: string | null;
   result: string | null;
-  attachment: string | null;
   status: string;
   responsibleStaffId: number | null;
 }
@@ -69,7 +83,6 @@ export interface LaboratoryUpdatePayload {
   sampleValid: boolean | null;
   incident: string | null;
   result: string | null;
-  attachment: string | null;
   status: string;
   receptionAt: string | null;
   resultAt: string | null;

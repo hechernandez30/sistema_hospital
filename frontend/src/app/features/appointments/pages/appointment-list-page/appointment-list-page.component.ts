@@ -46,6 +46,7 @@ import {
   PageViewMode,
   filterAppointments,
   formatDoctorDisplayLabel,
+  isDoctorAvailableForScheduling,
   getRangeForMode,
   slotClickDatetimeLocal,
   startOfDay,
@@ -154,7 +155,7 @@ export class AppointmentListPageComponent implements OnInit, AfterViewInit {
   doctorFilterOptions(): { id: number | null; label: string }[] {
     const opts: { id: number | null; label: string }[] = [{ id: null, label: 'Todos los médicos' }];
     const seen = new Set<number>();
-    for (const s of this.staffRows.filter((x) => x.staffType === 'MEDICO' && x.active)) {
+    for (const s of this.staffRows.filter((x) => isDoctorAvailableForScheduling(x))) {
       seen.add(s.id);
       opts.push({ id: s.id, label: this.doctorLabels.get(s.id) ?? `Médico #${s.id}` });
     }

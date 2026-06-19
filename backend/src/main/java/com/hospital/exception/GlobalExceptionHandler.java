@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.slf4j.Logger;
@@ -63,6 +64,13 @@ public class GlobalExceptionHandler {
             DataIntegrityViolationException ex,
             HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, "Conflicto de datos o restricción en base de datos", request, null);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleMaxUpload(
+            MaxUploadSizeExceededException ex,
+            HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "El archivo supera el tamaño máximo permitido (10 MB).", request, null);
     }
 
     @ExceptionHandler(Exception.class)

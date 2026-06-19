@@ -10,12 +10,6 @@
 } @else {
   <form [formGroup]="form" novalidate (ngSubmit)="submit()">
     <mat-dialog-content class="form-scroll">
-      <p class="hint">
-        <mat-icon>info</mat-icon>
-        <strong>Flujo:</strong> Atención médica (CU12) → Orden médica tipo <strong>LABORATORIO</strong> → este registro (CU07). Los datos de
-        solicitante, tipo de solicitud, expediente y descripción de muestra materializan el trámite de <strong>muestra (CU06)</strong> dentro
-        de la misma entidad Laboratorio — no hay tabla separada de muestras. El campo Adjunto admite texto o URL; no hay carga de archivos binarios.
-      </p>
       @if (!isEdit) {
         <app-entity-autocomplete
           formControlName="medicalOrderId"
@@ -46,18 +40,33 @@
       </div>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Nº expediente / registro</mat-label>
-        <input matInput formControlName="recordNumber" maxlength="40" />
+        <input matInput formControlName="recordNumber" maxlength="40" autocomplete="off" />
+        @if (!isEdit) {
+          <!-- <mat-hint>Sugerido: AAAA-MM-DD-CC-NNNNNNN (CC = MM o LQ según tipo solicitud); puede cambiarlo.</mat-hint> -->
+        }
         @if (form.controls.recordNumber.hasError('maxlength') && form.controls.recordNumber.touched) {
           <mat-error>Máx. 40</mat-error>
         }
       </mat-form-field>
+      @if (showExternalRequesterGuidance) {
+        <p class="hint external-requester-hint" role="note">
+          <mat-icon aria-hidden="true">info</mat-icon>
+          <span>Incluya en la descripción: tipo de soporte, número de soporte/factura (si aplica), teléfono y correo del solicitante externo, además del detalle de la muestra.</span>
+        </p>
+      }
       <mat-form-field appearance="outline" class="full">
         <mat-label>Descripción muestra</mat-label>
-        <textarea matInput rows="3" formControlName="sampleDescription"></textarea>
-        @if (isEdit) {
+        <textarea
+          matInput
+          [rows]="showExternalRequesterGuidance ? 6 : 3"
+          formControlName="sampleDescription"
+        ></textarea>
+        @if (showExternalRequesterGuidance) {
+          <mat-hint>Complete las líneas de la plantilla y el detalle clínico de la muestra.</mat-hint>
+        } @else if (isEdit) {
           <mat-hint>Opcional en edición si el registro ya existía sin texto.</mat-hint>
         } @else {
-          <mat-hint>Obligatoria en alta para documentar tipo de muestra y contexto (CU06).</mat-hint>
+          <mat-hint>Obligatoria en alta: describa el tipo de muestra y el contexto clínico.</mat-hint>
         }
         @if (form.controls.sampleDescription.hasError('required') && form.controls.sampleDescription.touched) {
           <mat-error>Describa la muestra antes de crear el registro.</mat-error>
@@ -103,10 +112,58 @@
         <mat-label>Resultado (texto)</mat-label>
         <textarea matInput rows="2" formControlName="result"></textarea>
       </mat-form-field>
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>Adjunto / referencia</mat-label>
-        <input matInput formControlName="attachment" />
-      </mat-form-field>
+
+      <section class="attachment-section">
+        <h4 class="attachment-title">Adjunto de resultado (PDF o imagen)</h4>
+        @if (existingAttachment) {
+          <div class="attachment-current">
+            <mat-icon aria-hidden="true">attach_file</mat-icon>
+            <span>
+              {{ existingAttachment.originalFileName }}
+              ({{ formatSize(existingAttachment.sizeBytes) }})
+            </span>
+            @if (isEdit && form.controls.status.value !== 'COMPLETADO') {
+              <button
+                mat-stroked-button
+                type="button"
+                color="warn"
+                (click)="removeExistingAttachment()"
+                [disabled]="saving || removingAttachment"
+              >
+                Quitar
+              </button>
+            }
+          </div>
+        }
+        <div class="attachment-picker">
+          <input
+            #attachmentInput
+            type="file"
+            class="file-input"
+            [accept]="attachmentAccept"
+            (change)="onAttachmentSelected($event)"
+            [disabled]="saving || removingAttachment"
+          />
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="attachmentInput.click()"
+            [disabled]="saving || removingAttachment"
+          >
+            <mat-icon>upload_file</mat-icon>
+            {{ existingAttachment ? 'Reemplazar archivo' : 'Seleccionar archivo' }}
+          </button>
+          @if (selectedFileLabel) {
+            <span class="selected-file">{{ selectedFileLabel }}</span>
+            <button mat-button type="button" (click)="clearSelectedFile(); attachmentInput.value = ''">Limpiar</button>
+          }
+        </div>
+        <p class="hint attachment-hint" role="note">
+          <mat-icon aria-hidden="true">info</mat-icon>
+          <span>Máximo 10 MB. Obligatorio al marcar estado <strong>Completado</strong>.</span>
+        </p>
+      </section>
+
       <mat-form-field appearance="outline" class="full">
         <mat-label>ID staff responsable (opcional)</mat-label>
         <input matInput formControlName="responsibleStaffId" inputmode="numeric" autocomplete="off" />

@@ -28,14 +28,17 @@ public class MedicalOrderService {
     private final MedicalOrderRepository medicalOrderRepository;
     private final MedicalCareRepository medicalCareRepository;
     private final BusinessAuditRecorder businessAuditRecorder;
+    private final PharmacyOrderLineService pharmacyOrderLineService;
 
     public MedicalOrderService(
             MedicalOrderRepository medicalOrderRepository,
             MedicalCareRepository medicalCareRepository,
-            BusinessAuditRecorder businessAuditRecorder) {
+            BusinessAuditRecorder businessAuditRecorder,
+            PharmacyOrderLineService pharmacyOrderLineService) {
         this.medicalOrderRepository = medicalOrderRepository;
         this.medicalCareRepository = medicalCareRepository;
         this.businessAuditRecorder = businessAuditRecorder;
+        this.pharmacyOrderLineService = pharmacyOrderLineService;
     }
 
     @Transactional(readOnly = true)
@@ -75,9 +78,19 @@ public class MedicalOrderService {
     public MedicalOrderResponse update(Long id, MedicalOrderUpdateRequest request) {
         MedicalOrder medicalOrder = medicalOrderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la orden médica: " + id));
+        String priorStatus = medicalOrder.getStatus();
+        String priorType = medicalOrder.getOrderType();
+        if ("FARMACIA".equalsIgnoreCase(priorType) && !"FARMACIA".equalsIgnoreCase(request.orderType())) {
+            pharmacyOrderLineService.clearPharmacyLinesWithStockRestore(id);
+        }
         Map<String, Object> prior = snapshotMedicalOrderMinimal(medicalOrder);
         mapCommon(medicalOrder, request.medicalCareId(), request.orderType(), request.description(),
                 request.priority().trim(), request.status(), request.observations());
+        if ("FARMACIA".equalsIgnoreCase(medicalOrder.getOrderType())
+                && "ANULADO".equalsIgnoreCase(request.status())
+                && !"ANULADO".equalsIgnoreCase(priorStatus)) {
+            pharmacyOrderLineService.restoreStockForOrder(id);
+        }
         MedicalOrder saved = medicalOrderRepository.save(medicalOrder);
         businessAuditRecorder.safeRecord(
                 "medical-order",
@@ -95,6 +108,9 @@ public class MedicalOrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la orden médica: " + id));
         if ("ANULADO".equalsIgnoreCase(medicalOrder.getStatus())) {
             return;
+        }
+        if ("FARMACIA".equalsIgnoreCase(medicalOrder.getOrderType())) {
+            pharmacyOrderLineService.restoreStockForOrder(id);
         }
         Map<String, Object> prior = snapshotMedicalOrderMinimal(medicalOrder);
         medicalOrder.setStatus("ANULADO");

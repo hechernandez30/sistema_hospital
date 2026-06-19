@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { forkJoin } from 'rxjs';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin, map, Observable, of, switchMap } from 'rxjs';
+import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -17,6 +17,8 @@ import {
   MedicalOrderCreatePayload,
   MedicalOrderResponse,
   MedicalOrderUpdatePayload,
+  PharmacyOrderLineItemPayload,
+  PharmacyOrderLineResponse,
   medicalOrderStatusLabel,
   medicalOrderTypeLabel,
 } from '../models/medical-order.models';
@@ -27,6 +29,8 @@ import { PatientApiService } from '../../patients/services/patient-api.service';
 import { EntityPickerOption } from '../../shared/entity-picker.models';
 import { buildMedicalCareOptions, patientsToMap } from '../../shared/entity-picker.utils';
 import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
+import { MedicationApiService } from '../../medications/services/medication-api.service';
+import { MedicationResponse } from '../../medications/models/medication.models';
 
 export interface MedicalOrderFormDialogData {
   mode: 'create' | 'edit';
@@ -56,6 +60,7 @@ export class MedicalOrderFormDialogComponent implements OnInit {
   private readonly api = inject(MedicalOrderApiService);
   private readonly medicalCareApi = inject(MedicalCareApiService);
   private readonly patientApi = inject(PatientApiService);
+  private readonly medicationApi = inject(MedicationApiService);
   private readonly dialogRef = inject(MatDialogRef<MedicalOrderFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<MedicalOrderFormDialogData>(MAT_DIALOG_DATA);
@@ -63,10 +68,10 @@ export class MedicalOrderFormDialogComponent implements OnInit {
   readonly orderTypes = [...MEDICAL_ORDER_TYPES];
   readonly statuses = [...MEDICAL_ORDER_STATUSES];
   readonly priorityPresets = [...MEDICAL_ORDER_PRIORITY_PRESETS];
-  /** Prioridades fuera del catálogo (datos legacy) para poder editar sin perder valor. */
   extraPriorities: string[] = [];
 
   medicalCareOptions: EntityPickerOption[] = [];
+  medications: MedicationResponse[] = [];
   catalogError: string | null = null;
 
   loading = false;
@@ -79,6 +84,7 @@ export class MedicalOrderFormDialogComponent implements OnInit {
     priority: ['NORMAL', [Validators.required, Validators.maxLength(120)]],
     status: ['PENDIENTE', [Validators.required]],
     observations: ['', [Validators.maxLength(2000)]],
+    pharmacyLines: this.fb.array([]),
   });
 
   ngOnInit(): void {
@@ -89,9 +95,11 @@ export class MedicalOrderFormDialogComponent implements OnInit {
     forkJoin({
       cares: this.medicalCareApi.list(),
       patients: this.patientApi.list(),
+      medications: this.medicationApi.list(),
     }).subscribe({
-      next: ({ cares, patients }) => {
+      next: ({ cares, patients, medications }) => {
         this.medicalCareOptions = buildMedicalCareOptions(cares, patientsToMap(patients));
+        this.medications = medications.filter((m) => m.active);
         this.catalogError = null;
         if (this.dialogData.mode === 'edit' && this.dialogData.medicalOrderId != null) {
           this.api.getById(this.dialogData.medicalOrderId).subscribe({
@@ -106,28 +114,88 @@ export class MedicalOrderFormDialogComponent implements OnInit {
     });
   }
 
+  get pharmacyLines(): FormArray {
+    return this.form.controls.pharmacyLines;
+  }
+
+  get isPharmacyOrder(): boolean {
+    return this.form.controls.orderType.value === 'FARMACIA';
+  }
+
+  get pharmacyLinesLocked(): boolean {
+    const st = this.form.controls.status.value ?? '';
+    return st === 'COMPLETADO' || st === 'ANULADO';
+  }
+
+  addPharmacyLine(): void {
+    if (this.pharmacyLinesLocked) {
+      return;
+    }
+    this.pharmacyLines.push(this.createPharmacyLineGroup());
+  }
+
+  removePharmacyLine(index: number): void {
+    if (this.pharmacyLinesLocked) {
+      return;
+    }
+    this.pharmacyLines.removeAt(index);
+  }
+
+  private createPharmacyLineGroup(medicationId = '', quantity = 1) {
+    return this.fb.group({
+      medicationId: [medicationId, [requiredPositiveInteger()]],
+      quantity: [quantity, [Validators.required, Validators.min(1)]],
+    });
+  }
+
   private failLoad(err: unknown): void {
     this.loading = false;
-    this.catalogError = 'No se pudieron cargar atenciones médicas.';
+    this.catalogError = 'No se pudieron cargar los catálogos.';
     this.snackBar.open(getHttpErrorMessage(err, this.catalogError), 'Cerrar', { duration: 7000 });
     this.dialogRef.close(false);
   }
 
   private patchFrom(o: MedicalOrderResponse): void {
-    this.loading = false;
-    const pri = (o.priority ?? 'NORMAL').trim() || 'NORMAL';
-    const presetSet = new Set(this.priorityPresets as readonly string[]);
-    if (!presetSet.has(pri) && !this.extraPriorities.includes(pri)) {
-      this.extraPriorities = [...this.extraPriorities, pri];
+    const finish = (): void => {
+      this.loading = false;
+      const pri = (o.priority ?? 'NORMAL').trim() || 'NORMAL';
+      const presetSet = new Set(this.priorityPresets as readonly string[]);
+      if (!presetSet.has(pri) && !this.extraPriorities.includes(pri)) {
+        this.extraPriorities = [...this.extraPriorities, pri];
+      }
+      this.form.patchValue({
+        medicalCareId: String(o.medicalCareId),
+        orderType: o.orderType as (typeof MEDICAL_ORDER_TYPES)[number],
+        description: o.description,
+        priority: pri,
+        status: o.status as (typeof MEDICAL_ORDER_STATUSES)[number],
+        observations: o.observations ?? '',
+      });
+    };
+
+    if (o.orderType === 'FARMACIA' && this.dialogData.medicalOrderId != null) {
+      this.api.listPharmacyLines(this.dialogData.medicalOrderId).subscribe({
+        next: (lines) => {
+          this.setPharmacyLines(lines);
+          finish();
+        },
+        error: (err: unknown) => {
+          this.snackBar.open(getHttpErrorMessage(err, 'No se pudieron cargar las líneas de farmacia.'), 'Cerrar', {
+            duration: 7000,
+          });
+          finish();
+        },
+      });
+    } else {
+      finish();
     }
-    this.form.patchValue({
-      medicalCareId: String(o.medicalCareId),
-      orderType: o.orderType as (typeof MEDICAL_ORDER_TYPES)[number],
-      description: o.description,
-      priority: pri,
-      status: o.status as (typeof MEDICAL_ORDER_STATUSES)[number],
-      observations: o.observations ?? '',
-    });
+  }
+
+  private setPharmacyLines(lines: PharmacyOrderLineResponse[]): void {
+    this.pharmacyLines.clear();
+    for (const line of lines) {
+      this.pharmacyLines.push(this.createPharmacyLineGroup(String(line.medicationId), line.quantity));
+    }
   }
 
   submit(): void {
@@ -154,10 +222,13 @@ export class MedicalOrderFormDialogComponent implements OnInit {
         status: v.status as string,
         observations,
       };
-      this.api.create(body).subscribe({
-        next: () => this.ok(),
-        error: (e) => this.err(e),
-      });
+      this.api
+        .create(body)
+        .pipe(switchMap((created) => this.savePharmacyLinesIfNeeded(created.id, v.orderType as string)))
+        .subscribe({
+          next: () => this.ok(),
+          error: (e) => this.err(e),
+        });
     } else if (this.dialogData.medicalOrderId != null) {
       const body: MedicalOrderUpdatePayload = {
         medicalCareId,
@@ -167,14 +238,43 @@ export class MedicalOrderFormDialogComponent implements OnInit {
         status: v.status as string,
         observations,
       };
-      this.api.update(this.dialogData.medicalOrderId, body).subscribe({
-        next: () => this.ok(),
-        error: (e) => this.err(e),
-      });
+      const orderId = this.dialogData.medicalOrderId;
+      this.api
+        .update(orderId, body)
+        .pipe(switchMap(() => this.savePharmacyLinesIfNeeded(orderId, v.orderType as string)))
+        .subscribe({
+          next: () => this.ok(),
+          error: (e) => this.err(e),
+        });
     } else {
       this.saving = false;
       this.snackBar.open('No se pudo guardar: falta el identificador.', 'Cerrar', { duration: 6000 });
     }
+  }
+
+  private savePharmacyLinesIfNeeded(orderId: number, orderType: string): Observable<void> {
+    if (orderType !== 'FARMACIA' || this.pharmacyLinesLocked) {
+      return of(undefined);
+    }
+    const lines: PharmacyOrderLineItemPayload[] = [];
+    for (const row of this.pharmacyLines.controls) {
+      const medicationId = parsePositiveInt(row.get('medicationId')?.value);
+      const quantity = Number(row.get('quantity')?.value);
+      if (medicationId == null || !Number.isFinite(quantity) || quantity < 1) {
+        continue;
+      }
+      lines.push({ medicationId, quantity: Math.trunc(quantity) });
+    }
+    return this.api.replacePharmacyLines(orderId, { lines }).pipe(map(() => undefined));
+  }
+
+  medicationLabel(m: MedicationResponse): string {
+    const unit = m.unit?.trim() ? ` ${m.unit.trim()}` : '';
+    return `${m.name} — stock ${m.currentStock}${unit}`;
+  }
+
+  medicationOptionValue(id: number): string {
+    return String(id);
   }
 
   private ok(): void {

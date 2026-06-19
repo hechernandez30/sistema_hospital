@@ -16,6 +16,10 @@ spring:
         default_schema: hospital
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 server:
   port: 8080
@@ -23,6 +27,14 @@ server:
 app:
   security:
     enabled: true
+  storage:
+    type: local
+    max-attachment-bytes: 10485760
+    local:
+      base-path: ./data/uploads
+    azure:
+      connection-string: ${AZURE_STORAGE_CONNECTION_STRING:}
+      container-name: hospital-attachments
   jwt:
     # Mínimo 32 bytes UTF-8 para HS256; sustituir en producción (variable de entorno recomendada).
     secret: "desarrollo-local-clave-muy-larga-de-al-menos-32-bytes!!"

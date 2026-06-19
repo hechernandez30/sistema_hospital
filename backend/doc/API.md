@@ -176,7 +176,13 @@ Reglas adicionales: **`/api/users/**` y `/api/roles/**`** solo **ADMINISTRADOR**
 | GET | `/api/laboratory/{id}` | Obtener |
 | POST | `/api/laboratory` | Crear |
 | PUT | `/api/laboratory/{id}` | Actualizar (resultados, estado, etc.) |
-| DELETE | `/api/laboratory/{id}` | Eliminar |
+| DELETE | `/api/laboratory/{id}` | Anulación lógica (`estado = ANULADO`) |
+| POST | `/api/laboratory/{id}/attachment` | Subir o reemplazar adjunto (`multipart/form-data`, campo `file`) |
+| GET | `/api/laboratory/{id}/attachment` | Descargar adjunto (binario) |
+| GET | `/api/laboratory/{id}/attachment/metadata` | Metadatos del adjunto |
+| DELETE | `/api/laboratory/{id}/attachment` | Eliminar adjunto (no permitido si `estado = COMPLETADO`) |
+
+**Adjuntos (CU07 RN03):** PDF o imagen (JPEG, PNG, WebP), máximo **10 MB**. Metadatos en columna `adjunto` (JSON). Almacenamiento: disco local (`app.storage.type=local`, dev) o **Azure Blob Storage** (`app.storage.type=azure`, prod). **Regla:** `estado = COMPLETADO` exige adjunto válido previo vía `POST .../attachment`. El campo `attachment` en JSON create/update se ignora; usar endpoints dedicados.
 
 ## Imágenes
 

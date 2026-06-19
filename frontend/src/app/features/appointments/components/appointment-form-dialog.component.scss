@@ -57,6 +57,70 @@
   flex: 1 1 200px;
 }
 
+/* Inicio / Fin: fecha + hora en la misma fila dentro de cada bloque */
+.datetime-blocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.25rem;
+}
+
+.datetime-block {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 20rem;
+  min-width: min(100%, 20rem);
+  max-width: 100%;
+}
+
+:host ::ng-deep .datetime-block app-datetime-local-field.apt-datetime .datetime-local-field {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+:host ::ng-deep .datetime-block app-datetime-local-field.apt-datetime .dt-date {
+  flex: 1 1 11.5rem;
+  min-width: 10.5rem;
+}
+
+:host ::ng-deep .datetime-block app-datetime-local-field.apt-datetime .dt-time {
+  flex: 0 0 8.25rem;
+  width: 8.25rem;
+  max-width: 8.25rem;
+  min-width: 8.25rem;
+}
+
+@media (max-width: 599px) {
+  .datetime-blocks {
+    flex-direction: column;
+  }
+
+  .datetime-block {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  :host ::ng-deep .datetime-block app-datetime-local-field.apt-datetime .datetime-local-field {
+    flex-wrap: wrap;
+  }
+
+  :host ::ng-deep .datetime-block app-datetime-local-field.apt-datetime .dt-date {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  :host ::ng-deep .datetime-block app-datetime-local-field.apt-datetime .dt-time {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
 .full {
   width: 100%;
 }

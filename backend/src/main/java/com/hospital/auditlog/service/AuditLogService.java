@@ -10,6 +10,7 @@ import com.hospital.user.entity.User;
 import com.hospital.user.repository.UserRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.net.InetAddress;
@@ -52,8 +53,9 @@ public class AuditLogService {
 
     /**
      * Registro interno de auditoría (no expuesto como flujo principal vía HTTP).
+     * Transacción independiente para no marcar rollback en operaciones de solo lectura del llamador.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordEvent(AuditLogCreateRequest request) {
         AuditLog log = new AuditLog();
         log.setUser(resolveUser(request.userId()));

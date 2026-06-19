@@ -10,13 +10,12 @@
 } @else {
   <form [formGroup]="form" novalidate (ngSubmit)="submit()">
     <mat-dialog-content class="form-scroll">
-      <p class="hint">
+      <!-- <p class="hint">
         <mat-icon>info</mat-icon>
-        <strong>Episodio (CU12):</strong> debe indicar el <strong>ID de admisión</strong> del paciente. Opcionalmente puede
-        indicar una <strong>cita</strong> en estado PROGRAMADA o REPROGRAMADA; en ese caso la admisión también es
-        obligatoria. Paciente y médico (staff) son obligatorios; motivo de consulta, evaluación clínica y diagnóstico
-        también (validado en servidor).
-      </p>
+        Indique la <strong>admisión</strong> del paciente. Opcionalmente puede asociar una <strong>cita</strong> en estado
+        programada o reprogramada; en ese caso la admisión del mismo paciente también es obligatoria.
+        Paciente, médico, motivo de consulta, evaluación clínica y diagnóstico son obligatorios.
+      </p> -->
       @if (form.hasError('admissionOrAppointmentRequired') && form.touched) {
         <p class="context-error">Indique el ID de admisión (mínimo obligatorio para registrar el episodio).</p>
       }
@@ -48,7 +47,7 @@
           [options]="admissionOptions"
           [loading]="loading"
           [loadError]="catalogError"
-          hint="Seleccione paciente primero. Sin RECHAZADO/ANULADO."
+          hint=""
           emptyMessage="No hay admisiones válidas para este paciente."
         />
         <app-entity-autocomplete
@@ -57,7 +56,7 @@
           [options]="appointmentOptions"
           [loading]="loading"
           [loadError]="catalogError"
-          hint="Solo PROGRAMADA o REPROGRAMADA."
+          hint=""
           emptyMessage="No hay citas activas para este contexto."
         />
       </div>
@@ -86,7 +85,18 @@
         <mat-label>Plan de tratamiento (opcional)</mat-label>
         <textarea matInput rows="2" formControlName="treatmentPlan"></textarea>
       </mat-form-field>
-      <mat-checkbox formControlName="requiresHospitalization">Requiere hospitalización</mat-checkbox>
+      <div class="order-requests">
+        <p class="section-label">Estudios / exámenes adicionales</p>
+        <p class="section-hint">
+          Al guardar se crearán órdenes médicas en estado <strong>PENDIENTE</strong> (prioridad NORMAL) en el módulo
+          Órdenes médicas.
+        </p>
+        <div class="order-checks">
+          @for (opt of orderRequestOptions; track opt.orderType) {
+            <mat-checkbox [formControlName]="opt.formControlName">{{ opt.label }}</mat-checkbox>
+          }
+        </div>
+      </div>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>

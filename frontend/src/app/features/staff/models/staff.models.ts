@@ -21,8 +21,8 @@ export interface StaffResponse {
   attendance: string | null;
   active: boolean;
   hireDate: string | null;
-  linkedUserFirstName: string | null;
-  linkedUserLastName: string | null;
+  linkedUserFirstName?: string | null;
+  linkedUserLastName?: string | null;
 }
 
 export interface StaffCreatePayload {

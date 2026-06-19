@@ -13,7 +13,7 @@ public record LaboratoryResponse(
         Boolean sampleValid,
         String incident,
         String result,
-        String attachment,
+        LaboratoryAttachmentMetadataResponse attachment,
         String status,
         LocalDateTime receptionAt,
         LocalDateTime resultAt,

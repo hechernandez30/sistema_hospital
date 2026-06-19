@@ -6,6 +6,8 @@ import {
   MedicalOrderCreatePayload,
   MedicalOrderResponse,
   MedicalOrderUpdatePayload,
+  PharmacyOrderLinesReplacePayload,
+  PharmacyOrderLineResponse,
 } from '../models/medical-order.models';
 
 @Injectable({ providedIn: 'root' })
@@ -35,5 +37,16 @@ export class MedicalOrderApiService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
+  listPharmacyLines(medicalOrderId: number): Observable<PharmacyOrderLineResponse[]> {
+    return this.http.get<PharmacyOrderLineResponse[]>(`${this.base}/${medicalOrderId}/pharmacy-lines`);
+  }
+
+  replacePharmacyLines(
+    medicalOrderId: number,
+    body: PharmacyOrderLinesReplacePayload,
+  ): Observable<PharmacyOrderLineResponse[]> {
+    return this.http.put<PharmacyOrderLineResponse[]>(`${this.base}/${medicalOrderId}/pharmacy-lines`, body);
   }
 }

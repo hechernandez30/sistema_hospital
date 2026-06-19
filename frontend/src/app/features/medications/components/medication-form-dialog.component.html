@@ -34,7 +34,7 @@
         <mat-form-field appearance="outline">
           <mat-label>Stock actual</mat-label>
           <input matInput formControlName="currentStock" inputmode="numeric" autocomplete="off" />
-          <mat-hint>Reabasto: aumente este valor cuando ingrese nueva mercancía al inventario.</mat-hint>
+          <!-- <mat-hint>Reabasto: aumente este valor cuando ingrese nueva mercancía al inventario.</mat-hint> -->
           @if (form.controls.currentStock.hasError('required') && form.controls.currentStock.touched) {
             <mat-error>Requerido</mat-error>
           }
@@ -62,8 +62,7 @@
       </div>
       <mat-checkbox formControlName="active">Activo en catálogo</mat-checkbox>
       <p class="active-hint">
-        Desactive solo si el producto no debe ofrecerse; el stock sigue pudiendo ajustarse al editar. El despacho formal
-        vinculado a órdenes médicas no está implementado aún.
+        Desactive solo si el producto no debe ofrecerse; el stock sigue pudiendo ajustarse al editar.
       </p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">

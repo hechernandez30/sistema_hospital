@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -37,6 +38,16 @@ import {
   staffToMap,
 } from '../../shared/entity-picker.utils';
 import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
+import { MedicalOrderApiService } from '../../medical-orders/services/medical-order-api.service';
+import { MedicalOrderType, medicalOrderTypeLabel } from '../../medical-orders/models/medical-order.models';
+import {
+  MEDICAL_CARE_ORDER_REQUESTS,
+  activeOrderTypesFromList,
+  buildMedicalOrderCreatePayload,
+  checkboxPatchFromCareAndOrders,
+  orderTypesToCreate,
+  selectedOrderTypesFromForm,
+} from '../utils/medical-care-order-request.util';
 
 /** CU12: al menos admisión o cita; si hay cita, el backend exige admisión del mismo paciente. */
 function medicalCareEpisodeContextValidator(): ValidatorFn {
@@ -79,6 +90,7 @@ export interface MedicalCareFormDialogData {
 export class MedicalCareFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(MedicalCareApiService);
+  private readonly orderApi = inject(MedicalOrderApiService);
   private readonly patientApi = inject(PatientApiService);
   private readonly staffApi = inject(StaffApiService);
   private readonly admissionApi = inject(AdmissionApiService);
@@ -89,6 +101,8 @@ export class MedicalCareFormDialogComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<MedicalCareFormDialogData>(MAT_DIALOG_DATA);
 
+  readonly orderRequestOptions = MEDICAL_CARE_ORDER_REQUESTS;
+
   patientOptions: EntityPickerOption[] = [];
   doctorOptions: EntityPickerOption[] = [];
   admissionOptions: EntityPickerOption[] = [];
@@ -98,6 +112,7 @@ export class MedicalCareFormDialogComponent implements OnInit {
   private staffMap = new Map<number, import('../../staff/models/staff.models').StaffResponse>();
   private allAdmissions: import('../../admissions/models/admission.models').AdmissionResponse[] = [];
   private allAppointments: import('../../appointments/models/appointment.models').AppointmentResponse[] = [];
+  private existingActiveOrderTypes = new Set<MedicalOrderType>();
 
   loading = false;
   saving = false;
@@ -112,7 +127,10 @@ export class MedicalCareFormDialogComponent implements OnInit {
       clinicalEvaluation: ['', [Validators.required, Validators.maxLength(8000)]],
       diagnosis: ['', [Validators.required, Validators.maxLength(4000)]],
       treatmentPlan: ['', [Validators.maxLength(8000)]],
-      requiresHospitalization: [false],
+      orderLaboratorio: [false],
+      orderImagen: [false],
+      orderFarmacia: [false],
+      orderHospitalizacion: [false],
     },
     { validators: [medicalCareEpisodeContextValidator()] },
   );
@@ -136,10 +154,7 @@ export class MedicalCareFormDialogComponent implements OnInit {
         this.refreshContextOptions();
         this.catalogError = null;
         if (this.dialogData.mode === 'edit' && this.dialogData.medicalCareId != null) {
-          this.api.getById(this.dialogData.medicalCareId).subscribe({
-            next: (c) => this.patchFrom(c),
-            error: (err: unknown) => this.failLoad(err),
-          });
+          this.loadForEdit(this.dialogData.medicalCareId);
         } else {
           this.loading = false;
         }
@@ -155,6 +170,19 @@ export class MedicalCareFormDialogComponent implements OnInit {
     this.form.controls.admissionId.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.refreshAppointmentOptions();
       this.form.controls.appointmentId.setValue('');
+    });
+  }
+
+  private loadForEdit(medicalCareId: number): void {
+    forkJoin({
+      care: this.api.getById(medicalCareId),
+      orders: this.orderApi.list(medicalCareId),
+    }).subscribe({
+      next: ({ care, orders }) => {
+        this.existingActiveOrderTypes = activeOrderTypesFromList(orders);
+        this.patchFrom(care);
+      },
+      error: (err: unknown) => this.failLoad(err),
     });
   }
 
@@ -196,6 +224,7 @@ export class MedicalCareFormDialogComponent implements OnInit {
 
   private patchFrom(c: MedicalCareResponse): void {
     this.loading = false;
+    const orderChecks = checkboxPatchFromCareAndOrders(c.requiresHospitalization, this.existingActiveOrderTypes);
     this.form.patchValue(
       {
         patientId: String(c.patientId),
@@ -206,7 +235,7 @@ export class MedicalCareFormDialogComponent implements OnInit {
         clinicalEvaluation: c.clinicalEvaluation,
         diagnosis: c.diagnosis,
         treatmentPlan: c.treatmentPlan ?? '',
-        requiresHospitalization: c.requiresHospitalization,
+        ...orderChecks,
       },
       { emitEvent: false },
     );
@@ -237,6 +266,18 @@ export class MedicalCareFormDialogComponent implements OnInit {
     const admissionId = parsePositiveInt(v.admissionId);
     const appointmentId = parsePositiveInt(v.appointmentId);
     const treatmentPlan = v.treatmentPlan?.trim() ? v.treatmentPlan.trim() : null;
+    const diagnosis = (v.diagnosis ?? '').trim();
+    const requiresHospitalization = !!v.orderHospitalizacion;
+    const typesToCreate = orderTypesToCreate(
+      selectedOrderTypesFromForm({
+        orderLaboratorio: !!v.orderLaboratorio,
+        orderImagen: !!v.orderImagen,
+        orderFarmacia: !!v.orderFarmacia,
+        orderHospitalizacion: !!v.orderHospitalizacion,
+      }),
+      this.existingActiveOrderTypes,
+    );
+
     this.saving = true;
     if (this.dialogData.mode === 'create') {
       const body: MedicalCareCreatePayload = {
@@ -246,12 +287,12 @@ export class MedicalCareFormDialogComponent implements OnInit {
         doctorId,
         consultationReason: (v.consultationReason ?? '').trim(),
         clinicalEvaluation: (v.clinicalEvaluation ?? '').trim(),
-        diagnosis: (v.diagnosis ?? '').trim(),
+        diagnosis,
         treatmentPlan,
-        requiresHospitalization: v.requiresHospitalization ? true : false,
+        requiresHospitalization,
       };
       this.api.create(body).subscribe({
-        next: () => this.ok(),
+        next: (care) => this.afterCareSaved(care.id, diagnosis, typesToCreate),
         error: (e) => this.err(e),
       });
     } else if (this.dialogData.medicalCareId != null) {
@@ -262,12 +303,12 @@ export class MedicalCareFormDialogComponent implements OnInit {
         doctorId,
         consultationReason: (v.consultationReason ?? '').trim(),
         clinicalEvaluation: (v.clinicalEvaluation ?? '').trim(),
-        diagnosis: (v.diagnosis ?? '').trim(),
+        diagnosis,
         treatmentPlan,
-        requiresHospitalization: !!v.requiresHospitalization,
+        requiresHospitalization,
       };
       this.api.update(this.dialogData.medicalCareId, body).subscribe({
-        next: () => this.ok(),
+        next: () => this.afterCareSaved(this.dialogData.medicalCareId!, diagnosis, typesToCreate),
         error: (e) => this.err(e),
       });
     } else {
@@ -276,9 +317,60 @@ export class MedicalCareFormDialogComponent implements OnInit {
     }
   }
 
-  private ok(): void {
+  private afterCareSaved(medicalCareId: number, diagnosis: string, typesToCreate: MedicalOrderType[]): void {
+    this.createOrders(medicalCareId, diagnosis, typesToCreate).subscribe({
+      next: ({ created, failed }) => this.ok(created, failed),
+      error: (err: unknown) => {
+        this.saving = false;
+        this.snackBar.open(
+          getHttpErrorMessage(err, 'Atención guardada, pero falló la generación de órdenes médicas.'),
+          'Cerrar',
+          { duration: 9000 },
+        );
+        this.dialogRef.close(true);
+      },
+    });
+  }
+
+  private createOrders(
+    medicalCareId: number,
+    diagnosis: string,
+    types: MedicalOrderType[],
+  ): Observable<{ created: number; failed: MedicalOrderType[] }> {
+    if (types.length === 0) {
+      return of({ created: 0, failed: [] });
+    }
+    return forkJoin(
+      types.map((orderType) =>
+        this.orderApi.create(buildMedicalOrderCreatePayload(medicalCareId, orderType, diagnosis)).pipe(
+          map(() => ({ orderType, ok: true as const })),
+          catchError(() => of({ orderType, ok: false as const })),
+        ),
+      ),
+    ).pipe(
+      map((results) => ({
+        created: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).map((r) => r.orderType),
+      })),
+    );
+  }
+
+  private ok(ordersCreated: number, failedTypes: MedicalOrderType[]): void {
     this.saving = false;
-    this.snackBar.open('Atención guardada correctamente.', 'Cerrar', { duration: 4000 });
+    if (failedTypes.length === 0) {
+      const msg =
+        ordersCreated > 0
+          ? `Atención guardada. Se generaron ${ordersCreated} orden(es) médica(s).`
+          : 'Atención guardada correctamente.';
+      this.snackBar.open(msg, 'Cerrar', { duration: 5000 });
+    } else {
+      const labels = failedTypes.map((t) => medicalOrderTypeLabel(t)).join(', ');
+      this.snackBar.open(
+        `Atención guardada. ${ordersCreated} orden(es) creada(s); no se pudo crear: ${labels}.`,
+        'Cerrar',
+        { duration: 9000 },
+      );
+    }
     this.dialogRef.close(true);
   }
 

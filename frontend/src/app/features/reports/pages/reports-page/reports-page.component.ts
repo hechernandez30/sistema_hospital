@@ -1,6 +1,7 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -18,12 +19,21 @@ import {
   PaymentReportRow,
 } from '../../models/report.models';
 import { ReportApiService } from '../../services/report-api.service';
+import {
+  ADMISSION_REPORT_COLUMNS,
+  APPOINTMENT_REPORT_COLUMNS,
+  LABORATORY_REPORT_COLUMNS,
+  LOW_STOCK_REPORT_COLUMNS,
+  PAYMENT_REPORT_COLUMNS,
+} from '../../utils/report-column-definitions';
+import { exportReportCsv, exportReportPdf, ReportExportColumn } from '../../utils/report-export.utils';
 
 @Component({
   selector: 'app-reports-page',
   standalone: true,
   imports: [
     FormsModule,
+    RouterLink,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -136,28 +146,66 @@ export class ReportsPageComponent {
     });
   }
 
-  exportCsv(name: string, rows: ReadonlyArray<object>): void {
-    if (!rows.length) {
-      this.snackBar.open('No hay datos para exportar.', 'Cerrar', { duration: 5000 });
+  exportAppointmentsCsv(): void {
+    this.exportCsv('reporte_citas', APPOINTMENT_REPORT_COLUMNS, this.appointments);
+  }
+
+  exportAppointmentsPdf(): void {
+    this.exportPdf('Reporte de citas', 'reporte_citas', APPOINTMENT_REPORT_COLUMNS, this.appointments);
+  }
+
+  exportAdmissionsCsv(): void {
+    this.exportCsv('reporte_admisiones', ADMISSION_REPORT_COLUMNS, this.admissions);
+  }
+
+  exportAdmissionsPdf(): void {
+    this.exportPdf('Reporte de admisiones', 'reporte_admisiones', ADMISSION_REPORT_COLUMNS, this.admissions);
+  }
+
+  exportPaymentsCsv(): void {
+    this.exportCsv('reporte_pagos', PAYMENT_REPORT_COLUMNS, this.payments);
+  }
+
+  exportPaymentsPdf(): void {
+    this.exportPdf('Reporte de pagos', 'reporte_pagos', PAYMENT_REPORT_COLUMNS, this.payments);
+  }
+
+  exportLowStockCsv(): void {
+    this.exportCsv('reporte_stock_bajo', LOW_STOCK_REPORT_COLUMNS, this.lowStock);
+  }
+
+  exportLowStockPdf(): void {
+    this.exportPdf('Medicamentos con stock bajo', 'reporte_stock_bajo', LOW_STOCK_REPORT_COLUMNS, this.lowStock);
+  }
+
+  exportLaboratoryCsv(): void {
+    this.exportCsv('reporte_laboratorio', LABORATORY_REPORT_COLUMNS, this.laboratory);
+  }
+
+  exportLaboratoryPdf(): void {
+    this.exportPdf('Reporte de laboratorio', 'reporte_laboratorio', LABORATORY_REPORT_COLUMNS, this.laboratory);
+  }
+
+  private exportCsv<T>(fileName: string, columns: ReportExportColumn<T>[], rows: readonly T[]): void {
+    if (!this.ensureExportable(rows)) {
       return;
     }
-    const first = rows[0] as Record<string, unknown>;
-    const headers = Object.keys(first);
-    const csv = [
-      headers.join(','),
-      ...rows.map((r) => {
-        const row = r as Record<string, unknown>;
-        return headers.map((h) => csvEscape(row[h])).join(',');
-      }),
-    ].join('\n');
+    exportReportCsv(fileName, columns as ReportExportColumn<unknown>[], rows);
+  }
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${name}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  private exportPdf<T>(title: string, fileName: string, columns: ReportExportColumn<T>[], rows: readonly T[]): void {
+    if (!this.ensureExportable(rows)) {
+      return;
+    }
+    exportReportPdf(title, fileName, columns as ReportExportColumn<unknown>[], rows);
+  }
+
+  private ensureExportable(rows: readonly unknown[]): boolean {
+    if (!rows.length) {
+      this.snackBar.open('No hay datos para exportar.', 'Cerrar', { duration: 5000 });
+      return false;
+    }
+    return true;
   }
 
   private validateRange(dateFrom: string, dateTo: string): boolean {
@@ -176,15 +224,4 @@ export class ReportsPageComponent {
     onFinally();
     this.snackBar.open(getHttpErrorMessage(err, 'No se pudo generar el reporte.'), 'Cerrar', { duration: 7000 });
   }
-}
-
-function csvEscape(value: unknown): string {
-  if (value == null) {
-    return '';
-  }
-  const raw = String(value);
-  if (/[",\n]/.test(raw)) {
-    return `"${raw.replace(/"/g, '""')}"`;
-  }
-  return raw;
 }

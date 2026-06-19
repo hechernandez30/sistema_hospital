@@ -1,7 +1,9 @@
 export interface AppointmentReportRow {
   appointmentId: number;
   patientId: number;
+  patientName: string;
   doctorId: number;
+  doctorName: string;
   startAt: string;
   endAt: string;
   status: string;
@@ -10,6 +12,7 @@ export interface AppointmentReportRow {
 export interface AdmissionReportRow {
   admissionId: number;
   patientId: number;
+  patientName: string;
   admissionType: string;
   status: string;
   admissionDate: string;

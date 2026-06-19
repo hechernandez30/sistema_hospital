@@ -4,6 +4,8 @@ import com.hospital.auditlog.BusinessAuditActions;
 import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
+import com.hospital.laboratory.attachment.LaboratoryAttachmentCodec;
+import com.hospital.laboratory.dto.LaboratoryAttachmentMetadataResponse;
 import com.hospital.laboratory.dto.LaboratoryCreateRequest;
 import com.hospital.laboratory.dto.LaboratoryResponse;
 import com.hospital.laboratory.dto.LaboratoryUpdateRequest;
@@ -32,16 +34,19 @@ public class LaboratoryService {
     private final MedicalOrderRepository medicalOrderRepository;
     private final StaffRepository staffRepository;
     private final BusinessAuditRecorder businessAuditRecorder;
+    private final LaboratoryAttachmentCodec attachmentCodec;
 
     public LaboratoryService(
             LaboratoryRepository laboratoryRepository,
             MedicalOrderRepository medicalOrderRepository,
             StaffRepository staffRepository,
-            BusinessAuditRecorder businessAuditRecorder) {
+            BusinessAuditRecorder businessAuditRecorder,
+            LaboratoryAttachmentCodec attachmentCodec) {
         this.laboratoryRepository = laboratoryRepository;
         this.medicalOrderRepository = medicalOrderRepository;
         this.staffRepository = staffRepository;
         this.businessAuditRecorder = businessAuditRecorder;
+        this.attachmentCodec = attachmentCodec;
     }
 
     @Transactional(readOnly = true)
@@ -139,9 +144,11 @@ public class LaboratoryService {
         lab.setSampleValid(request.sampleValid());
         lab.setIncident(request.incident());
         lab.setResult(request.result());
-        lab.setAttachment(request.attachment());
         String createStatus = request.status() != null && !request.status().isBlank() ? request.status() : "PENDIENTE";
         ensureLaboratoryStatus(createStatus);
+        if ("COMPLETADO".equals(createStatus)) {
+            ensureCompletedHasAttachment(lab);
+        }
         lab.setStatus(createStatus);
         lab.setResponsibleStaff(resolveStaff(request.responsibleStaffId()));
     }
@@ -155,8 +162,10 @@ public class LaboratoryService {
         lab.setSampleValid(request.sampleValid());
         lab.setIncident(request.incident());
         lab.setResult(request.result());
-        lab.setAttachment(request.attachment());
         ensureLaboratoryStatus(request.status());
+        if ("COMPLETADO".equals(request.status())) {
+            ensureCompletedHasAttachment(lab);
+        }
         lab.setStatus(request.status());
         lab.setReceptionAt(request.receptionAt());
         lab.setResultAt(request.resultAt());
@@ -167,6 +176,13 @@ public class LaboratoryService {
         if (!ALLOWED_LAB_STATUS.contains(status)) {
             throw new BusinessRuleException(
                     "Estado de laboratorio no válido: use PENDIENTE, EN_PROCESO, COMPLETADO, RECHAZADO o ANULADO.");
+        }
+    }
+
+    private void ensureCompletedHasAttachment(Laboratory lab) {
+        if (!attachmentCodec.hasValidAttachment(lab.getAttachment())) {
+            throw new BusinessRuleException(
+                    "Para marcar como COMPLETADO debe adjuntar un archivo de resultado (PDF o imagen) mediante POST /api/laboratory/{id}/attachment.");
         }
     }
 
@@ -199,6 +215,8 @@ public class LaboratoryService {
     }
 
     private LaboratoryResponse toResponse(Laboratory lab) {
+        LaboratoryAttachmentMetadataResponse attachment =
+                attachmentCodec.toResponse(attachmentCodec.parse(lab.getAttachment()));
         return new LaboratoryResponse(
                 lab.getId(),
                 lab.getMedicalOrder().getId(),
@@ -210,7 +228,7 @@ public class LaboratoryService {
                 lab.getSampleValid(),
                 lab.getIncident(),
                 lab.getResult(),
-                lab.getAttachment(),
+                attachment,
                 lab.getStatus(),
                 lab.getReceptionAt(),
                 lab.getResultAt(),

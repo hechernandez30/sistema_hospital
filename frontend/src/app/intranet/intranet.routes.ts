@@ -127,6 +127,15 @@ export const intranetRoutes: Routes = [
           import('../features/reports/pages/reports-page/reports-page.component').then((m) => m.ReportsPageComponent),
       },
       {
+        path: 'reportes/medicos',
+        canActivate: [roleGuard],
+        data: { title: 'Reportes de médicos', roles: [...ROLES_REPORTS] },
+        loadComponent: () =>
+          import('../features/reports/pages/doctor-reports-page/doctor-reports-page.component').then(
+            (m) => m.DoctorReportsPageComponent,
+          ),
+      },
+      {
         path: 'bitacora',
         canActivate: [roleGuard],
         data: { title: 'Bitácora', roles: [...ROLES_AUDIT] },

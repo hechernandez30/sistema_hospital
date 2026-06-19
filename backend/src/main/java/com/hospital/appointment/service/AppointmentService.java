@@ -31,6 +31,11 @@ public class AppointmentService {
 
     private static final Set<String> ALLOWED_STATUS = Set.of("PROGRAMADA", "REPROGRAMADA", "CANCELADA", "ATENDIDA", "NO_ASISTIO");
     private static final Set<String> ACTIVE_STATUS = Set.of("PROGRAMADA", "REPROGRAMADA");
+    private static final String STAFF_TYPE_DOCTOR = "MEDICO";
+    private static final String ATTENDANCE_PRESENT = "PRESENTE";
+    private static final String MEDICO_NO_DISPONIBLE_MSG =
+            "El médico seleccionado no está disponible para agendar citas (personal inactivo o asistencia distinta de Presente). "
+                    + "Actualice el registro en Personal o elija otro médico.";
 
     private final AppointmentRepository appointmentRepository;
     private final PatientRepository patientRepository;
@@ -191,6 +196,7 @@ public class AppointmentService {
         appointment.setNotifySms(notifySms);
         appointment.setNotifyWhatsapp(notifyWhatsapp);
         appointment.setCreatedBy(resolveUser(createdByUserId));
+        validateDoctorAvailableForActiveAppointment(doctor, status);
     }
 
     private Specialty resolveSpecialty(Long specialtyId) {
@@ -219,6 +225,26 @@ public class AppointmentService {
         if (!endAt.isAfter(startAt)) {
             throw new BusinessRuleException(
                     "La fecha y hora de fin debe ser posterior a la de inicio (no pueden ser iguales).");
+        }
+    }
+
+    /**
+     * CU04 FA02 (mínimo): citas activas solo con médico operativamente disponible.
+     * Aplica en alta y edición si el estado queda PROGRAMADA o REPROGRAMADA.
+     */
+    private void validateDoctorAvailableForActiveAppointment(Staff doctor, String appointmentStatus) {
+        if (!ACTIVE_STATUS.contains(appointmentStatus)) {
+            return;
+        }
+        if (!STAFF_TYPE_DOCTOR.equalsIgnoreCase(doctor.getStaffType())) {
+            throw new BusinessRuleException("El personal seleccionado no es de tipo médico.");
+        }
+        if (!doctor.isActive()) {
+            throw new BusinessRuleException(MEDICO_NO_DISPONIBLE_MSG);
+        }
+        String attendance = doctor.getAttendance();
+        if (attendance != null && !attendance.isBlank() && !ATTENDANCE_PRESENT.equalsIgnoreCase(attendance.trim())) {
+            throw new BusinessRuleException(MEDICO_NO_DISPONIBLE_MSG);
         }
     }
 

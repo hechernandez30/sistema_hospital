@@ -28,5 +28,11 @@
   <div class="field"><span class="label">Usuario registro</span><span class="value">{{ data.registeredByUserId ?? '—' }}</span></div>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
+  @if (isPaid) {
+    <button mat-stroked-button type="button" color="primary" (click)="downloadReceipt()">
+      <mat-icon>picture_as_pdf</mat-icon>
+      Imprimir comprobante
+    </button>
+  }
   <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>
 </mat-dialog-actions>

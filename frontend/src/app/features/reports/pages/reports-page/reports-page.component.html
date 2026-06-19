@@ -2,9 +2,20 @@
   <mat-card-header>
     <mat-icon mat-card-avatar class="page-avatar">insights</mat-icon>
     <mat-card-title>Reportes operativos</mat-card-title>
-    <mat-card-subtitle>CU08 (versión inicial read-only)</mat-card-subtitle>
+    <mat-card-subtitle>Consultas e indicadores — solo lectura</mat-card-subtitle>
   </mat-card-header>
   <mat-card-content class="page-grid">
+    <section class="report-box doctor-link-box">
+      <h3>Reportes de médicos</h3>
+      <p class="doctor-link-desc">
+        Citas, atenciones, órdenes, admisiones, productividad, laboratorio e imágenes filtrados por médico y especialidad.
+      </p>
+      <a mat-flat-button color="primary" routerLink="/app/reportes/medicos">
+        <mat-icon>medical_information</mat-icon>
+        Abrir reportes de médicos
+      </a>
+    </section>
+
     <section class="report-box">
       <h3>Citas por fecha/estado</h3>
       <div class="filters">
@@ -30,7 +41,8 @@
         <button mat-flat-button color="primary" type="button" (click)="runAppointments()" [disabled]="appointmentsLoading">
           Generar
         </button>
-        <button mat-stroked-button type="button" (click)="exportCsv('reporte_citas', appointments)">CSV</button>
+        <button mat-stroked-button type="button" (click)="exportAppointmentsCsv()">CSV</button>
+        <button mat-stroked-button type="button" (click)="exportAppointmentsPdf()">PDF</button>
       </div>
       @if (appointmentsLoading) {
         <div class="loading"><mat-progress-spinner diameter="28" mode="indeterminate" /></div>
@@ -43,7 +55,7 @@
             <tbody>
               @for (row of appointments; track row.appointmentId) {
                 <tr>
-                  <td>{{ row.appointmentId }}</td><td>{{ row.patientId }}</td><td>{{ row.doctorId }}</td>
+                  <td>{{ row.appointmentId }}</td><td>{{ row.patientName }}</td><td>{{ row.doctorName }}</td>
                   <td>{{ row.startAt | date: 'yyyy-MM-dd HH:mm' }}</td><td>{{ row.status }}</td>
                 </tr>
               }
@@ -68,7 +80,8 @@
       </div>
       <div class="actions">
         <button mat-flat-button color="primary" type="button" (click)="runAdmissions()" [disabled]="admissionsLoading">Generar</button>
-        <button mat-stroked-button type="button" (click)="exportCsv('reporte_admisiones', admissions)">CSV</button>
+        <button mat-stroked-button type="button" (click)="exportAdmissionsCsv()">CSV</button>
+        <button mat-stroked-button type="button" (click)="exportAdmissionsPdf()">PDF</button>
       </div>
       @if (admissionsLoading) {
         <div class="loading"><mat-progress-spinner diameter="28" mode="indeterminate" /></div>
@@ -81,7 +94,7 @@
             <tbody>
               @for (row of admissions; track row.admissionId) {
                 <tr>
-                  <td>{{ row.admissionId }}</td><td>{{ row.patientId }}</td><td>{{ row.admissionType }}</td>
+                  <td>{{ row.admissionId }}</td><td>{{ row.patientName }}</td><td>{{ row.admissionType }}</td>
                   <td>{{ row.admissionDate | date: 'yyyy-MM-dd HH:mm' }}</td><td>{{ row.status }}</td>
                 </tr>
               }
@@ -106,7 +119,8 @@
       </div>
       <div class="actions">
         <button mat-flat-button color="primary" type="button" (click)="runPayments()" [disabled]="paymentsLoading">Generar</button>
-        <button mat-stroked-button type="button" (click)="exportCsv('reporte_pagos', payments)">CSV</button>
+        <button mat-stroked-button type="button" (click)="exportPaymentsCsv()">CSV</button>
+        <button mat-stroked-button type="button" (click)="exportPaymentsPdf()">PDF</button>
       </div>
       @if (paymentsLoading) {
         <div class="loading"><mat-progress-spinner diameter="28" mode="indeterminate" /></div>
@@ -133,7 +147,8 @@
       <h3>Medicamentos con stock bajo</h3>
       <div class="actions">
         <button mat-flat-button color="primary" type="button" (click)="runLowStock()" [disabled]="lowStockLoading">Generar</button>
-        <button mat-stroked-button type="button" (click)="exportCsv('reporte_stock_bajo', lowStock)">CSV</button>
+        <button mat-stroked-button type="button" (click)="exportLowStockCsv()">CSV</button>
+        <button mat-stroked-button type="button" (click)="exportLowStockPdf()">PDF</button>
       </div>
       @if (lowStockLoading) {
         <div class="loading"><mat-progress-spinner diameter="28" mode="indeterminate" /></div>
@@ -166,7 +181,8 @@
       </div>
       <div class="actions">
         <button mat-flat-button color="primary" type="button" (click)="runLaboratory()" [disabled]="laboratoryLoading">Generar</button>
-        <button mat-stroked-button type="button" (click)="exportCsv('reporte_laboratorio', laboratory)">CSV</button>
+        <button mat-stroked-button type="button" (click)="exportLaboratoryCsv()">CSV</button>
+        <button mat-stroked-button type="button" (click)="exportLaboratoryPdf()">PDF</button>
       </div>
       @if (laboratoryLoading) {
         <div class="loading"><mat-progress-spinner diameter="28" mode="indeterminate" /></div>

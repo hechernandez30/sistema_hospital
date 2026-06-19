@@ -59,6 +59,10 @@
 - **Notificaciones reales**: checkboxes sin cambio.
 - **Salas / otros módulos** (admisiones, triage, pagos, etc.).
 
+## Extensión 4.1b — FA02 médico no disponible
+
+Ver `docs/fase_4_1b_citas_fa02_disponibilidad_medico.md`. Valida en **alta y edición** que el médico esté activo y con asistencia **PRESENTE** cuando la cita queda PROGRAMADA/REPROGRAMADA (vacaciones/ausente/permiso rechazan guardado).
+
 ## Estado final de CU04
 
 - Validación de disponibilidad por **intervalo** entre citas **PROGRAMADA/REPROGRAMADA** del mismo médico.  

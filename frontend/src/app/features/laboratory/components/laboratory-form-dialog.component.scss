@@ -30,6 +30,12 @@
   width: 1.125rem;
   height: 1.125rem;
   color: var(--hh-primary, #1565c0);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.external-requester-hint {
+  margin-top: 0.25rem;
 }
 
 .row {
@@ -49,4 +55,53 @@
 mat-checkbox {
   display: block;
   margin: 0.5rem 0 1rem;
+}
+
+.attachment-section {
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.attachment-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.attachment-current {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.attachment-current mat-icon {
+  color: var(--hh-primary, #1565c0);
+}
+
+.attachment-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.file-input {
+  display: none;
+}
+
+.selected-file {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.attachment-hint {
+  margin: 0.75rem 0 0;
 }

@@ -10,18 +10,17 @@
 } @else {
   <form [formGroup]="form" novalidate (ngSubmit)="submit()">
     <mat-dialog-content class="form-scroll">
-      <p class="hint">
+      <!-- <p class="hint">
         <mat-icon>info</mat-icon>
-        La admisión debe existir en el sistema y no estar en estado RECHAZADO (el servidor rechaza ese caso).
-        CU10 recomienda registrar FC, FR, TA (sistólica/diastólica), SpO₂, temperatura y escala de dolor 0–10; en esta
-        fase siguen siendo opcionales en API para no romper flujos existentes — complete los rangos válidos cuando los
-        ingrese.
-        Decimales: use punto o coma. Staff responsable: ID opcional.
-      </p>
+        La admisión debe existir y no estar <strong>rechazada</strong>.
+        Se recomienda registrar frecuencia cardiaca y respiratoria, presión arterial, saturación, temperatura y dolor (0–10);
+        complete los valores cuando los tenga, respetando los rangos indicados en cada campo.
+        Decimales: use punto o coma. Personal responsable: opcional.
+      </p> -->
       <app-entity-autocomplete
         formControlName="admissionId"
         label="Admisión"
-        hint="Paciente, tipo de ingreso y estado (no ANULADA/RECHAZADA)"
+        hint=""
         [options]="admissionOptions"
         [loading]="loading"
         [loadError]="catalogError"
@@ -32,7 +31,7 @@
       }
       <div class="row three">
         <mat-form-field appearance="outline">
-          <mat-label>FC (lpm)</mat-label>
+          <mat-label>Frec. Card. (lpm)</mat-label>
           <input matInput formControlName="heartRate" inputmode="numeric" autocomplete="off" />
           <mat-hint>0–300</mat-hint>
           @if (form.controls.heartRate.hasError('integer') && form.controls.heartRate.touched) {
@@ -43,7 +42,7 @@
           }
         </mat-form-field>
         <mat-form-field appearance="outline">
-          <mat-label>FR (rpm)</mat-label>
+          <mat-label>Frec. Respir. (rpm)</mat-label>
           <input matInput formControlName="respiratoryRate" inputmode="numeric" autocomplete="off" />
           <mat-hint>0–120</mat-hint>
           @if (form.controls.respiratoryRate.hasError('integer') && form.controls.respiratoryRate.touched) {
@@ -54,7 +53,7 @@
           }
         </mat-form-field>
         <mat-form-field appearance="outline">
-          <mat-label>Dolor (0–10)</mat-label>
+          <mat-label>Escala dolor (0–10)</mat-label>
           <input matInput formControlName="pain" inputmode="numeric" autocomplete="off" />
           <mat-hint>Escala numérica EVA</mat-hint>
           @if (form.controls.pain.hasError('integer') && form.controls.pain.touched) {
@@ -67,7 +66,7 @@
       </div>
       <div class="row two">
         <mat-form-field appearance="outline">
-          <mat-label>TA sistólica</mat-label>
+          <mat-label>Pres. Sistólica (mmHg)</mat-label>
           <input matInput formControlName="systolicPressure" inputmode="numeric" autocomplete="off" />
           <mat-hint>mmHg · 0–300</mat-hint>
           @if (form.controls.systolicPressure.hasError('integer') && form.controls.systolicPressure.touched) {
@@ -78,7 +77,7 @@
           }
         </mat-form-field>
         <mat-form-field appearance="outline">
-          <mat-label>TA diastólica</mat-label>
+          <mat-label>Pres. Diastólica (mmHg)</mat-label>
           <input matInput formControlName="diastolicPressure" inputmode="numeric" autocomplete="off" />
           <mat-hint>mmHg · 0–200</mat-hint>
           @if (form.controls.diastolicPressure.hasError('integer') && form.controls.diastolicPressure.touched) {
@@ -91,7 +90,7 @@
       </div>
       <div class="row two">
         <mat-form-field appearance="outline">
-          <mat-label>SpO₂ (%)</mat-label>
+          <mat-label>Saturación de oxígeno (%)</mat-label>
           <input matInput formControlName="oxygenSaturation" inputmode="decimal" placeholder="ej. 98" autocomplete="off" />
           <mat-hint>0–100</mat-hint>
           @if (form.controls.oxygenSaturation.hasError('decimal') && form.controls.oxygenSaturation.touched) {
@@ -118,17 +117,21 @@
         <textarea matInput rows="2" formControlName="symptoms"></textarea>
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
-        <mat-label>Prioridad</mat-label>
+        <mat-label>Prioridad (automática)</mat-label>
         <mat-select formControlName="priority">
           @for (p of priorityOptions; track p.code) {
             <mat-option [value]="p.code"><span class="opt-code">{{ p.code }}</span> — {{ p.label }}</mat-option>
           }
         </mat-select>
-        @if (form.controls.priority.invalid && form.controls.priority.touched) {
-          <mat-error>Requerido</mat-error>
-        }
+        <mat-hint>
+          @if (form.controls.priority.value; as pri) {
+            {{ triagePriorityLabelFn(pri) }} — se actualiza al ingresar signos vitales.
+          } @else {
+            Complete signos vitales para calcular la categoría (CU10 RN02).
+          }
+        </mat-hint>
       </mat-form-field>
-      <mat-form-field appearance="outline" class="full">
+      <!-- <mat-form-field appearance="outline" class="full">
         <mat-label>Meta minutos (opcional)</mat-label>
         <input matInput formControlName="targetMinutes" inputmode="numeric" autocomplete="off" />
         <mat-hint>Tiempo objetivo ≥ 0 (minutos)</mat-hint>
@@ -138,14 +141,14 @@
         @if (form.controls.targetMinutes.hasError('range') && form.controls.targetMinutes.touched) {
           <mat-error>Valor fuera de rango</mat-error>
         }
-      </mat-form-field>
-      <mat-form-field appearance="outline" class="full">
+      </mat-form-field> -->
+      <!-- <mat-form-field appearance="outline" class="full">
         <mat-label>ID staff responsable (opcional)</mat-label>
         <input matInput formControlName="responsibleStaffId" inputmode="numeric" autocomplete="off" />
         @if (form.controls.responsibleStaffId.hasError('positiveInteger') && form.controls.responsibleStaffId.touched) {
           <mat-error>ID entero positivo (sin letras)</mat-error>
         }
-      </mat-form-field>
+      </mat-form-field> -->
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>

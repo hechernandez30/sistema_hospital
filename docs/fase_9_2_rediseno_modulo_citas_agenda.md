@@ -153,4 +153,50 @@ Tras el build frontend exitoso y sin tocar backend, el proyecto se considera **e
 
 ---
 
+## Ajuste UI — fecha y hora en la misma fila (formulario de citas)
+
+**Fecha:** 2026-05-21
+
+### Qué se modificó
+
+| Archivo | Cambio |
+|---------|--------|
+| `appointment-form-dialog.component.html` | Bloques `datetime-blocks` / `datetime-block` para Inicio y Fin; clase `apt-datetime` en cada `app-datetime-local-field` |
+| `appointment-form-dialog.component.scss` | Layout: fecha + hora + minuto en **una sola fila** por bloque; responsivo (apilado ordenado en pantallas pequeñas) |
+
+### Diseño resultante
+
+- **Inicio:** `[Fecha inicio]` `[HH]` `:` `[MM]` en la misma fila, a la derecha de la fecha.
+- **Fin:** `[Fecha fin]` `[HH]` `:` `[MM]` en la misma fila, a la derecha de la fecha.
+- En escritorio, los bloques Inicio y Fin pueden compartir fila si hay espacio.
+- En tablet/móvil (&lt; 600px): Inicio y Fin en columna; dentro de cada bloque, fecha y hora siguen en fila si caben.
+- En móvil estrecho (&lt; 420px): dentro de cada bloque, la hora pasa debajo de la fecha de forma ordenada.
+
+### Confirmaciones
+
+| Área | ¿Cambió? |
+|------|----------|
+| Layout visual del formulario de citas | Sí |
+| Lógica de fechas / validaciones / `datetime-local` | No |
+| Cálculo «Calcular hora fin» / duración por especialidad | No |
+| DTOs, backend, rutas, agenda CU04 | No |
+| Otros módulos | No |
+
+### Build
+
+```text
+npm run build — OK (exit 0)
+```
+
+Warnings previos de presupuesto CSS en `appointment-agenda` y `public-layout` (sin relación con este ajuste).
+
+### Pruebas recomendadas (smoke)
+
+1. Nueva cita: Inicio y Fin muestran fecha y hora en la misma fila.
+2. Redimensionar ventana: sin desbordamiento horizontal; apilado correcto en móvil.
+3. «Calcular hora fin» sigue actualizando Fin.
+4. Crear / editar cita y validación fin &gt; inicio sin regresiones.
+
+---
+
 *Fase 9.2 — 2026-05-21*

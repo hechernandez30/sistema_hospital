@@ -67,17 +67,65 @@ export function buildAppointmentPatientOptions(
     .sort((a, b) => a.label.localeCompare(b.label, 'es'));
 }
 
+/** Nombre corto del médico para pickers (linkedUser en personal o catálogo de usuarios admin). */
+export function doctorPickerShortName(
+  staff: StaffResponse,
+  userById?: ReadonlyMap<number, UserResponse>,
+): string {
+  const fromStaff = formatDoctorShortName(staff.linkedUserFirstName, staff.linkedUserLastName);
+  if (fromStaff) {
+    return fromStaff;
+  }
+  if (staff.userId != null) {
+    const user = userById?.get(staff.userId);
+    if (user) {
+      const fromUser = formatDoctorShortName(user.firstName, user.lastName);
+      if (fromUser) {
+        return fromUser;
+      }
+    }
+  }
+  return '';
+}
+
+/** Médico agendable: activo y asistencia Presente (vacaciones/ausente/permiso bloquean FA02). */
+export function isDoctorAvailableForScheduling(staff: StaffResponse): boolean {
+  if (staff.staffType !== 'MEDICO' || !staff.active) {
+    return false;
+  }
+  const attendance = staff.attendance?.trim();
+  if (!attendance) {
+    return true;
+  }
+  return attendance.toUpperCase() === 'PRESENTE';
+}
+
 /** Opciones de médico en formulario de cita: `EMP-0007 — Nombre Apellido — Especialidad`. */
 export function buildAppointmentDoctorOptions(
   staff: StaffResponse[],
   specialties: SpecialtyResponse[],
   activeOnly = true,
+  userById?: ReadonlyMap<number, UserResponse>,
+  /** En edición: incluir médico actual aunque ya no esté disponible (para poder cambiarlo). */
+  includeStaffId?: number | null,
 ): EntityPickerOption[] {
   const specMap = new Map(specialties.map((s) => [s.id, s.name] as const));
+  const includeId = includeStaffId ?? null;
   return staff
-    .filter((s) => (!activeOnly || s.active) && s.staffType === 'MEDICO')
+    .filter((s) => {
+      if (s.staffType !== 'MEDICO') {
+        return false;
+      }
+      if (activeOnly && !s.active) {
+        return false;
+      }
+      if (isDoctorAvailableForScheduling(s)) {
+        return true;
+      }
+      return includeId != null && s.id === includeId;
+    })
     .map((s) => {
-      const shortName = formatDoctorShortName(s.linkedUserFirstName, s.linkedUserLastName) || 'Médico';
+      const shortName = doctorPickerShortName(s, userById) || 'Médico';
       const specName =
         s.specialtyId != null ? (specMap.get(s.specialtyId) ?? 'Sin especialidad') : 'Sin especialidad';
       const code = s.employeeCode?.trim() || `#${s.id}`;
@@ -322,7 +370,7 @@ export function buildDoctorColumns(
   filterDoctorId: number | null,
   filterSpecialtyId: number | null,
 ): AgendaDoctorColumn[] {
-  let doctors = staff.filter((s) => s.staffType === 'MEDICO' && s.active);
+  let doctors = staff.filter((s) => isDoctorAvailableForScheduling(s));
   if (filterDoctorId != null) {
     doctors = doctors.filter((d) => d.id === filterDoctorId);
   }

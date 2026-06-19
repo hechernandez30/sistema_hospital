@@ -59,6 +59,15 @@ export class AuthService {
     return sessionStorage.getItem(STORAGE_USERNAME);
   }
 
+  getUserId(): number | null {
+    const raw = sessionStorage.getItem(STORAGE_USER_ID);
+    if (!raw) {
+      return null;
+    }
+    const id = Number(raw);
+    return Number.isInteger(id) && id > 0 ? id : null;
+  }
+
   hasAnyRole(allowed: readonly string[]): boolean {
     const roles = this.getRoles();
     return allowed.some((r) => roles.includes(r));

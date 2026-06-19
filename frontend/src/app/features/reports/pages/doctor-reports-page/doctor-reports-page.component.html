@@ -1,0 +1,171 @@
+<mat-card class="page-card">
+  <mat-card-header>
+    <mat-icon mat-card-avatar class="page-avatar">medical_information</mat-icon>
+    <mat-card-title>Reportes de médicos</mat-card-title>
+    <mat-card-subtitle>Consultas clínicas y operativas por médico — previsualización y exportación</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <div class="nav-row">
+      <a mat-stroked-button routerLink="/app/reportes">
+        <mat-icon>arrow_back</mat-icon>
+        Reportes operativos
+      </a>
+    </div>
+
+    <p class="type-hint">{{ selectedMeta.description }}</p>
+
+    <div class="filters">
+      <mat-form-field appearance="outline" class="type-field">
+        <mat-label>Tipo de reporte</mat-label>
+        <mat-select [(ngModel)]="selectedType" (selectionChange)="onTypeChange()">
+          @for (t of reportTypes; track t.id) {
+            <mat-option [value]="t.id">{{ t.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (showSpecialtyFilter()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Especialidad</mat-label>
+          <mat-select [(ngModel)]="specialtyId" [disabled]="catalogsLoading">
+            <mat-option value="">Todas</mat-option>
+            @for (s of specialties; track s.id) {
+              <mat-option [value]="optionValue(s.id)">{{ specialtyLabel(s) }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @if (showDoctorFilter()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Médico</mat-label>
+          <mat-select [(ngModel)]="doctorId" [disabled]="catalogsLoading">
+            <mat-option value="">Todos</mat-option>
+            @for (d of doctors; track d.id) {
+              <mat-option [value]="optionValue(d.id)">{{ doctorLabel(d) }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @if (selectedType === 'catalog') {
+        <mat-form-field appearance="outline">
+          <mat-label>Activo</mat-label>
+          <mat-select [(ngModel)]="activeFilter">
+            <mat-option value="">Todos</mat-option>
+            <mat-option value="true">Sí</mat-option>
+            <mat-option value="false">No</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Asistencia</mat-label>
+          <mat-select [(ngModel)]="attendance">
+            <mat-option value="">Todas</mat-option>
+            @for (a of attendanceTypes; track a) {
+              <mat-option [value]="a">{{ a }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @if (showDateRange()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Desde</mat-label>
+          <input matInput type="date" [(ngModel)]="dateFrom" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Hasta</mat-label>
+          <input matInput type="date" [(ngModel)]="dateTo" />
+        </mat-form-field>
+      }
+
+      @if (showStatusFilter()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Estado</mat-label>
+          <mat-select [(ngModel)]="status">
+            <mat-option value="">Todos</mat-option>
+            @for (s of statusOptions(); track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @if (selectedType === 'medical-orders') {
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de orden</mat-label>
+          <mat-select [(ngModel)]="orderType">
+            <mat-option value="">Todos</mat-option>
+            @for (t of orderTypes; track t) {
+              <mat-option [value]="t">{{ t }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @if (selectedType === 'admissions') {
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo ingreso</mat-label>
+          <mat-select [(ngModel)]="admissionType">
+            <mat-option value="">Todos</mat-option>
+            @for (t of admissionTypes; track t) {
+              <mat-option [value]="t">{{ t }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @if (selectedType === 'medical-cares') {
+        <mat-form-field appearance="outline">
+          <mat-label>Hospitalización</mat-label>
+          <mat-select [(ngModel)]="requiresHospitalization">
+            <mat-option value="">Todos</mat-option>
+            <mat-option value="true">Requiere</mat-option>
+            <mat-option value="false">No requiere</mat-option>
+          </mat-select>
+        </mat-form-field>
+      }
+    </div>
+
+    <div class="actions">
+      <button mat-flat-button color="primary" type="button" (click)="runReport()" [disabled]="loading || catalogsLoading">
+        <mat-icon>preview</mat-icon>
+        Previsualizar
+      </button>
+      <button mat-stroked-button type="button" (click)="exportCsv()" [disabled]="loading || !rows.length">CSV</button>
+      <button mat-stroked-button type="button" (click)="exportPdf()" [disabled]="loading || !rows.length">PDF</button>
+    </div>
+
+    @if (loading) {
+      <div class="loading"><mat-progress-spinner diameter="36" mode="indeterminate" /></div>
+    } @else if (generated && !rows.length) {
+      <p class="empty">Sin datos para los filtros seleccionados.</p>
+    } @else if (rows.length) {
+      <div class="preview-head">
+        <h3>Vista previa</h3>
+        <span class="count">{{ rows.length }} registro(s)</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              @for (col of previewColumns; track col.header) {
+                <th>{{ col.header }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows; track $index) {
+              <tr>
+                @for (col of previewColumns; track col.header) {
+                  <td>{{ cellValue(row, col) }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

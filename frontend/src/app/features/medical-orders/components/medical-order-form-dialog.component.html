@@ -10,12 +10,12 @@
 } @else {
   <form [formGroup]="form" novalidate (ngSubmit)="submit()">
     <mat-dialog-content class="form-scroll">
-      <p class="hint">
+      <!-- <p class="hint">
         <mat-icon>info</mat-icon>
-        <strong>Flujo (CU12):</strong> toda orden queda enlazada a un ID de atención médica existente. Para laboratorio:
-        después cree el registro en el módulo <strong>Laboratorio</strong> usando el ID de una orden tipo
-        <strong>LABORATORIO</strong>. Tipos de orden y estado son valores cerrados. Prioridad habitual: NORMAL o URGENTE.
-      </p>
+        Toda orden debe vincularse a una <strong>atención médica</strong> existente. Para laboratorio, después registre el
+        estudio en el módulo <strong>Laboratorio</strong> a partir de una orden tipo <strong>LABORATORIO</strong>.
+        Prioridad habitual: normal o urgente.
+      </p> -->
       <app-entity-autocomplete
         formControlName="medicalCareId"
         label="Atención médica"
@@ -71,12 +71,58 @@
         @if (form.controls.priority.hasError('required') && form.controls.priority.touched) {
           <mat-error>Requerida</mat-error>
         }
-        <mat-hint>Máx. 20 caracteres en base de datos; catálogo sugerido arriba.</mat-hint>
+        <!-- <mat-hint>Máx. 20 caracteres.</mat-hint> -->
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Observaciones (opcional)</mat-label>
         <textarea matInput rows="2" formControlName="observations"></textarea>
       </mat-form-field>
+
+      @if (isPharmacyOrder) {
+        <section class="pharmacy-section">
+          <div class="pharmacy-head">
+            <h3>Medicamentos a despachar</h3>
+            @if (pharmacyLinesLocked) {
+              <span class="lock-hint">Solo lectura (orden {{ form.controls.status.value }})</span>
+            }
+          </div>
+          @if (!pharmacyLinesLocked) {
+            <p class="hint pharmacy-hint">
+              <mat-icon>medication</mat-icon>
+              Al guardar se debitará el stock de cada medicamento indicado.
+            </p>
+          }
+          <div formArrayName="pharmacyLines" class="pharmacy-lines">
+            @for (row of pharmacyLines.controls; track $index; let i = $index) {
+              <div class="pharmacy-row" [formGroupName]="i">
+                <mat-form-field appearance="outline" class="med-field">
+                  <mat-label>Medicamento</mat-label>
+                  <mat-select formControlName="medicationId" [disabled]="pharmacyLinesLocked">
+                    @for (m of medications; track m.id) {
+                      <mat-option [value]="medicationOptionValue(m.id)">{{ medicationLabel(m) }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="qty-field">
+                  <mat-label>Cantidad</mat-label>
+                  <input matInput type="number" min="1" formControlName="quantity" [readonly]="pharmacyLinesLocked" />
+                </mat-form-field>
+                @if (!pharmacyLinesLocked) {
+                  <button mat-icon-button type="button" (click)="removePharmacyLine(i)" aria-label="Quitar línea">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+          @if (!pharmacyLinesLocked) {
+            <button mat-stroked-button type="button" class="add-line-btn" (click)="addPharmacyLine()">
+              <mat-icon>add</mat-icon>
+              Agregar medicamento
+            </button>
+          }
+        </section>
+      }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>

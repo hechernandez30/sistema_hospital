@@ -199,14 +199,12 @@ public class PaymentService {
 
     private BigDecimal computeTotal(BigDecimal subtotal, BigDecimal insuranceDiscount, BigDecimal copay) {
         BigDecimal cop = copay != null ? copay : BigDecimal.ZERO;
-        BigDecimal disc = insuranceDiscount != null ? insuranceDiscount : BigDecimal.ZERO;
-        BigDecimal total = subtotal.subtract(disc).add(cop);
-        if (total.compareTo(BigDecimal.ZERO) < 0) {
+        if (cop.compareTo(BigDecimal.ZERO) < 0) {
             throw new BusinessRuleException(
-                    "El total a pagar no puede ser negativo. Se calcula como subtotal − descuento por seguro "
-                            + "(subtotal × % seguro ÷ 100) + copago. Con cobertura 100% y sin copago, el total puede ser 0,00.");
+                    "El total a pagar no puede ser negativo. El copago representa lo que paga el paciente "
+                            + "(parte no cubierta por el seguro). Con cobertura 100% el copago y el total pueden ser 0,00.");
         }
-        return total.setScale(2, RoundingMode.HALF_UP);
+        return cop.setScale(2, RoundingMode.HALF_UP);
     }
 
     private void validatePaymentMethodForStatus(String status, String paymentMethod) {

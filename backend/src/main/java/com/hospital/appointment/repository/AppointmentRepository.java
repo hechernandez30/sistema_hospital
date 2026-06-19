@@ -33,4 +33,79 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> findByStartAtBetween(LocalDateTime from, LocalDateTime to);
 
     List<Appointment> findByStartAtBetweenAndStatus(LocalDateTime from, LocalDateTime to, String status);
+
+    @Query(
+            """
+            select a from Appointment a
+            join fetch a.patient
+            join fetch a.doctor d
+            left join fetch d.user
+            where a.startAt >= :from and a.startAt < :to
+            order by a.startAt asc, a.id asc
+            """)
+    List<Appointment> findReportRowsBetween(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
+
+    @Query(
+            """
+            select a from Appointment a
+            join fetch a.patient
+            join fetch a.doctor d
+            left join fetch d.user
+            where a.startAt >= :from and a.startAt < :to and a.status = :status
+            order by a.startAt asc, a.id asc
+            """)
+    List<Appointment> findReportRowsBetweenAndStatus(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("status") String status);
+
+    @Query(
+            """
+            select a from Appointment a
+            join fetch a.patient
+            join fetch a.doctor d
+            left join fetch d.user
+            left join fetch d.specialty
+            where d.staffType = 'MEDICO'
+            and a.startAt >= :from and a.startAt < :to
+            and (:doctorId is null or d.id = :doctorId)
+            and (:specialtyId is null or d.specialty.id = :specialtyId)
+            and (:status is null or a.status = :status)
+            order by a.startAt asc, a.id asc
+            """)
+    List<Appointment> findDoctorReportRows(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("doctorId") Long doctorId,
+            @Param("specialtyId") Long specialtyId,
+            @Param("status") String status);
+
+    @Query(
+            """
+            select a.doctor.id, count(a) from Appointment a
+            where a.doctor.staffType = 'MEDICO'
+            and a.startAt >= :from and a.startAt < :to
+            and (:doctorId is null or a.doctor.id = :doctorId)
+            group by a.doctor.id
+            """)
+    List<Object[]> countAppointmentsByDoctor(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("doctorId") Long doctorId);
+
+    @Query(
+            """
+            select a.doctor.id, count(a) from Appointment a
+            where a.doctor.staffType = 'MEDICO'
+            and a.status = 'ATENDIDA'
+            and a.startAt >= :from and a.startAt < :to
+            and (:doctorId is null or a.doctor.id = :doctorId)
+            group by a.doctor.id
+            """)
+    List<Object[]> countAttendedAppointmentsByDoctor(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("doctorId") Long doctorId);
 }

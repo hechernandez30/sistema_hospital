@@ -176,7 +176,12 @@ export class PaymentListPageComponent implements OnInit, AfterViewInit {
       .open<PaymentFormDialogComponent, PaymentFormDialogData, boolean>(PaymentFormDialogComponent, {
         width: '640px',
         maxWidth: '95vw',
-        data: { mode: 'create' },
+        data: {
+          mode: 'create',
+          existingReceiptNumbers: this.dataSource.data
+            .map((p) => p.receiptNumber)
+            .filter((n): n is string => Boolean(n?.trim())),
+        },
       })
       .afterClosed()
       .subscribe((ok) => ok && this.reload());

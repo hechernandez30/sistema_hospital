@@ -2,7 +2,12 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { LaboratoryCreatePayload, LaboratoryResponse, LaboratoryUpdatePayload } from '../models/laboratory.models';
+import {
+  LaboratoryAttachmentMetadata,
+  LaboratoryCreatePayload,
+  LaboratoryResponse,
+  LaboratoryUpdatePayload,
+} from '../models/laboratory.models';
 
 @Injectable({ providedIn: 'root' })
 export class LaboratoryApiService {
@@ -31,5 +36,23 @@ export class LaboratoryApiService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
+  uploadAttachment(id: number, file: File): Observable<LaboratoryResponse> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    return this.http.post<LaboratoryResponse>(`${this.base}/${id}/attachment`, formData);
+  }
+
+  downloadAttachment(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/${id}/attachment`, { responseType: 'blob' });
+  }
+
+  getAttachmentMetadata(id: number): Observable<LaboratoryAttachmentMetadata> {
+    return this.http.get<LaboratoryAttachmentMetadata>(`${this.base}/${id}/attachment/metadata`);
+  }
+
+  deleteAttachment(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}/attachment`);
   }
 }

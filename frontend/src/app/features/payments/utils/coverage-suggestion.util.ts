@@ -62,6 +62,30 @@ export function suggestCoveragePercentFromPolicies(rows: PatientInsuranceRow[]):
   return { coveragePercent: best.coveragePercent, insurerHint: hintParts.join(' · ') };
 }
 
+/** Descuento por seguro (2 decimales, HALF_UP) coherente con `PaymentService`. */
+export function computeInsuranceDiscount(subtotal: number, insurancePercent: number): number {
+  if (!Number.isFinite(subtotal) || subtotal < 0 || !Number.isFinite(insurancePercent)) {
+    return 0;
+  }
+  const pct = Math.min(100, Math.max(0, insurancePercent));
+  if (pct <= 0) {
+    return 0;
+  }
+  return Math.round(((subtotal * pct) / 100) * 100) / 100;
+}
+
+/**
+ * Copago sugerido al aplicar % desde póliza (CU09 RN03): parte del subtotal no cubierta por el seguro.
+ * Con cobertura 100 % devuelve 0 (FA02).
+ */
+export function suggestCopayFromCoverage(subtotal: number, insurancePercent: number): number {
+  if (!Number.isFinite(subtotal) || subtotal < 0) {
+    return 0;
+  }
+  const discount = computeInsuranceDiscount(subtotal, insurancePercent);
+  return Math.max(0, Math.round((subtotal - discount) * 100) / 100);
+}
+
 /** Descuento y total coherentes con `PaymentService` (HALF_UP a 2 decimales). */
 export function previewPaymentMath(subtotal: number, insurancePercent: number, copay: number): {
   discount: number;
@@ -70,12 +94,7 @@ export function previewPaymentMath(subtotal: number, insurancePercent: number, c
   if (!Number.isFinite(subtotal) || !Number.isFinite(insurancePercent) || !Number.isFinite(copay)) {
     return null;
   }
-  let discount = 0;
-  if (insurancePercent > 0) {
-    discount = (subtotal * insurancePercent) / 100;
-    discount = Math.round(discount * 100) / 100;
-  }
-  let total = subtotal - discount + copay;
-  total = Math.round(total * 100) / 100;
+  const discount = insurancePercent > 0 ? computeInsuranceDiscount(subtotal, insurancePercent) : 0;
+  const total = Math.round(copay * 100) / 100;
   return { discount, total };
 }

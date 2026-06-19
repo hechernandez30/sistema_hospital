@@ -24,6 +24,7 @@ import {
 } from '../models/payment.models';
 import {
   previewPaymentMath,
+  suggestCopayFromCoverage,
   suggestCoveragePercentFromPolicies,
 } from '../utils/coverage-suggestion.util';
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
@@ -45,6 +46,10 @@ import {
   patientsToMap,
 } from '../../shared/entity-picker.utils';
 import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
+import { SessionUserFieldComponent } from '../../shared/session-user-field.component';
+import { AuthService } from '../../../core/services/auth.service';
+import { resolveActorUserIdForSubmit } from '../../shared/session-user.utils';
+import { nextReceiptNumberFromExisting } from '../../../core/utils/next-sequential-code';
 import { AdmissionResponse } from '../../admissions/models/admission.models';
 import { MedicalCareResponse } from '../../medical-cares/models/medical-care.models';
 import { MedicalOrderResponse } from '../../medical-orders/models/medical-order.models';
@@ -52,6 +57,16 @@ import { MedicalOrderResponse } from '../../medical-orders/models/medical-order.
 export interface PaymentFormDialogData {
   mode: 'create' | 'edit';
   paymentId?: number;
+  /** Recibos ya conocidos (p. ej. desde lista); se complementan con GET /payments al crear. */
+  existingReceiptNumbers?: string[];
+}
+
+function formatMoneyFieldValue(n: number): string {
+  if (!Number.isFinite(n)) {
+    return '0';
+  }
+  const rounded = Math.round(n * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
 }
 
 function parseMoneyToNumber(raw: string): number {
@@ -76,6 +91,7 @@ function parseMoneyToNumber(raw: string): number {
     MatSnackBarModule,
     DecimalPipe,
     EntityAutocompleteComponent,
+    SessionUserFieldComponent,
   ],
   templateUrl: './payment-form-dialog.component.html',
   styleUrl: './payment-form-dialog.component.scss',
@@ -91,6 +107,7 @@ export class PaymentFormDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<PaymentFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly auth = inject(AuthService);
   readonly dialogData = inject<PaymentFormDialogData>(MAT_DIALOG_DATA);
 
   readonly statuses = [...PAYMENT_STATUSES];
@@ -109,6 +126,7 @@ export class PaymentFormDialogComponent implements OnInit {
   saving = false;
   /** Intento reciente de sugerencia desde pólizas API (solo UX). */
   suggestLoading = false;
+  private preservedActorUserId: number | null = null;
 
   readonly form = this.fb.group({
     patientId: ['', [requiredPositiveInteger()]],
@@ -117,11 +135,10 @@ export class PaymentFormDialogComponent implements OnInit {
     concept: ['', [Validators.required, Validators.maxLength(200)]],
     subtotal: ['', [Validators.required, optionalDecimalRange(0, 1_000_000_000)]],
     insurancePercent: ['0', [Validators.required, optionalDecimalRange(0, 100)]],
-    copay: ['', [Validators.required, optionalDecimalRange(0, 1_000_000_000)]],
+    copay: ['0', [Validators.required, optionalDecimalRange(0, 1_000_000_000)]],
     paymentMethod: ['' as string],
     status: ['PENDIENTE', [Validators.required]],
     receiptNumber: ['', [Validators.maxLength(50)]],
-    registeredByUserId: ['', [optionalPositiveInteger()]],
   });
 
   ngOnInit(): void {
@@ -131,13 +148,16 @@ export class PaymentFormDialogComponent implements OnInit {
     this.syncPaymentMethodValidator();
 
     this.loading = true;
-    forkJoin({
+    const catalogRequests = {
       patients: this.patientApi.list(),
       admissions: this.admissionApi.list(),
       orders: this.medicalOrderApi.list(),
       cares: this.medicalCareApi.list(),
-    }).subscribe({
-      next: ({ patients, admissions, orders, cares }) => {
+      ...(this.dialogData.mode === 'create' ? { payments: this.api.list() } : {}),
+    };
+    forkJoin(catalogRequests).subscribe({
+      next: (result) => {
+        const { patients, admissions, orders, cares } = result;
         this.patientMap = patientsToMap(patients);
         this.allAdmissions = admissions;
         this.allOrders = orders;
@@ -150,6 +170,9 @@ export class PaymentFormDialogComponent implements OnInit {
             error: (err: unknown) => this.failLoad(err),
           });
         } else {
+          const payments =
+            'payments' in result && Array.isArray(result.payments) ? result.payments : [];
+          this.applySuggestedReceiptNumber(payments);
           this.loading = false;
         }
       },
@@ -168,6 +191,15 @@ export class PaymentFormDialogComponent implements OnInit {
     this.catalogError = 'No se pudieron cargar catálogos.';
     this.snackBar.open(getHttpErrorMessage(err, this.catalogError), 'Cerrar', { duration: 7000 });
     this.dialogRef.close(false);
+  }
+
+  private applySuggestedReceiptNumber(payments: PaymentResponse[]): void {
+    const fromApi = payments
+      .map((p) => p.receiptNumber)
+      .filter((n): n is string => Boolean(n?.trim()));
+    const fromDialog = this.dialogData.existingReceiptNumbers ?? [];
+    const suggested = nextReceiptNumberFromExisting([...fromApi, ...fromDialog]);
+    this.form.patchValue({ receiptNumber: suggested });
   }
 
   private refreshPaymentContext(): void {
@@ -221,11 +253,14 @@ export class PaymentFormDialogComponent implements OnInit {
           );
           return;
         }
+        const subtotal = parseMoneyToNumber(this.form.controls.subtotal.value as string);
+        const suggestedCopay = suggestCopayFromCoverage(subtotal, sug.coveragePercent);
         this.form.patchValue({
           insurancePercent: String(sug.coveragePercent),
+          copay: formatMoneyFieldValue(suggestedCopay),
         });
         this.snackBar.open(
-          `Sugerido por ${sug.insurerHint}: cobertura ${sug.coveragePercent}% — puede cambiar este valor.`,
+          `Sugerido por ${sug.insurerHint}: cobertura ${sug.coveragePercent}%, copago ${formatMoneyFieldValue(suggestedCopay)} — puede cambiar estos valores.`,
           'Cerrar',
           { duration: 8000 },
         );
@@ -267,10 +302,10 @@ export class PaymentFormDialogComponent implements OnInit {
         paymentMethod: (p.paymentMethod ?? '') as '' | 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA',
         status: p.status as (typeof PAYMENT_STATUSES)[number],
         receiptNumber: p.receiptNumber ?? '',
-        registeredByUserId: p.registeredByUserId != null ? String(p.registeredByUserId) : '',
       },
       { emitEvent: false },
     );
+    this.preservedActorUserId = p.registeredByUserId;
     this.refreshPaymentContext();
   }
 
@@ -279,7 +314,7 @@ export class PaymentFormDialogComponent implements OnInit {
       this.form.markAllAsTouched();
       if (this.form.controls.status.value === 'PAGADO' && this.form.controls.paymentMethod.invalid) {
         this.snackBar.open(
-          'En estado PAGADO debe seleccionar un método de pago (CU09 / auditoría compatible).',
+          'En estado Pagado debe seleccionar un método de pago.',
           'Cerrar',
           { duration: 9000 },
         );
@@ -304,7 +339,7 @@ export class PaymentFormDialogComponent implements OnInit {
     const pre = previewPaymentMath(subtotal, insurancePercent, copay);
     if (pre != null && pre.total < 0) {
       this.snackBar.open(
-        'La combinación de subtotal, % seguro y copago produciría un total negativo. El servidor rechazaría el guardado.',
+        'El copago (total a pagar) no puede ser negativo. El servidor rechazaría el guardado.',
         'Cerrar',
         { duration: 9500 },
       );
@@ -322,7 +357,11 @@ export class PaymentFormDialogComponent implements OnInit {
       paymentMethod: methodRaw ? methodRaw : null,
       status: v.status as string,
       receiptNumber: v.receiptNumber?.trim() ? v.receiptNumber.trim() : null,
-      registeredByUserId: parsePositiveInt(v.registeredByUserId),
+      registeredByUserId: resolveActorUserIdForSubmit(
+        this.auth,
+        this.dialogData.mode,
+        this.preservedActorUserId,
+      ),
     };
     this.saving = true;
     if (this.dialogData.mode === 'create') {

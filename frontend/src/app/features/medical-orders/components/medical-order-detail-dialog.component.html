@@ -19,6 +19,22 @@
   <div class="field full"><span class="label">Fecha orden</span><span class="value">{{ data.orderDate ? (data.orderDate | date: 'medium') : '—' }}</span></div>
   <div class="field full"><span class="label">Descripción</span><span class="value pre">{{ data.description }}</span></div>
   <div class="field full"><span class="label">Observaciones</span><span class="value pre">{{ data.observations ?? '—' }}</span></div>
+  @if (data.orderType === 'FARMACIA') {
+    <div class="field full pharmacy-block">
+      <span class="label">Medicamentos despachados</span>
+      @if (loadingPharmacyLines) {
+        <mat-progress-spinner diameter="28" mode="indeterminate" />
+      } @else if (pharmacyLines.length === 0) {
+        <span class="value">—</span>
+      } @else {
+        <ul class="pharmacy-list">
+          @for (line of pharmacyLines; track line.id) {
+            <li>{{ line.medicationName }} × {{ line.quantity }}</li>
+          }
+        </ul>
+      }
+    </div>
+  }
 </mat-dialog-content>
 <mat-dialog-actions align="end">
   <button mat-flat-button color="primary" type="button" (click)="close()">Cerrar</button>

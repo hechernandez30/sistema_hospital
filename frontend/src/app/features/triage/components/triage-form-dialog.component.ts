@@ -1,5 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin, merge } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,7 +11,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { TriageApiService } from '../services/triage-api.service';
-import { TRIAGE_PRIORITY_OPTIONS, TriageCreatePayload, TriageUpdatePayload } from '../models/triage.models';
+import { TRIAGE_PRIORITY_OPTIONS, TriageCreatePayload, TriageUpdatePayload, triagePriorityLabel } from '../models/triage.models';
+import { computeTriagePriorityFromVitals } from '../utils/triage-priority.util';
 import { getHttpErrorMessage } from '../../../core/utils/http-error-message';
 import {
   optionalDecimalRange,
@@ -57,9 +59,11 @@ export class TriageFormDialogComponent implements OnInit {
   private readonly patientApi = inject(PatientApiService);
   private readonly dialogRef = inject(MatDialogRef<TriageFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly destroyRef = inject(DestroyRef);
   readonly dialogData = inject<TriageFormDialogData>(MAT_DIALOG_DATA);
 
   readonly priorityOptions = TRIAGE_PRIORITY_OPTIONS;
+  readonly triagePriorityLabelFn = triagePriorityLabel;
   admissionOptions: EntityPickerOption[] = [];
   catalogError: string | null = null;
   loading = false;
@@ -81,6 +85,8 @@ export class TriageFormDialogComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.form.controls.priority.disable({ emitEvent: false });
+    this.setupAutoPriorityFromVitals();
     this.loading = true;
     forkJoin({ patients: this.patientApi.list(), admissions: this.admissionApi.list() }).subscribe({
       next: ({ patients, admissions }) => {
@@ -121,6 +127,7 @@ export class TriageFormDialogComponent implements OnInit {
             targetMinutes: t.targetMinutes != null ? String(t.targetMinutes) : '',
             responsibleStaffId: t.responsibleStaffId != null ? String(t.responsibleStaffId) : '',
           });
+          this.syncPriorityFromVitals();
         },
       error: (err: unknown) => {
         this.loading = false;
@@ -128,6 +135,57 @@ export class TriageFormDialogComponent implements OnInit {
         this.dialogRef.close(false);
       },
     });
+  }
+
+  private setupAutoPriorityFromVitals(): void {
+    const vitalControls = [
+      this.form.controls.heartRate,
+      this.form.controls.respiratoryRate,
+      this.form.controls.systolicPressure,
+      this.form.controls.diastolicPressure,
+      this.form.controls.oxygenSaturation,
+      this.form.controls.temperature,
+      this.form.controls.pain,
+    ];
+    merge(...vitalControls.map((c) => c.valueChanges))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.syncPriorityFromVitals());
+  }
+
+  private syncPriorityFromVitals(): void {
+    const v = this.form.getRawValue();
+    const result = computeTriagePriorityFromVitals({
+      heartRate: parseOptionalInt(v.heartRate),
+      respiratoryRate: parseOptionalInt(v.respiratoryRate),
+      systolicPressure: parseOptionalInt(v.systolicPressure),
+      diastolicPressure: parseOptionalInt(v.diastolicPressure),
+      oxygenSaturation: this.parseOptionalDecimalNumber(v.oxygenSaturation),
+      temperature: this.parseOptionalDecimalNumber(v.temperature),
+      pain: parseOptionalInt(v.pain),
+    });
+    if (result == null) {
+      this.form.patchValue(
+        { priority: 'III_PRIORITARIO', targetMinutes: '60' },
+        { emitEvent: false },
+      );
+      return;
+    }
+    this.form.patchValue(
+      {
+        priority: result.priority,
+        targetMinutes: String(result.targetMinutes),
+      },
+      { emitEvent: false },
+    );
+  }
+
+  private parseOptionalDecimalNumber(raw: unknown): number | null {
+    const s = parseOptionalDecimalString(raw);
+    if (s == null) {
+      return null;
+    }
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
   }
 
   submit(): void {
@@ -142,19 +200,21 @@ export class TriageFormDialogComponent implements OnInit {
       this.snackBar.open('ID de admisión no válido.', 'Cerrar', { duration: 5000 });
       return;
     }
+    this.syncPriorityFromVitals();
+    const vAfter = this.form.getRawValue();
     const payload = {
       admissionId,
-      heartRate: parseOptionalInt(v.heartRate),
-      respiratoryRate: parseOptionalInt(v.respiratoryRate),
-      systolicPressure: parseOptionalInt(v.systolicPressure),
-      diastolicPressure: parseOptionalInt(v.diastolicPressure),
-      oxygenSaturation: parseOptionalDecimalString(v.oxygenSaturation),
-      temperature: parseOptionalDecimalString(v.temperature),
-      pain: parseOptionalInt(v.pain),
-      symptoms: v.symptoms?.trim() ? v.symptoms.trim() : null,
-      priority: v.priority,
-      targetMinutes: parseOptionalInt(v.targetMinutes),
-      responsibleStaffId: parsePositiveInt(v.responsibleStaffId),
+      heartRate: parseOptionalInt(vAfter.heartRate),
+      respiratoryRate: parseOptionalInt(vAfter.respiratoryRate),
+      systolicPressure: parseOptionalInt(vAfter.systolicPressure),
+      diastolicPressure: parseOptionalInt(vAfter.diastolicPressure),
+      oxygenSaturation: parseOptionalDecimalString(vAfter.oxygenSaturation),
+      temperature: parseOptionalDecimalString(vAfter.temperature),
+      pain: parseOptionalInt(vAfter.pain),
+      symptoms: vAfter.symptoms?.trim() ? vAfter.symptoms.trim() : null,
+      priority: vAfter.priority,
+      targetMinutes: parseOptionalInt(vAfter.targetMinutes),
+      responsibleStaffId: parsePositiveInt(vAfter.responsibleStaffId),
     };
     this.saving = true;
     if (this.dialogData.mode === 'create') {

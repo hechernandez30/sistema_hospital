@@ -12,6 +12,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { forkJoin, of } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 import { AppointmentApiService } from '../services/appointment-api.service';
 import {
   APPOINTMENT_STATUSES,
@@ -27,8 +28,10 @@ import {
 import { optionalPositiveInteger, parsePositiveInt, requiredPositiveInteger } from '../../shared/form-validators';
 import { SpecialtyApiService } from '../../specialties/services/specialty-api.service';
 import { SpecialtyResponse } from '../../specialties/models/specialty.models';
+import { UserApiService } from '../../users/services/user-api.service';
+import { UserResponse } from '../../users/models/user.models';
 import { AuthService } from '../../../core/services/auth.service';
-import { ROLES_RRHH_SPECIALTIES } from '../../../core/constants/role-routes';
+import { ROLE_ADMIN, ROLES_RRHH_SPECIALTIES } from '../../../core/constants/role-routes';
 import { appointmentStatusChipClass } from '../appointment-status-chip';
 import { PatientApiService } from '../../patients/services/patient-api.service';
 import { PatientResponse } from '../../patients/models/patient.models';
@@ -40,6 +43,9 @@ import {
   buildAppointmentPatientOptions,
 } from '../appointment-page.utils';
 import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
+import { SessionUserFieldComponent } from '../../shared/session-user-field.component';
+import { resolveActorUserIdForSubmit } from '../../shared/session-user.utils';
+import { DatetimeLocalFieldComponent } from '../../shared/datetime-local-field.component';
 
 export interface AppointmentFormPrefill {
   doctorId?: number;
@@ -85,6 +91,8 @@ function rangeValidator(group: AbstractControl): ValidationErrors | null {
     MatProgressSpinnerModule,
     MatSnackBarModule,
     EntityAutocompleteComponent,
+    SessionUserFieldComponent,
+    DatetimeLocalFieldComponent,
   ],
   templateUrl: './appointment-form-dialog.component.html',
   styleUrl: './appointment-form-dialog.component.scss',
@@ -95,7 +103,9 @@ export class AppointmentFormDialogComponent implements OnInit {
   private readonly specialtyApi = inject(SpecialtyApiService);
   private readonly patientApi = inject(PatientApiService);
   private readonly staffApi = inject(StaffApiService);
+  private readonly userApi = inject(UserApiService);
   private readonly auth = inject(AuthService);
+  private readonly isAdmin = this.auth.hasAnyRole([ROLE_ADMIN]);
   private readonly dialogRef = inject(MatDialogRef<AppointmentFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<AppointmentFormDialogData>(MAT_DIALOG_DATA);
@@ -109,6 +119,8 @@ export class AppointmentFormDialogComponent implements OnInit {
 
   loading = false;
   saving = false;
+  /** En edición: conserva el usuario que registró originalmente la cita. */
+  private preservedActorUserId: number | null = null;
 
   readonly form = this.fb.group(
     {
@@ -122,7 +134,6 @@ export class AppointmentFormDialogComponent implements OnInit {
       notifyEmail: [false],
       notifySms: [false],
       notifyWhatsapp: [false],
-      createdByUserId: ['', [optionalPositiveInteger()]],
     },
     { validators: [rangeValidator] },
   );
@@ -133,62 +144,76 @@ export class AppointmentFormDialogComponent implements OnInit {
       patients: this.patientApi.list(),
       staff: this.staffApi.list(),
       specialties: specs$,
+      users: this.isAdmin ? this.userApi.list() : of([] as UserResponse[]),
     });
     if (this.dialogData.mode === 'edit' && this.dialogData.appointmentId != null) {
       this.loading = true;
       forkJoin({
         catalog: catalog$,
         apt: this.api.getById(this.dialogData.appointmentId),
-      }).subscribe({
+      })
+        .pipe(finalize(() => (this.loading = false)))
+        .subscribe({
         next: ({ catalog, apt }) => {
-          this.applyCatalog(catalog.patients, catalog.staff, catalog.specialties);
+          this.applyCatalog(catalog.patients, catalog.staff, catalog.specialties, catalog.users, apt.doctorId);
           this.form.patchValue({
-            patientId: String(apt.patientId),
-            doctorId: String(apt.doctorId),
-            specialtyId: apt.specialtyId != null ? String(apt.specialtyId) : '',
-            startAt: apiToDatetimeLocal(apt.startAt),
-            endAt: apiToDatetimeLocal(apt.endAt),
-            reason: apt.reason ?? '',
-            status: apt.status,
-            notifyEmail: apt.notifyEmail,
-            notifySms: apt.notifySms,
-            notifyWhatsapp: apt.notifyWhatsapp,
-            createdByUserId: apt.createdByUserId != null ? String(apt.createdByUserId) : '',
-          });
-          this.loading = false;
-        },
-        error: (err: unknown) => {
-          this.loading = false;
-          this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar la cita o especialidades.'), 'Cerrar', {
-            duration: 7000,
-          });
-          this.dialogRef.close(false);
-        },
-      });
+              patientId: String(apt.patientId),
+              doctorId: String(apt.doctorId),
+              specialtyId: apt.specialtyId != null ? String(apt.specialtyId) : '',
+              startAt: apiToDatetimeLocal(apt.startAt),
+              endAt: apiToDatetimeLocal(apt.endAt),
+              reason: apt.reason ?? '',
+              status: apt.status,
+              notifyEmail: apt.notifyEmail,
+              notifySms: apt.notifySms,
+              notifyWhatsapp: apt.notifyWhatsapp,
+            });
+            this.preservedActorUserId = apt.createdByUserId;
+          },
+          error: (err: unknown) => {
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudo cargar la cita o especialidades.'), 'Cerrar', {
+              duration: 7000,
+            });
+            this.dialogRef.close(false);
+          },
+        });
     } else {
       this.loading = true;
-      catalog$.subscribe({
-        next: ({ patients, staff, specialties }) => {
-          this.applyCatalog(patients, staff, specialties);
-          this.applyCreatePrefill();
-          this.loading = false;
-        },
-        error: (err: unknown) => {
-          this.loading = false;
-          this.snackBar.open(getHttpErrorMessage(err, 'No se pudieron cargar pacientes o personal.'), 'Cerrar', {
-            duration: 7000,
-          });
-          this.dialogRef.close(false);
-        },
-      });
+      catalog$
+        .pipe(finalize(() => (this.loading = false)))
+        .subscribe({
+          next: ({ patients, staff, specialties, users }) => {
+            this.applyCatalog(patients, staff, specialties, users);
+            this.applyCreatePrefill();
+          },
+          error: (err: unknown) => {
+            this.snackBar.open(getHttpErrorMessage(err, 'No se pudieron cargar pacientes o personal.'), 'Cerrar', {
+              duration: 7000,
+            });
+            this.dialogRef.close(false);
+          },
+        });
     }
   }
 
-  private applyCatalog(patients: PatientResponse[], staff: StaffResponse[], specialties: SpecialtyResponse[]): void {
+  private applyCatalog(
+    patients: PatientResponse[],
+    staff: StaffResponse[],
+    specialties: SpecialtyResponse[],
+    users: UserResponse[] = [],
+    includeDoctorId?: number | null,
+  ): void {
     this.specialties = specialties;
     this.catalogError = null;
+    const userById = new Map(users.map((u) => [u.id, u] as const));
     this.patientOptions = buildAppointmentPatientOptions(patients);
-    this.doctorOptions = buildAppointmentDoctorOptions(staff, specialties);
+    this.doctorOptions = buildAppointmentDoctorOptions(
+      staff,
+      specialties,
+      true,
+      userById,
+      includeDoctorId ?? null,
+    );
   }
 
   private applyCreatePrefill(): void {
@@ -273,14 +298,18 @@ export class AppointmentFormDialogComponent implements OnInit {
     }
     const now = Date.now();
     if (t0 <= now || t1 <= now) {
-      this.snackBar.open('Las fechas de inicio y fin deben ser futuras (validación del backend).', 'Cerrar', {
+      this.snackBar.open('Las fechas de inicio y fin deben ser futuras.', 'Cerrar', {
         duration: 6000,
       });
       return;
     }
     this.saving = true;
     const specialtyId = parsePositiveInt(v.specialtyId);
-    const createdByUserId = parsePositiveInt(v.createdByUserId);
+    const createdByUserId = resolveActorUserIdForSubmit(
+      this.auth,
+      this.dialogData.mode,
+      this.preservedActorUserId,
+    );
     const common = {
       patientId,
       doctorId,

@@ -18,7 +18,31 @@
   <div class="field full"><span class="label">Resultado (fecha)</span><span class="value">{{ data.resultAt ? (data.resultAt | date: 'medium') : '—' }}</span></div>
   <div class="field full"><span class="label">Incidente</span><span class="value pre">{{ data.incident ?? '—' }}</span></div>
   <div class="field full"><span class="label">Resultado</span><span class="value pre">{{ data.result ?? '—' }}</span></div>
-  <div class="field full"><span class="label">Adjunto</span><span class="value pre">{{ data.attachment ?? '—' }}</span></div>
+  <div class="field full">
+    <span class="label">Adjunto</span>
+    @if (data.attachment) {
+      <span class="value">
+        {{ data.attachment.originalFileName }} ({{ formatSize(data.attachment.sizeBytes) }})
+        · {{ data.attachment.uploadedAt | date: 'medium' }}
+      </span>
+      <button
+        mat-stroked-button
+        type="button"
+        class="download-btn"
+        (click)="downloadAttachment()"
+        [disabled]="downloading"
+      >
+        @if (downloading) {
+          <mat-progress-spinner diameter="18" mode="indeterminate" />
+        } @else {
+          <mat-icon>download</mat-icon>
+        }
+        Descargar
+      </button>
+    } @else {
+      <span class="value">—</span>
+    }
+  </div>
   <div class="field"><span class="label">Staff</span><span class="value">{{ data.responsibleStaffId ?? '—' }}</span></div>
 </mat-dialog-content>
 <mat-dialog-actions align="end">

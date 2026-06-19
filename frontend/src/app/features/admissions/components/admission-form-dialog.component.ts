@@ -37,6 +37,9 @@ import {
   staffToMap,
 } from '../../shared/entity-picker.utils';
 import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
+import { SessionUserFieldComponent } from '../../shared/session-user-field.component';
+import { AuthService } from '../../../core/services/auth.service';
+import { resolveActorUserIdForSubmit } from '../../shared/session-user.utils';
 import { StaffApiService } from '../../staff/services/staff-api.service';
 
 export interface AdmissionFormDialogData {
@@ -60,6 +63,7 @@ export interface AdmissionFormDialogData {
     MatProgressSpinnerModule,
     MatSnackBarModule,
     EntityAutocompleteComponent,
+    SessionUserFieldComponent,
   ],
   templateUrl: './admission-form-dialog.component.html',
   styleUrl: './admission-form-dialog.component.scss',
@@ -73,6 +77,7 @@ export class AdmissionFormDialogComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly dialogRef = inject(MatDialogRef<AdmissionFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly auth = inject(AuthService);
   readonly dialogData = inject<AdmissionFormDialogData>(MAT_DIALOG_DATA);
 
   readonly types = [...ADMISSION_TYPES];
@@ -92,6 +97,7 @@ export class AdmissionFormDialogComponent implements OnInit {
 
   loading = false;
   saving = false;
+  private preservedActorUserId: number | null = null;
 
   readonly form = this.fb.group({
     patientId: ['', [requiredPositiveInteger()]],
@@ -105,7 +111,6 @@ export class AdmissionFormDialogComponent implements OnInit {
     observations: [''],
     dischargeDate: [''],
     transferredArea: ['', [Validators.maxLength(100)]],
-    admittedByUserId: ['', [optionalPositiveInteger()]],
   });
 
   ngOnInit(): void {
@@ -168,8 +173,8 @@ export class AdmissionFormDialogComponent implements OnInit {
             observations: a.observations ?? '',
             dischargeDate: a.dischargeDate ? a.dischargeDate.slice(0, 16) : '',
             transferredArea: a.transferredArea ?? '',
-            admittedByUserId: a.admittedByUserId != null ? String(a.admittedByUserId) : '',
           });
+          this.preservedActorUserId = a.admittedByUserId;
           this.form.controls.status.setValidators([Validators.required]);
           this.form.controls.status.updateValueAndValidity();
         },
@@ -224,7 +229,11 @@ export class AdmissionFormDialogComponent implements OnInit {
 
     this.saving = true;
     const appointmentId = parsePositiveInt(v.appointmentId);
-    const admittedByUserId = parsePositiveInt(v.admittedByUserId);
+    const admittedByUserId = resolveActorUserIdForSubmit(
+      this.auth,
+      this.dialogData.mode,
+      this.preservedActorUserId,
+    );
     const discharge = v.dischargeDate?.trim() ? datetimeLocalToApi(v.dischargeDate.trim()) : null;
     const vs = v.validationSource?.trim();
     const validationSource = vs ? vs : null;

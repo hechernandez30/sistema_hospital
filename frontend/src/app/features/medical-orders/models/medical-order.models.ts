@@ -82,3 +82,20 @@ export interface MedicalOrderUpdatePayload {
   status: string;
   observations: string | null;
 }
+
+export interface PharmacyOrderLineResponse {
+  id: number;
+  medicalOrderId: number;
+  medicationId: number;
+  medicationName: string;
+  quantity: number;
+}
+
+export interface PharmacyOrderLineItemPayload {
+  medicationId: number;
+  quantity: number;
+}
+
+export interface PharmacyOrderLinesReplacePayload {
+  lines: PharmacyOrderLineItemPayload[];
+}

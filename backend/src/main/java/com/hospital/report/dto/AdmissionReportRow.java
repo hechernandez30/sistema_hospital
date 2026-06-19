@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 public record AdmissionReportRow(
         Long admissionId,
         Long patientId,
+        String patientName,
         String admissionType,
         String status,
         LocalDateTime admissionDate,

@@ -10,35 +10,26 @@
 } @else {
   <form [formGroup]="form" novalidate (ngSubmit)="submit()">
     <mat-dialog-content class="form-scroll">
-      <p class="hint">
-        <mat-icon>info</mat-icon>
-        Busque paciente por nombre, DPI o código; médico por código, nombre o especialidad. Estados:
-        <strong>PROGRAMADA · REPROGRAMADA · CANCELADA · ATENDIDA · NO_ASISTIO</strong>. El servidor evita traslapamiento en citas activas del mismo médico.
-      </p>
       <div class="row two">
         <app-entity-autocomplete
           formControlName="patientId"
           label="Paciente"
-          hint="Escriba para buscar por nombre, DPI/NIT o código"
           [options]="patientOptions"
           [loading]="loading"
           [loadError]="catalogError"
           emptyMessage="No hay pacientes activos. Registre un expediente primero."
         />
         @if (form.controls.patientId.hasError('required') && form.controls.patientId.touched) {
-          <p class="field-error">Seleccione un paciente.</p>
         }
         <app-entity-autocomplete
           formControlName="doctorId"
           label="Médico"
-          hint="Escriba para buscar por código, nombre o especialidad"
           [options]="doctorOptions"
           [loading]="loading"
           [loadError]="catalogError"
           emptyMessage="No hay médicos activos en personal."
         />
         @if (form.controls.doctorId.hasError('required') && form.controls.doctorId.touched) {
-          <p class="field-error">Seleccione un médico.</p>
         }
       </div>
       @if (canPickSpecialtyCatalog) {
@@ -69,21 +60,19 @@
           </button>
         </div>
       }
-      <div class="row two">
-        <mat-form-field appearance="outline">
-          <mat-label>Inicio</mat-label>
-          <input matInput type="datetime-local" formControlName="startAt" />
-          @if (form.controls.startAt.invalid && form.controls.startAt.touched) {
-            <mat-error>Requerido</mat-error>
+      <div class="datetime-blocks">
+        <div class="datetime-block">
+          <app-datetime-local-field formControlName="startAt" label="Inicio" class="apt-datetime" />
+          @if (form.controls.startAt.hasError('required') && form.controls.startAt.touched) {
+            <p class="error-text">Inicio requerido</p>
           }
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Fin</mat-label>
-          <input matInput type="datetime-local" formControlName="endAt" />
-          @if (form.controls.endAt.invalid && form.controls.endAt.touched) {
-            <mat-error>Requerido</mat-error>
+        </div>
+        <div class="datetime-block">
+          <app-datetime-local-field formControlName="endAt" label="Fin" class="apt-datetime" />
+          @if (form.controls.endAt.hasError('required') && form.controls.endAt.touched) {
+            <p class="error-text">Fin requerido</p>
           }
-        </mat-form-field>
+        </div>
       </div>
       @if (form.hasError('range') && form.touched) {
         <p class="error-text">La fecha/hora de fin debe ser estrictamente posterior al inicio (no igual).</p>
@@ -107,13 +96,7 @@
         <mat-checkbox formControlName="notifySms">Notificar SMS</mat-checkbox>
         <mat-checkbox formControlName="notifyWhatsapp">Notificar WhatsApp</mat-checkbox>
       </div>
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>ID usuario creador (opcional)</mat-label>
-        <input matInput formControlName="createdByUserId" inputmode="numeric" autocomplete="off" />
-        @if (form.controls.createdByUserId.hasError('positiveInteger') && form.controls.createdByUserId.touched) {
-          <mat-error>ID entero positivo o vacío</mat-error>
-        }
-      </mat-form-field>
+      <app-session-user-field label="Registrado por" />
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>

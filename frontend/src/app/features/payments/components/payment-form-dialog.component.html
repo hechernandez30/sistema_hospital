@@ -10,13 +10,13 @@
 } @else {
   <form [formGroup]="form" novalidate (ngSubmit)="submit()">
     <mat-dialog-content class="form-scroll">
-      <p class="hint">
+      <!-- <p class="hint">
         <mat-icon>info</mat-icon>
-        El <strong>total a pagar</strong> lo calcula el servidor como: subtotal − (subtotal × % seguro ÷ 100) + copago.
+        El <strong>total a pagar</strong> lo calcula el sistema: subtotal − (subtotal × % seguro ÷ 100) + copago.
         Si no aplica cobertura, use <strong>0%</strong>. El botón inferior precarga desde una <strong>póliza activa y vigente</strong>
-        según fecha (CU02/RN07); puede corregir el % manualmente. Con cobertura 100% sin copago, el total puede ser
-        <strong>0,00</strong> (FA02). En estado <strong>PAGADO</strong> debe indicarse método de pago.
-      </p>
+        del paciente; puede corregir el porcentaje manualmente. Con cobertura total y sin copago, el total puede ser
+        <strong>0,00</strong>. En estado <strong>Pagado</strong> debe indicar el método de pago.
+      </p> -->
       <div class="row two">
         <app-entity-autocomplete
           formControlName="patientId"
@@ -44,7 +44,6 @@
           [options]="admissionOptions"
           [loading]="loading"
           [loadError]="catalogError"
-          hint="Seleccione paciente primero. Sin RECHAZADO/ANULADO."
           emptyMessage="No hay admisiones válidas para este paciente."
         />
         <app-entity-autocomplete
@@ -53,7 +52,6 @@
           [options]="medicalOrderOptions"
           [loading]="loading"
           [loadError]="catalogError"
-          hint="Órdenes del paciente, sin ANULADO."
           emptyMessage="No hay órdenes válidas para este paciente."
         />
       </div>
@@ -81,7 +79,7 @@
         <mat-form-field appearance="outline">
           <mat-label>% seguro aplicado al pago (0–100)</mat-label>
           <input matInput formControlName="insurancePercent" inputmode="decimal" autocomplete="off" />
-          <mat-hint>Manual; no se guarda vínculo a id de seguro.</mat-hint>
+          <!-- <mat-hint>Manual; no se guarda vínculo a id de seguro.</mat-hint> -->
           @if (form.controls.insurancePercent.hasError('required') && form.controls.insurancePercent.touched) {
             <mat-error>Requerido</mat-error>
           }
@@ -144,16 +142,13 @@
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Nº recibo (opcional)</mat-label>
-          <input matInput formControlName="receiptNumber" maxlength="50" />
+          <input matInput formControlName="receiptNumber" maxlength="50" autocomplete="off" />
+          <!-- @if (!isEdit) {
+            <mat-hint>Sugerido según pagos registrados (Fact-00001, …). Debe ser único; el servidor rechaza duplicados.</mat-hint>
+          } -->
         </mat-form-field>
       </div>
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>ID usuario registro (opcional)</mat-label>
-        <input matInput formControlName="registeredByUserId" inputmode="numeric" autocomplete="off" />
-        @if (form.controls.registeredByUserId.hasError('positiveInteger') && form.controls.registeredByUserId.touched) {
-          <mat-error>ID válido o vacío</mat-error>
-        }
-      </mat-form-field>
+      <app-session-user-field label="Usuario registro" />
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>

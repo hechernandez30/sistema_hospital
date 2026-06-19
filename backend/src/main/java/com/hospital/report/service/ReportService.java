@@ -18,6 +18,9 @@ import com.hospital.report.dto.LaboratoryReportRow;
 import com.hospital.report.dto.MedicationLowStockRow;
 import com.hospital.report.dto.PaymentReportRow;
 import com.hospital.report.dto.ReportDateRangeParams;
+import com.hospital.patient.entity.Patient;
+import com.hospital.staff.entity.Staff;
+import com.hospital.user.entity.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,14 +60,16 @@ public class ReportService {
         DateRange range = normalizeRange(params.dateFrom(), params.dateTo());
         String status = normalizeStatus(params.status());
         List<Appointment> rows = status == null
-                ? appointmentRepository.findByStartAtBetween(range.from(), range.to())
-                : appointmentRepository.findByStartAtBetweenAndStatus(range.from(), range.to(), status);
+                ? appointmentRepository.findReportRowsBetween(range.from(), range.to())
+                : appointmentRepository.findReportRowsBetweenAndStatus(range.from(), range.to(), status);
         recordAudit("appointments", params, status);
         return rows.stream()
                 .map(r -> new AppointmentReportRow(
                         r.getId(),
                         r.getPatient().getId(),
+                        patientDisplayName(r.getPatient()),
                         r.getDoctor().getId(),
+                        staffDisplayName(r.getDoctor()),
                         r.getStartAt(),
                         r.getEndAt(),
                         r.getStatus()))
@@ -76,13 +81,14 @@ public class ReportService {
         DateRange range = normalizeRange(params.dateFrom(), params.dateTo());
         String status = normalizeStatus(params.status());
         List<Admission> rows = status == null
-                ? admissionRepository.findByAdmissionDateBetween(range.from(), range.to())
-                : admissionRepository.findByAdmissionDateBetweenAndStatus(range.from(), range.to(), status);
+                ? admissionRepository.findReportRowsBetween(range.from(), range.to())
+                : admissionRepository.findReportRowsBetweenAndStatus(range.from(), range.to(), status);
         recordAudit("admissions", params, status);
         return rows.stream()
                 .map(r -> new AdmissionReportRow(
                         r.getId(),
                         r.getPatient().getId(),
+                        patientDisplayName(r.getPatient()),
                         r.getAdmissionType(),
                         r.getStatus(),
                         r.getAdmissionDate(),
@@ -169,6 +175,30 @@ public class ReportService {
             return null;
         }
         return raw.trim().toUpperCase();
+    }
+
+    private static String patientDisplayName(Patient patient) {
+        return personName(patient.getFirstName(), patient.getLastName());
+    }
+
+    private static String staffDisplayName(Staff staff) {
+        User user = staff.getUser();
+        if (user != null) {
+            String name = personName(user.getFirstName(), user.getLastName());
+            if (!name.isBlank()) {
+                return name;
+            }
+        }
+        if (staff.getEmployeeCode() != null && !staff.getEmployeeCode().isBlank()) {
+            return staff.getEmployeeCode().trim();
+        }
+        return "Personal " + staff.getId();
+    }
+
+    private static String personName(String firstName, String lastName) {
+        String first = firstName != null ? firstName.trim() : "";
+        String last = lastName != null ? lastName.trim() : "";
+        return (first + " " + last).trim();
     }
 
     private record DateRange(LocalDateTime from, LocalDateTime to) {}

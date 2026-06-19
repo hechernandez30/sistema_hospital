@@ -32,6 +32,36 @@ export function dateToDatetimeLocal(d: Date): string {
   )}`;
 }
 
+/** Partes de un valor `datetime-local` para datepicker y selector de hora. */
+export function splitDatetimeLocal(value: string | null | undefined): { date: Date | null; time: string } {
+  const v = value?.trim();
+  if (!v) {
+    return { date: null, time: '' };
+  }
+  const d = new Date(datetimeLocalToApi(v));
+  if (Number.isNaN(d.getTime())) {
+    return { date: null, time: '' };
+  }
+  return {
+    date: d,
+    time: `${pad2(d.getHours())}:${pad2(d.getMinutes())}`,
+  };
+}
+
+/** Une fecha (datepicker) y hora (`HH:mm`) al formato `datetime-local`. */
+export function joinDatetimeLocal(date: Date | null, time: string): string {
+  if (!date || Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const t = time?.trim() || '00:00';
+  const parts = t.split(':');
+  const hours = Number(parts[0]);
+  const minutes = Number(parts[1]);
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setHours(Number.isFinite(hours) ? hours : 0, Number.isFinite(minutes) ? minutes : 0, 0, 0);
+  return dateToDatetimeLocal(d);
+}
+
 /** Suma minutos al valor actual de datetime-local y devuelve el nuevo string para el input. */
 export function addMinutesToDatetimeLocal(startValue: string, minutes: number): string {
   const iso = datetimeLocalToApi(startValue);
