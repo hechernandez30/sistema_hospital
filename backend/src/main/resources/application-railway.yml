@@ -1,0 +1,23 @@
+spring:
+  config:
+    activate:
+      on-profile: railway
+  datasource:
+    url: jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}?sslmode=require
+    username: ${PGUSER}
+    password: ${PGPASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+server:
+  port: ${PORT:8080}
+
+app:
+  storage:
+    type: local
+    local:
+      base-path: ./data/uploads
+  jwt:
+    secret: ${JWT_SECRET}
+  cors:
+    allowed-origins:
+      - ${CORS_ORIGIN:http://localhost:4200}
