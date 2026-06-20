@@ -38,7 +38,7 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confi
 import { UserApiService } from '../../../users/services/user-api.service';
 import { UserResponse } from '../../../users/models/user.models';
 import { AuthService } from '../../../../core/services/auth.service';
-import { ROLE_ADMIN, ROLES_RRHH_SPECIALTIES } from '../../../../core/constants/role-routes';
+import { ROLE_ADMIN, ROLES_STAFF_SPECIALTY_READ } from '../../../../core/constants/role-routes';
 import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
 import { appointmentStatusChipClass } from '../../appointment-status-chip';
 import {
@@ -89,7 +89,7 @@ export class AppointmentListPageComponent implements OnInit, AfterViewInit {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
-  private readonly canResolveStaffSpec = this.auth.hasAnyRole(ROLES_RRHH_SPECIALTIES);
+  private readonly canResolveStaffSpec = this.auth.hasAnyRole(ROLES_STAFF_SPECIALTY_READ);
   private readonly isAdmin = this.auth.hasAnyRole([ROLE_ADMIN]);
   private userById = new Map<number, UserResponse>();
 

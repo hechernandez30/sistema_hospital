@@ -9,6 +9,8 @@ import com.hospital.auditlog.BusinessAuditActions;
 import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
+import com.hospital.medicalcare.ChiefMedicalDoctorResolver;
+import com.hospital.medicalcare.MedicalCareAccessSupport;
 import com.hospital.medicalcare.dto.MedicalCareCreateRequest;
 import com.hospital.medicalcare.dto.MedicalCareResponse;
 import com.hospital.medicalcare.dto.MedicalCareUpdateRequest;
@@ -29,6 +31,8 @@ import java.util.Set;
 @Service
 public class MedicalCareService {
 
+    private static final String PENDING_PLACEHOLDER = "Pendiente";
+
     /** Cita “activa” para vincular atención (alineado a estados de cita en el dominio). */
     private static final Set<String> ACTIVE_APPOINTMENT_STATUS = Set.of("PROGRAMADA", "REPROGRAMADA");
 
@@ -38,6 +42,8 @@ public class MedicalCareService {
     private final AppointmentRepository appointmentRepository;
     private final StaffRepository staffRepository;
     private final BusinessAuditRecorder businessAuditRecorder;
+    private final ChiefMedicalDoctorResolver chiefMedicalDoctorResolver;
+    private final MedicalCareAccessSupport medicalCareAccessSupport;
 
     public MedicalCareService(
             MedicalCareRepository medicalCareRepository,
@@ -45,29 +51,62 @@ public class MedicalCareService {
             AdmissionRepository admissionRepository,
             AppointmentRepository appointmentRepository,
             StaffRepository staffRepository,
-            BusinessAuditRecorder businessAuditRecorder) {
+            BusinessAuditRecorder businessAuditRecorder,
+            ChiefMedicalDoctorResolver chiefMedicalDoctorResolver,
+            MedicalCareAccessSupport medicalCareAccessSupport) {
         this.medicalCareRepository = medicalCareRepository;
         this.patientRepository = patientRepository;
         this.admissionRepository = admissionRepository;
         this.appointmentRepository = appointmentRepository;
         this.staffRepository = staffRepository;
         this.businessAuditRecorder = businessAuditRecorder;
+        this.chiefMedicalDoctorResolver = chiefMedicalDoctorResolver;
+        this.medicalCareAccessSupport = medicalCareAccessSupport;
     }
 
     @Transactional(readOnly = true)
-    public List<MedicalCareResponse> findAll() {
-        return medicalCareRepository.findAll().stream().map(this::toResponse).toList();
+    public List<MedicalCareResponse> listForCurrentUser(Long patientId) {
+        return loadVisibleMedicalCares(patientId).stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public MedicalCareResponse findById(Long id) {
-        return toResponse(medicalCareRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la atención médica: " + id)));
+    public MedicalCareResponse findByIdForCurrentUser(Long id) {
+        MedicalCare medicalCare = medicalCareRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la atención médica: " + id));
+        medicalCareAccessSupport.assertCanAccess(medicalCare);
+        return toResponse(medicalCare);
     }
 
-    @Transactional(readOnly = true)
-    public List<MedicalCareResponse> findByPatient(Long patientId) {
-        return medicalCareRepository.findByPatient_Id(patientId).stream().map(this::toResponse).toList();
+    /**
+     * Crea atención pendiente al registrar admisión en PENDIENTE, ADMITIDO o TRANSFERIDO.
+     * Idempotente por admisión: no duplica si ya existe una atención vinculada.
+     */
+    @Transactional
+    public void createPendingFromAdmission(Admission admission) {
+        if (!AdmissionStatusRules.triggersAutoMedicalCare(admission.getStatus())) {
+            return;
+        }
+        if (medicalCareRepository.existsByAdmission_Id(admission.getId())) {
+            return;
+        }
+        Staff chiefDoctor = chiefMedicalDoctorResolver.resolveChiefDoctorStaff();
+        MedicalCare medicalCare = new MedicalCare();
+        medicalCare.setPatient(admission.getPatient());
+        medicalCare.setAdmission(admission);
+        medicalCare.setAppointment(null);
+        medicalCare.setDoctor(chiefDoctor);
+        medicalCare.setConsultationReason(PENDING_PLACEHOLDER);
+        medicalCare.setClinicalEvaluation(PENDING_PLACEHOLDER);
+        medicalCare.setDiagnosis(PENDING_PLACEHOLDER);
+        medicalCare.setRequiresHospitalization(false);
+        MedicalCare saved = medicalCareRepository.save(medicalCare);
+        businessAuditRecorder.safeRecord(
+                "medical-care",
+                "MedicalCare",
+                String.valueOf(saved.getId()),
+                BusinessAuditActions.CREATE,
+                null,
+                snapshotMedicalCareMinimal(saved));
     }
 
     @Transactional
@@ -88,9 +127,16 @@ public class MedicalCareService {
     }
 
     @Transactional
-    public MedicalCareResponse update(Long id, MedicalCareUpdateRequest request) {
+    public MedicalCareResponse updateForCurrentUser(Long id, MedicalCareUpdateRequest request) {
         MedicalCare medicalCare = medicalCareRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la atención médica: " + id));
+        medicalCareAccessSupport.assertCanAccess(medicalCare);
+        if (!medicalCareAccessSupport.canSeeAllMedicalCares()) {
+            Long staffId = medicalCareAccessSupport.requireCurrentDoctorStaffId();
+            if (!staffId.equals(request.doctorId())) {
+                throw new BusinessRuleException("Solo el jefe médico puede reasignar la atención a otro médico.");
+            }
+        }
         Map<String, Object> prior = snapshotMedicalCareMinimal(medicalCare);
         mapCommon(medicalCare, request.patientId(), request.admissionId(), request.appointmentId(), request.doctorId(),
                 request.consultationReason(), request.clinicalEvaluation(), request.diagnosis(),
@@ -107,9 +153,10 @@ public class MedicalCareService {
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void deleteForCurrentUser(Long id) {
         MedicalCare medicalCare = medicalCareRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la atención médica: " + id));
+        medicalCareAccessSupport.assertCanAccess(medicalCare);
         Map<String, Object> prior = snapshotMedicalCareMinimal(medicalCare);
         medicalCareRepository.deleteById(id);
         businessAuditRecorder.safeRecord(
@@ -119,6 +166,20 @@ public class MedicalCareService {
                 BusinessAuditActions.DELETE,
                 prior,
                 null);
+    }
+
+    private List<MedicalCare> loadVisibleMedicalCares(Long patientId) {
+        if (medicalCareAccessSupport.canSeeAllMedicalCares()) {
+            if (patientId != null) {
+                return medicalCareRepository.findByPatient_Id(patientId);
+            }
+            return medicalCareRepository.findAll();
+        }
+        Long doctorStaffId = medicalCareAccessSupport.requireCurrentDoctorStaffId();
+        if (patientId != null) {
+            return medicalCareRepository.findByDoctor_IdAndPatient_Id(doctorStaffId, patientId);
+        }
+        return medicalCareRepository.findByDoctor_Id(doctorStaffId);
     }
 
     private void mapCommon(

@@ -72,19 +72,31 @@ public class SecurityConfig {
             auth.requestMatchers("/api/reports/**").hasAnyRole("ADMINISTRADOR", "AUDITOR");
 
             auth.requestMatchers("/api/payments/**").hasAnyRole("ADMINISTRADOR", "CAJERO");
+            auth.requestMatchers(HttpMethod.GET, "/api/medications/**")
+                    .hasAnyRole("ADMINISTRADOR", "FARMACIA", "MEDICO", "MEDICO-JEFE");
             auth.requestMatchers("/api/medications/**").hasAnyRole("ADMINISTRADOR", "FARMACIA");
-            auth.requestMatchers("/api/laboratory/**").hasAnyRole("ADMINISTRADOR", "LABORATORIO", "MEDICO");
-            auth.requestMatchers("/api/imaging/**").hasAnyRole("ADMINISTRADOR", "MEDICO");
-            auth.requestMatchers("/api/medical-orders/**").hasAnyRole("ADMINISTRADOR", "MEDICO", "FARMACIA");
-            auth.requestMatchers("/api/medical-cares/**").hasAnyRole("ADMINISTRADOR", "MEDICO");
-            auth.requestMatchers("/api/appointments/**").hasAnyRole("ADMINISTRADOR", "MEDICO", "RECEPCIONISTA");
+            auth.requestMatchers("/api/laboratory/**").hasAnyRole("ADMINISTRADOR", "LABORATORIO", "MEDICO", "MEDICO-JEFE");
+            auth.requestMatchers("/api/imaging/**").hasAnyRole("ADMINISTRADOR", "MEDICO", "MEDICO-JEFE");
+            auth.requestMatchers(HttpMethod.GET, "/api/medical-orders/**")
+                    .hasAnyRole("ADMINISTRADOR", "MEDICO", "MEDICO-JEFE", "FARMACIA", "LABORATORIO", "CAJERO");
+            auth.requestMatchers("/api/medical-orders/**").hasAnyRole("ADMINISTRADOR", "MEDICO", "MEDICO-JEFE", "FARMACIA");
+            auth.requestMatchers(HttpMethod.GET, "/api/medical-cares/**")
+                    .hasAnyRole("ADMINISTRADOR", "MEDICO", "MEDICO-JEFE", "CAJERO", "LABORATORIO", "FARMACIA");
+            auth.requestMatchers("/api/medical-cares/**").hasAnyRole("ADMINISTRADOR", "MEDICO", "MEDICO-JEFE");
+            auth.requestMatchers("/api/appointments/**").hasAnyRole("ADMINISTRADOR", "MEDICO", "MEDICO-JEFE", "RECEPCIONISTA");
+            auth.requestMatchers(HttpMethod.GET, "/api/admissions/**")
+                    .hasAnyRole("ADMINISTRADOR", "RECEPCIONISTA", "MEDICO", "MEDICO-JEFE", "CAJERO");
             auth.requestMatchers("/api/admissions/**").hasAnyRole("ADMINISTRADOR", "RECEPCIONISTA");
             auth.requestMatchers("/api/triage/**").hasAnyRole("ADMINISTRADOR", "RECEPCIONISTA");
+            auth.requestMatchers(HttpMethod.GET, "/api/staff/**")
+                    .hasAnyRole("ADMINISTRADOR", "RRHH", "RECEPCIONISTA", "MEDICO", "MEDICO-JEFE");
             auth.requestMatchers("/api/staff/**").hasAnyRole("ADMINISTRADOR", "RRHH");
+            auth.requestMatchers(HttpMethod.GET, "/api/specialties/**")
+                    .hasAnyRole("ADMINISTRADOR", "RRHH", "RECEPCIONISTA", "MEDICO", "MEDICO-JEFE");
             auth.requestMatchers("/api/specialties/**").hasAnyRole("ADMINISTRADOR", "RRHH");
 
             auth.requestMatchers(HttpMethod.GET, "/api/patients/**")
-                    .hasAnyRole("ADMINISTRADOR", "MEDICO", "RECEPCIONISTA", "CAJERO");
+                    .hasAnyRole("ADMINISTRADOR", "MEDICO", "MEDICO-JEFE", "RECEPCIONISTA", "CAJERO", "LABORATORIO", "FARMACIA");
             auth.requestMatchers("/api/patients/**")
                     .hasAnyRole("ADMINISTRADOR", "MEDICO", "RECEPCIONISTA");
 

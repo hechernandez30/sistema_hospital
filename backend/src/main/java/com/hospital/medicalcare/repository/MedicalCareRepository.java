@@ -12,6 +12,12 @@ public interface MedicalCareRepository extends JpaRepository<MedicalCare, Long> 
 
     List<MedicalCare> findByPatient_Id(Long patientId);
 
+    List<MedicalCare> findByDoctor_Id(Long doctorId);
+
+    List<MedicalCare> findByDoctor_IdAndPatient_Id(Long doctorId, Long patientId);
+
+    boolean existsByAdmission_Id(Long admissionId);
+
     @Query(
             """
             select mc from MedicalCare mc

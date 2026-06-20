@@ -106,7 +106,9 @@ Todas detrás de **`authGuard`**; cada feature con **`roleGuard`** y `data.roles
 
 ### Backend (modelo de datos, `hospital_postgresql_15_tablas_es.sql`)
 
-Nombres en tabla `roles`: **ADMINISTRADOR**, **MEDICO**, **RECEPCIONISTA**, **CAJERO**, **FARMACIA**, **LABORATORIO**, **RRHH**, **AUDITOR**.
+Nombres en tabla `roles`: **ADMINISTRADOR**, **MEDICO**, **MEDICO-JEFE**, **RECEPCIONISTA**, **CAJERO**, **FARMACIA**, **LABORATORIO**, **RRHH**, **AUDITOR**.
+
+> **MEDICO-JEFE (9.3):** debe existir exactamente un usuario activo con este rol y personal tipo MEDICO. Al admitir paciente se auto-crea atención pendiente asignada a este médico. Ver `docs/fase_9_3_operacion_clinica_integrada.md`.
 
 En JWT/autorización Spring Security se usan autoridades con prefijo **`ROLE_`** (p. ej. `ROLE_MEDICO`), según `backend/doc/API.md`.
 
@@ -123,10 +125,12 @@ Reglas principales (con `app.security.enabled=true`):
 | `/api/laboratory/**` | ADMINISTRADOR, LABORATORIO, MEDICO |
 | `/api/imaging/**` | ADMINISTRADOR, MEDICO |
 | `/api/medical-orders/**` | ADMINISTRADOR, MEDICO, FARMACIA |
-| `/api/medical-cares/**` | ADMINISTRADOR, MEDICO |
-| `/api/appointments/**` | ADMINISTRADOR, MEDICO, RECEPCIONISTA |
-| `/api/admissions/**`, `/api/triage/**` | ADMINISTRADOR, RECEPCIONISTA |
-| `/api/staff/**`, `/api/specialties/**` | ADMINISTRADOR, RRHH |
+| `/api/medical-cares/**` | ADMINISTRADOR, MEDICO, **MEDICO-JEFE** |
+| `/api/appointments/**` | ADMINISTRADOR, MEDICO, **MEDICO-JEFE**, RECEPCIONISTA |
+| `/api/admissions/**` | GET: + MEDICO, MEDICO-JEFE, CAJERO; mutación: ADMINISTRADOR, RECEPCIONISTA |
+| `/api/triage/**` | ADMINISTRADOR, RECEPCIONISTA |
+| `GET /api/staff/**`, `GET /api/specialties/**` | ADMINISTRADOR, RRHH, **RECEPCIONISTA**, **MEDICO**, **MEDICO-JEFE** |
+| `/api/staff/**`, `/api/specialties/**` (mutación) | ADMINISTRADOR, RRHH |
 | `GET /api/patients/**` | ADMINISTRADOR, MEDICO, RECEPCIONISTA, CAJERO |
 | Otros `/api/patients/**` (POST/PUT/PATCH/DELETE) | ADMINISTRADOR, MEDICO, RECEPCIONISTA |
 | `/api/**` restante | ADMINISTRADOR |

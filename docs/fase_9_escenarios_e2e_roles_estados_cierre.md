@@ -1,5 +1,7 @@
 # Fase 9 — Escenarios funcionales E2E: roles, estados y cierre del ciclo del paciente
 
+> **Actualización 9.3 (mayo 2026):** auto-atención al admitir, rol MEDICO-JEFE, órdenes/exámenes en edición de atención, fulfillment lab/imagen, correlativo lab, triage automático, correo Gmail. Detalle en **`docs/fase_9_3_operacion_clinica_integrada.md`**.
+
 **Fecha:** 2026-05-21  
 **Tipo:** Documentación funcional (sin cambios de código)  
 **Relacionado con:** `docs/fase_9_pruebas_e2e_cierre_tecnico.md`, Fases 8.1 y 8.2 (baja lógica y política de eliminación)
@@ -30,10 +32,10 @@ Los estados citados corresponden al **modelo implementado** en backend/frontend 
 | Login / Acceso personal | Autenticación JWT, sesión intranet |
 | CU02 Registro de paciente | Alta expediente, consentimiento, `activo` |
 | Registro de seguro asociado | Póliza, vigencia, `activo` |
-| CU04 Citas | Agenda, solapamiento, cancelación lógica |
-| CU11 Admisión | Validación financiera, estados de episodio |
-| CU10 Triage | Prioridad, vínculo admisión (emergencia) |
-| CU12 Atención médica | Evaluación, diagnóstico, vínculo admisión/cita |
+| CU04 Citas | Agenda, solapamiento, cancelación lógica, **confirmación por correo Gmail (9.3)** |
+| CU11 Admisión | Validación financiera, estados de episodio, **auto-atención MEDICO-JEFE (9.3)** |
+| CU10 Triage | Prioridad **automática** por vitales; vínculo admisión (**emergencia**) |
+| CU12 Atención médica | Evaluación, diagnóstico; **visibilidad por rol**; órdenes desde formulario |
 | Órdenes médicas | LABORATORIO, IMAGEN, FARMACIA, HOSPITALIZACION |
 | CU06/CU07 Laboratorio | Muestra/resultado, estados operativos y ANULADO |
 | Imágenes | Estudio asociado a orden IMAGEN |
@@ -54,13 +56,14 @@ Los estados citados corresponden al **modelo implementado** en backend/frontend 
 | **Usuario visitante / paciente** | Consulta información pública; no muta datos hospitalarios | CU01 Portal (`/p/*`) |
 | **Recepcionista** | Registra paciente y seguro; agenda y cancela/reprograma citas; admite; triage en emergencia; anula admisión | Pacientes, seguros, citas, admisiones, triage |
 | **Administrador** | Configuración (usuarios, roles, especialidades); acceso amplio; reportes; anulaciones administrativas | Casi todos los módulos según `SecurityConfig` |
-| **Médico** | Atención médica; órdenes; consulta pacientes; puede ver lab/imagen según permiso | Atenciones, órdenes, citas (lectura/acción), lab/imagen (parcial) |
+| **Médico** | Atención médica **asignada**; órdenes; consulta pacientes; lab/imagen | Atenciones (propias), órdenes, citas, lab/imagen |
+| **Médico jefe (MEDICO-JEFE)** | Ve **todas** las atenciones; **reasigna** médico tratante; mismo acceso clínico que médico | Atenciones (todas), órdenes, lab/imagen |
 | **Enfermería / triage** | Clasificación inicial en urgencias (funcionalmente recepcionista o personal autorizado en triage) | Triage |
 | **Técnico de laboratorio** | Registro y seguimiento de solicitudes de laboratorio | Laboratorio |
 | **Personal de imágenes / radiología** | Registro de estudios de imagen (rol MEDICO o ADMIN en API actual) | Imágenes |
 | **Cajero** | Registro de pagos, cobertura de seguro, anulación de pago | Pagos (lectura paciente GET) |
 | **Farmacéutico** | Catálogo e inventario; órdenes tipo FARMACIA (sin despacho automatizado) | Medicamentos, órdenes médicas |
-| **RRHH** | Personal y especialidades (catálogos para citas) | Personal, especialidades |
+| **RRHH** | Personal y especialidades (catálogos); recepción/médico tienen **solo GET** para pickers | Personal, especialidades |
 | **Auditor** | Consulta bitácora y reportes | Auditoría, reportes |
 | **Sistema informático** | Valida reglas de negocio, unicidad, solapamientos, estados terminales, JWT, auditoría mínima | Transversal |
 
@@ -68,8 +71,9 @@ Los estados citados corresponden al **modelo implementado** en backend/frontend 
 
 | Rol en sistema | Ejemplos de acción |
 |----------------|-------------------|
-| `RECEPCIONISTA` | Paciente, cita, admisión, triage |
-| `MEDICO` | Atención, órdenes, lab (con rol LABORATORIO o MEDICO según endpoint) |
+| `RECEPCIONISTA` | Paciente, cita, admisión, triage; GET staff/especialidades (pickers) |
+| `MEDICO` | Atención **propia**, órdenes, lab/imagen |
+| `MEDICO-JEFE` | **Todas** las atenciones, reasignación, órdenes, lab/imagen |
 | `CAJERO` | Pagos |
 | `FARMACIA` | Medicamentos, órdenes FARMACIA |
 | `LABORATORIO` | Laboratorio |
@@ -102,11 +106,11 @@ CU01 Portal → Acceso/Login → CU02 Paciente → Seguro → CU04 Cita → CU11
 | 3 | CU02 Paciente | Recepcionista / ADMIN / MEDICO (mutación) | Crea expediente: nombres, DPI/NIT, consentimiento privacidad | Paciente no existe | `pacientes.activo = true` | DPI/NIT único; validaciones OK; aviso privacidad aceptado | Baja lógica posterior: `activo = false` (Fase 8.1), no DELETE físico |
 | 4 | Seguro (CU02) | Recepcionista / autorizado mutación paciente | Registra aseguradora, póliza, % cobertura, vigencia | Sin seguro para el paciente | `seguros.activo = true` | Fechas de vigencia coherentes; datos mínimos | CU11 valida seguro **vigente** si `fuente_validacion = SEGURO`; CU09 aplica % en pago |
 | 5 | CU04 Cita | Recepcionista / MEDICO / ADMIN | Agenda cita: paciente, médico (personal), fecha/hora | Sin cita | `citas.estado = PROGRAMADA` (default) o `REPROGRAMADA` | Paciente activo; médico sin solapamiento con otras PROGRAMADA/REPROGRAMADA | Estados también: `CANCELADA`, `ATENDIDA`, `NO_ASISTIO` |
-| 6 | CU11 Admisión | Recepcionista / ADMIN | Admite paciente; asocia `id_cita` si aplica; valida financiero | Cita PROGRAMADA/REPROGRAMADA (opcional) | `admisiones.estado = ADMITIDO` (default) o `PENDIENTE` | Paciente identificado (DPI, código); `validacion_financiera_ok = true`; fuente `SEGURO` con póliza vigente **o** `PAGO_SITIO` | Si seguro inválido → bloqueo o usar `PAGO_SITIO`. `RECHAZADO` / `ANULADO` cierran flujo asistencial |
-| 7 | CU10 Triage (si emergencia) | Recepcionista / enfermería | Registra signos vitales y prioridad (I–IV) | Admisión no RECHAZADA/ANULADA | Triage persistido (sin campo `estado`; prioridad obligatoria) | `admissionId` válido; admisión no cerrada | **No** hay botón eliminar en UI. Opcional en consulta programada |
-| 8 | CU12 Atención médica | Médico / ADMIN | Registra motivo, evaluación, diagnóstico, hospitalización si aplica | Admisión ADMITIDO (u otro estado abierto) | Registro de atención creado (sin campo `estado` en entidad) | Admisión no `RECHAZADO`/`ANULADO`; admisión obligatoria; cita opcional PROGRAMADA/REPROGRAMADA | **No** hay botón eliminar en UI |
-| 9 | Órdenes médicas | Médico | Crea orden tipo LABORATORIO (ej.) vinculada a atención | Atención registrada | `ordenes_medicas.estado = PENDIENTE` (default) | Tipo válido; paciente de la atención | También: IMAGEN, FARMACIA, HOSPITALIZACION. Anulación: `ANULADO` (8.1) |
-| 10 | Laboratorio | Técnico LABORATORIO / MEDICO / ADMIN | Crea registro 1:1 por orden LAB; procesa muestra | Orden LABORATORIO PENDIENTE | `laboratorio.estado`: PENDIENTE → EN_PROCESO → **COMPLETADO** o **RECHAZADO** | Orden no ANULADA; tipo orden = LABORATORIO | **RECHAZADO** = muestra inválida. **ANULADO** = baja administrativa (8.2), no borrado físico |
+| 6 | CU11 Admisión | Recepcionista / ADMIN | Admite paciente; asocia `id_cita` si aplica; valida financiero | Cita PROGRAMADA/REPROGRAMADA (opcional) | `admisiones.estado = ADMITIDO` (default) o `PENDIENTE` | Paciente identificado (DPI, código); `validacion_financiera_ok = true`; fuente `SEGURO` con póliza vigente **o** `PAGO_SITIO` | Si seguro inválido → bloqueo o usar `PAGO_SITIO`. `RECHAZADO` / `ANULADO` cierran flujo asistencial. **Auto-atención (9.3):** si estado ∈ PENDIENTE/ADMITIDO/TRANSFERIDO → atención pendiente con MEDICO-JEFE |
+| 7 | CU10 Triage (**solo emergencia**) | Recepcionista / enfermería | Registra signos vitales; **prioridad I–IV automática** | Admisión no RECHAZADA/ANULADA | Triage persistido | `admissionId` válido; admisión no cerrada | **Opcional** en consulta programada; **obligatorio operativamente** en flujo EMERGENCIA |
+| 8 | CU12 Atención médica | Médico / MEDICO-JEFE / ADMIN | Registra motivo, evaluación, diagnóstico; checkboxes órdenes; **MEDICO-JEFE reasigna** | Admisión abierta; atención puede existir desde admisión | Registro actualizado | Admisión no `RECHAZADO`/`ANULADO` | **MEDICO** solo ve asignadas; **MEDICO-JEFE** ve todas. Edición: listas órdenes/exámenes |
+| 9 | Órdenes médicas | Médico | Crea orden tipo LABORATORIO (ej.) vinculada a atención | Atención registrada | `ordenes_medicas.estado = PENDIENTE` (default) | Tipo válido; paciente de la atención | También desde checkboxes en atención. **Auto lab/imagen (9.3)** al crear orden LAB/IMAGEN |
+| 10 | Laboratorio | Técnico LABORATORIO / MEDICO / ADMIN | Crea registro 1:1 por orden LAB; procesa muestra | Orden LABORATORIO PENDIENTE | `laboratorio.estado`: PENDIENTE → EN_PROCESO → **COMPLETADO** o **RECHAZADO** | Orden no ANULADA; tipo orden = LABORATORIO | Registro puede **auto-crearse** al generar orden; **expediente correlativo** `AAAA-MM-DD-LQ-NNNNNNN` |
 | 11 | Imágenes (si aplica) | Médico / ADMIN | Registra estudio por orden IMAGEN | Orden IMAGEN PENDIENTE | PENDIENTE → EN_PROCESO → COMPLETADO / RECHAZADO / ANULADO | Una imagen por orden médica | Misma semántica ANULADO vs RECHAZADO que laboratorio |
 | 12 | Farmacia (si aplica) | Farmacéutico | Revisa catálogo/stock; orden FARMACIA es texto/contexto | Orden FARMACIA PENDIENTE | Inventario sin cambio automático por orden | — | **Pendiente funcional:** despacho real y descuento stock por orden |
 | 13 | CU09 Pago | Cajero / ADMIN | Registra pago; aplica % seguro; método si PAGADO | Sin pago o `PENDIENTE` | `pagos.estado = PAGADO` | Admisión no ANULADA/RECHAZADA; monto coherente; si PAGADO → método EFECTIVO/TARJETA/TRANSFERENCIA | Cobertura 100% → total puede ser 0. Anulación: `ANULADO` (8.1) |
@@ -238,7 +242,7 @@ CU04 Cita PROGRAMADA
 |---|-----------|---------------|---------|---------------|-------------------|
 | 2 | Paciente sin seguro, pago en sitio | Recepcionista + Cajero | Paciente, admisión, pago | Admisión con `fuente_validacion = PAGO_SITIO`; pago `PAGADO` | Pago resuelto; admisión no anulada |
 | 3 | Seguro vencido o inactivo | Recepcionista | Seguro, admisión | `seguros.activo = false` o fuera de vigencia | Admisión bloqueada con SEGURO; usar PAGO_SITIO o renovar seguro |
-| 4 | Emergencia con triage | Recepcionista / enfermería | Admisión EMERGENCIA, triage | Prioridad I–IV; admisión ADMITIDO | Triage registrado; luego atención médica |
+| 4 | Emergencia con triage | Recepcionista / enfermería | Admisión EMERGENCIA → **triage (prioridad auto)** → auto-atención MEDICO-JEFE | Prioridad I–IV; admisión ADMITIDO/PENDIENTE | Triage + atención pendiente; jefe reasigna | **Único escenario E2E con triage obligatorio** |
 | 5 | Solo orden de laboratorio | Médico + Laboratorio | Atención, orden LAB, laboratorio | Lab COMPLETADO o RECHAZADO | Orden/lab en terminal; pago según política |
 | 6 | Pago cobertura 100% | Cajero | Pago + seguro | `PAGADO`, total = 0 | Cierre administrativo sin copago |
 | 7 | Baja lógica del paciente (post-episodio) | Admin / recepción | Pacientes | `activo = false` | Expediente inactivo; episodios históricos conservados |
@@ -261,9 +265,13 @@ CU04 Cita PROGRAMADA
     ├── agenda cita (PROGRAMADA / REPROGRAMADA)
     └── admite paciente (ADMITIDO + validación SEGURO o PAGO_SITIO)
             │
-            ├── [opcional: Enfermería/Recepcionista] triage emergencia
+            ├── [auto] atención médica pendiente → MEDICO-JEFE
+            │
+            ├── [solo EMERGENCIA] triage (prioridad automática)
             │
             ▼
+[MEDICO-JEFE] reasigna atención (opcional si ya es el tratante)
+            │
 [Médico]
     ├── atención médica (registro sin estado)
     └── órdenes médicas (PENDIENTE → …)

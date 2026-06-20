@@ -41,7 +41,6 @@
               <mat-option [value]="'' + sp.id">{{ sp.name }} ({{ sp.durationMinutes }} min)</mat-option>
             }
           </mat-select>
-          <mat-hint>Administrador / RRHH: puede calcular hora fin con la duración del catálogo.</mat-hint>
         </mat-form-field>
       } @else {
         <mat-form-field appearance="outline" class="full">
@@ -92,9 +91,7 @@
         </mat-select>
       </mat-form-field>
       <div class="checks">
-        <mat-checkbox formControlName="notifyEmail">Notificar correo</mat-checkbox>
-        <mat-checkbox formControlName="notifySms">Notificar SMS</mat-checkbox>
-        <mat-checkbox formControlName="notifyWhatsapp">Notificar WhatsApp</mat-checkbox>
+        <mat-checkbox formControlName="notifyEmail">Enviar confirmación por correo al paciente</mat-checkbox>
       </div>
       <app-session-user-field label="Registrado por" />
     </mat-dialog-content>

@@ -98,3 +98,23 @@
 - Profundizar en **Órdenes médicas**: UX navegable desde contexto paciente/atención (sin duplicar lógica de tipos LAB/IMAGEN), o documentar flujo completo episodio → atención → orden → lab/farmacia.
 - Valorar **listado/atenciones con contexto admitido**: columnas etiqueta admisión/fecha episodio (datos desde APIs existentes si no hay nueva agregación).
 - Opcionalmente cubrir datos legacy con estrategia de migración (**fuera del alcance** hasta aprobación de BD).
+
+---
+
+## Addendum — Fase 9.3 (operación clínica integrada, mayo 2026)
+
+Documentación detallada: **`docs/fase_9_3_operacion_clinica_integrada.md`**.
+
+### Cambios posteriores a la fase original
+
+1. **Auto-atención al admitir:** admisión en `PENDIENTE` / `ADMITIDO` / `TRANSFERIDO` crea atención con médico **MEDICO-JEFE** y textos `"Pendiente"`.
+2. **Visibilidad por rol:** MEDICO-JEFE ve todas las atenciones; MEDICO solo las asignadas a su personal.
+3. **Formulario nueva atención:** paciente filtrado por admisión abierta; médico con nombre + especialidad.
+4. **Órdenes desde formulario:** checkboxes Lab / Imagen / Farmacia / Hospitalización al guardar.
+5. **Edición:** secciones **Órdenes médicas** y **Exámenes** (lista + detalle al clic).
+6. **Lista MEDICO-JEFE:** filas rojas/verdes según asignación; columna médico con nombre.
+
+### Archivos adicionales (9.3)
+
+- Backend: `MedicalCareService`, `ChiefMedicalDoctorResolver`, `MedicalCareAccessSupport`, `AdmissionService`
+- Frontend: `medical-care-form-dialog.*`, `medical-care-list-page.*`, `entity-picker.utils.ts`, `medical-care-order-request.util.ts`, `medical-care-linked-orders.util.ts`

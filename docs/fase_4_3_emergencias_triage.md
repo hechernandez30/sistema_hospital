@@ -99,3 +99,23 @@
 - Definir **atención médica / continuidad del episodio** enlazando triage-admisión-consultas sin redundancia.
 - Resolver **FA01** con modelo mínimo (p. ej. boolean o código en tabla existente sólo tras acuerdo y migración autorizada).
 - Valorar **obligatoriedad de vitales** en DTO sólo después de política explícita y migración/control de registros incompletos.
+
+---
+
+## Addendum — Fase 9.3 (mayo 2026)
+
+Ver **`docs/fase_9_3_operacion_clinica_integrada.md`**.
+
+### Prioridad automática por signos vitales
+
+En formulario **Nuevo / Editar triage**:
+
+- Al cambiar FC, FR, PA sistólica/diastólica, SpO₂, temperatura o dolor → recalcula **prioridad I–IV** y **`targetMinutes`**.
+- Campo prioridad **solo lectura**.
+- Sin vitales válidos → **III_PRIORITARIO** (60 min).
+- Utilidad: `frontend/.../triage/utils/triage-priority.util.ts`.
+
+### Uso en flujos de prueba
+
+- **Consulta programada:** triage **no** es obligatorio.
+- **Emergencia** (`admision.tipo = EMERGENCIA`): triage **sí** — entre admisión y atención médica.

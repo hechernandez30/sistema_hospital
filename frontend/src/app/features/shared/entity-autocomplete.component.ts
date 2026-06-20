@@ -101,10 +101,13 @@ export class EntityAutocompleteComponent implements ControlValueAccessor, OnChan
       this.storedId = '';
       this.onChange('');
     } else {
-      const id = parsePositiveInt(value.trim());
+      const id = this.parseIdFromInput(value);
       if (id != null && this.options.some((o) => o.id === id)) {
         this.storedId = String(id);
         this.onChange(this.storedId);
+      } else if (this.hasValidStoredSelection()) {
+        // Texto intermedio al buscar: conservar la selección previa (p. ej. al cambiar otro campo).
+        return;
       } else {
         this.storedId = '';
         this.onChange('');
@@ -126,9 +129,22 @@ export class EntityAutocompleteComponent implements ControlValueAccessor, OnChan
     const match = this.matchOptionByLabel(text);
     if (match) {
       this.selectOption(match, false);
-    } else {
-      this.syncInputFromStoredId();
+      return;
     }
+    const idFromText = this.parseIdFromInput(text);
+    if (idFromText != null) {
+      const opt = this.options.find((o) => o.id === idFromText);
+      if (opt) {
+        this.selectOption(opt, false);
+        return;
+      }
+    }
+    if (this.hasValidStoredSelection()) {
+      this.syncInputFromStoredId();
+      this.onChange(this.storedId);
+      return;
+    }
+    this.syncInputFromStoredId();
   }
 
   clear(markTouched = true): void {
@@ -181,5 +197,25 @@ export class EntityAutocompleteComponent implements ControlValueAccessor, OnChan
   private matchOptionByLabel(text: string): EntityPickerOption | undefined {
     const t = text.trim().toLowerCase();
     return this.options.find((o) => o.label.toLowerCase() === t);
+  }
+
+  private hasValidStoredSelection(): boolean {
+    const id = parsePositiveInt(this.storedId);
+    return id != null && this.options.some((o) => o.id === id);
+  }
+
+  /** Acepta ID numérico o placeholder `#123` generado cuando aún no hay etiqueta. */
+  private parseIdFromInput(text: string): number | null {
+    const trimmed = text.trim();
+    const direct = parsePositiveInt(trimmed);
+    if (direct != null) {
+      return direct;
+    }
+    const hash = /^#(\d+)$/.exec(trimmed);
+    if (hash) {
+      const n = parseInt(hash[1], 10);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    }
+    return null;
   }
 }

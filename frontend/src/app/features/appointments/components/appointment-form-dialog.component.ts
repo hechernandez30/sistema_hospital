@@ -31,7 +31,7 @@ import { SpecialtyResponse } from '../../specialties/models/specialty.models';
 import { UserApiService } from '../../users/services/user-api.service';
 import { UserResponse } from '../../users/models/user.models';
 import { AuthService } from '../../../core/services/auth.service';
-import { ROLE_ADMIN, ROLES_RRHH_SPECIALTIES } from '../../../core/constants/role-routes';
+import { ROLE_ADMIN, ROLES_STAFF_SPECIALTY_READ } from '../../../core/constants/role-routes';
 import { appointmentStatusChipClass } from '../appointment-status-chip';
 import { PatientApiService } from '../../patients/services/patient-api.service';
 import { PatientResponse } from '../../patients/models/patient.models';
@@ -110,7 +110,7 @@ export class AppointmentFormDialogComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   readonly dialogData = inject<AppointmentFormDialogData>(MAT_DIALOG_DATA);
 
-  readonly canPickSpecialtyCatalog = this.auth.hasAnyRole(ROLES_RRHH_SPECIALTIES);
+  readonly canPickSpecialtyCatalog = this.auth.hasAnyRole(ROLES_STAFF_SPECIALTY_READ);
   readonly statuses = [...APPOINTMENT_STATUSES];
   specialties: SpecialtyResponse[] = [];
   patientOptions: EntityPickerOption[] = [];
@@ -132,8 +132,6 @@ export class AppointmentFormDialogComponent implements OnInit {
       reason: ['', [Validators.maxLength(250)]],
       status: ['PROGRAMADA', [Validators.required]],
       notifyEmail: [false],
-      notifySms: [false],
-      notifyWhatsapp: [false],
     },
     { validators: [rangeValidator] },
   );
@@ -165,8 +163,6 @@ export class AppointmentFormDialogComponent implements OnInit {
               reason: apt.reason ?? '',
               status: apt.status,
               notifyEmail: apt.notifyEmail,
-              notifySms: apt.notifySms,
-              notifyWhatsapp: apt.notifyWhatsapp,
             });
             this.preservedActorUserId = apt.createdByUserId;
           },
@@ -319,8 +315,8 @@ export class AppointmentFormDialogComponent implements OnInit {
       reason: v.reason?.trim() ? v.reason.trim() : null,
       status: v.status as string,
       notifyEmail: !!v.notifyEmail,
-      notifySms: !!v.notifySms,
-      notifyWhatsapp: !!v.notifyWhatsapp,
+      notifySms: false,
+      notifyWhatsapp: false,
       createdByUserId,
     };
     if (this.dialogData.mode === 'create') {

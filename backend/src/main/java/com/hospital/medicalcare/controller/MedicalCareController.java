@@ -31,15 +31,12 @@ public class MedicalCareController {
 
     @GetMapping
     public List<MedicalCareResponse> list(@RequestParam(required = false) Long patientId) {
-        if (patientId != null) {
-            return medicalCareService.findByPatient(patientId);
-        }
-        return medicalCareService.findAll();
+        return medicalCareService.listForCurrentUser(patientId);
     }
 
     @GetMapping("/{id}")
     public MedicalCareResponse get(@PathVariable Long id) {
-        return medicalCareService.findById(id);
+        return medicalCareService.findByIdForCurrentUser(id);
     }
 
     @PostMapping
@@ -50,12 +47,12 @@ public class MedicalCareController {
 
     @PutMapping("/{id}")
     public MedicalCareResponse update(@PathVariable Long id, @Valid @RequestBody MedicalCareUpdateRequest request) {
-        return medicalCareService.update(id, request);
+        return medicalCareService.updateForCurrentUser(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        medicalCareService.delete(id);
+        medicalCareService.deleteForCurrentUser(id);
     }
 }

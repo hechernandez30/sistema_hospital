@@ -4,6 +4,8 @@ import com.hospital.auditlog.BusinessAuditActions;
 import com.hospital.auditlog.BusinessAuditRecorder;
 import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
+import com.hospital.imaging.service.ImagingStudyService;
+import com.hospital.laboratory.service.LaboratoryService;
 import com.hospital.medicalcare.entity.MedicalCare;
 import com.hospital.medicalcare.repository.MedicalCareRepository;
 import com.hospital.medicalorder.dto.MedicalOrderCreateRequest;
@@ -29,16 +31,22 @@ public class MedicalOrderService {
     private final MedicalCareRepository medicalCareRepository;
     private final BusinessAuditRecorder businessAuditRecorder;
     private final PharmacyOrderLineService pharmacyOrderLineService;
+    private final LaboratoryService laboratoryService;
+    private final ImagingStudyService imagingStudyService;
 
     public MedicalOrderService(
             MedicalOrderRepository medicalOrderRepository,
             MedicalCareRepository medicalCareRepository,
             BusinessAuditRecorder businessAuditRecorder,
-            PharmacyOrderLineService pharmacyOrderLineService) {
+            PharmacyOrderLineService pharmacyOrderLineService,
+            LaboratoryService laboratoryService,
+            ImagingStudyService imagingStudyService) {
         this.medicalOrderRepository = medicalOrderRepository;
         this.medicalCareRepository = medicalCareRepository;
         this.businessAuditRecorder = businessAuditRecorder;
         this.pharmacyOrderLineService = pharmacyOrderLineService;
+        this.laboratoryService = laboratoryService;
+        this.imagingStudyService = imagingStudyService;
     }
 
     @Transactional(readOnly = true)
@@ -71,7 +79,17 @@ public class MedicalOrderService {
                 BusinessAuditActions.CREATE,
                 null,
                 snapshotMedicalOrderMinimal(saved));
+        ensureFulfillmentRecords(saved);
         return toResponse(saved);
+    }
+
+    private void ensureFulfillmentRecords(MedicalOrder order) {
+        String type = order.getOrderType();
+        if ("LABORATORIO".equals(type)) {
+            laboratoryService.ensurePendingRecordForMedicalOrder(order);
+        } else if ("IMAGEN".equals(type)) {
+            imagingStudyService.ensurePendingRecordForMedicalOrder(order);
+        }
     }
 
     @Transactional

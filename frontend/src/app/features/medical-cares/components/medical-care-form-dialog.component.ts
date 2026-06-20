@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, Observable, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, map } from 'rxjs/operators';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -11,6 +11,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { NgClass } from '@angular/common';
 import { MedicalCareApiService } from '../services/medical-care-api.service';
 import {
   MedicalCareCreatePayload,
@@ -33,13 +34,23 @@ import {
   buildAdmissionOptions,
   buildAppointmentOptions,
   buildDoctorOptions,
-  buildPatientOptions,
+  buildPatientOptionsForMedicalCare,
+  isAdmissionOpenForMedicalCare,
   patientsToMap,
   staffToMap,
 } from '../../shared/entity-picker.utils';
 import { EntityAutocompleteComponent } from '../../shared/entity-autocomplete.component';
 import { MedicalOrderApiService } from '../../medical-orders/services/medical-order-api.service';
-import { MedicalOrderType, medicalOrderTypeLabel } from '../../medical-orders/models/medical-order.models';
+import { MedicalOrderResponse, MedicalOrderType, medicalOrderPriorityLabel, medicalOrderStatusLabel, medicalOrderTypeLabel } from '../../medical-orders/models/medical-order.models';
+import { LaboratoryApiService } from '../../laboratory/services/laboratory-api.service';
+import { ImagingApiService } from '../../imaging/services/imaging-api.service';
+import {
+  buildExamsForOrders,
+  examListKey,
+  fulfillmentStatusTone,
+  fulfillmentToneClass,
+  MedicalCareExamListItem,
+} from '../utils/medical-care-linked-orders.util';
 import {
   MEDICAL_CARE_ORDER_REQUESTS,
   activeOrderTypesFromList,
@@ -83,6 +94,7 @@ export interface MedicalCareFormDialogData {
     MatProgressSpinnerModule,
     MatSnackBarModule,
     EntityAutocompleteComponent,
+    NgClass,
   ],
   templateUrl: './medical-care-form-dialog.component.html',
   styleUrl: './medical-care-form-dialog.component.scss',
@@ -91,6 +103,8 @@ export class MedicalCareFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(MedicalCareApiService);
   private readonly orderApi = inject(MedicalOrderApiService);
+  private readonly laboratoryApi = inject(LaboratoryApiService);
+  private readonly imagingApi = inject(ImagingApiService);
   private readonly patientApi = inject(PatientApiService);
   private readonly staffApi = inject(StaffApiService);
   private readonly admissionApi = inject(AdmissionApiService);
@@ -112,10 +126,27 @@ export class MedicalCareFormDialogComponent implements OnInit {
   private staffMap = new Map<number, import('../../staff/models/staff.models').StaffResponse>();
   private allAdmissions: import('../../admissions/models/admission.models').AdmissionResponse[] = [];
   private allAppointments: import('../../appointments/models/appointment.models').AppointmentResponse[] = [];
+  private allStaff: import('../../staff/models/staff.models').StaffResponse[] = [];
+  private allSpecialties: import('../../specialties/models/specialty.models').SpecialtyResponse[] = [];
   private existingActiveOrderTypes = new Set<MedicalOrderType>();
+  /** Episodio cargado en edición; respaldo si el picker pierde el ID al interactuar con otros campos. */
+  private loadedEpisode: { patientId: number; admissionId: number | null; appointmentId: number | null } | null =
+    null;
 
   loading = false;
   saving = false;
+  linkedDataLoading = false;
+  careOrders: MedicalOrderResponse[] = [];
+  careExams: MedicalCareExamListItem[] = [];
+  selectedOrderId: number | null = null;
+  selectedExamKey: string | null = null;
+
+  readonly fulfillmentToneClass = fulfillmentToneClass;
+  readonly medicalOrderTypeLabel = medicalOrderTypeLabel;
+  readonly medicalOrderStatusLabel = medicalOrderStatusLabel;
+  readonly medicalOrderPriorityLabel = medicalOrderPriorityLabel;
+  readonly examListKey = examListKey;
+  readonly orderTone = (status: string) => fulfillmentToneClass(fulfillmentStatusTone(status));
 
   readonly form = this.fb.group(
     {
@@ -149,8 +180,10 @@ export class MedicalCareFormDialogComponent implements OnInit {
         this.staffMap = staffToMap(staff);
         this.allAdmissions = admissions;
         this.allAppointments = appointments;
-        this.patientOptions = buildPatientOptions(patients);
-        this.doctorOptions = buildDoctorOptions(staff, specialties);
+        this.allStaff = staff;
+        this.allSpecialties = specialties;
+        this.rebuildPatientOptions();
+        this.rebuildDoctorOptions();
         this.refreshContextOptions();
         this.catalogError = null;
         if (this.dialogData.mode === 'edit' && this.dialogData.medicalCareId != null) {
@@ -162,47 +195,105 @@ export class MedicalCareFormDialogComponent implements OnInit {
       error: (err: unknown) => this.failLoad(err),
     });
 
-    this.form.controls.patientId.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.refreshContextOptions();
-      this.form.controls.admissionId.setValue('');
-      this.form.controls.appointmentId.setValue('');
-    });
-    this.form.controls.admissionId.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.refreshAppointmentOptions();
-      this.form.controls.appointmentId.setValue('');
-    });
+    this.form.controls.patientId.valueChanges
+      .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe((rawPatientId) => {
+        const patientId = parsePositiveInt(rawPatientId);
+        const previousPatientId = this.loadedEpisode?.patientId ?? null;
+        this.refreshContextOptions();
+        if (patientId != null && previousPatientId != null && patientId === previousPatientId) {
+          return;
+        }
+        this.form.controls.admissionId.setValue('');
+        this.form.controls.appointmentId.setValue('');
+      });
+    this.form.controls.admissionId.valueChanges
+      .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.refreshAppointmentOptions();
+        const admissionId = parsePositiveInt(this.form.controls.admissionId.value);
+        if (admissionId == null) {
+          this.form.controls.appointmentId.setValue('');
+        }
+      });
   }
 
   private loadForEdit(medicalCareId: number): void {
+    this.linkedDataLoading = true;
     forkJoin({
       care: this.api.getById(medicalCareId),
       orders: this.orderApi.list(medicalCareId),
+      labs: this.laboratoryApi.list(),
+      imaging: this.imagingApi.list(),
     }).subscribe({
-      next: ({ care, orders }) => {
+      next: ({ care, orders, labs, imaging }) => {
+        this.careOrders = [...orders].sort((a, b) => b.id - a.id);
+        this.careExams = buildExamsForOrders(orders, labs, imaging);
         this.existingActiveOrderTypes = activeOrderTypesFromList(orders);
+        this.linkedDataLoading = false;
         this.patchFrom(care);
       },
       error: (err: unknown) => this.failLoad(err),
     });
   }
 
+  toggleOrder(order: MedicalOrderResponse): void {
+    this.selectedOrderId = this.selectedOrderId === order.id ? null : order.id;
+  }
+
+  toggleExam(exam: MedicalCareExamListItem): void {
+    const key = examListKey(exam);
+    this.selectedExamKey = this.selectedExamKey === key ? null : key;
+  }
+
+  get selectedOrder(): MedicalOrderResponse | null {
+    return this.careOrders.find((o) => o.id === this.selectedOrderId) ?? null;
+  }
+
+  get selectedExam(): MedicalCareExamListItem | null {
+    return this.careExams.find((e) => examListKey(e) === this.selectedExamKey) ?? null;
+  }
+
   private failLoad(err: unknown): void {
     this.loading = false;
+    this.linkedDataLoading = false;
     this.catalogError = 'No se pudieron cargar catálogos.';
     this.snackBar.open(getHttpErrorMessage(err, this.catalogError), 'Cerrar', { duration: 7000 });
     this.dialogRef.close(false);
   }
 
+  private rebuildPatientOptions(includePatientId?: number): void {
+    this.patientOptions = buildPatientOptionsForMedicalCare(
+      [...this.patientMap.values()],
+      this.allAdmissions,
+      includePatientId,
+    );
+  }
+
+  private rebuildDoctorOptions(includeStaffId?: number): void {
+    this.doctorOptions = buildDoctorOptions(this.allStaff, this.allSpecialties, true, includeStaffId);
+  }
+
   private refreshContextOptions(): void {
     const patientId = parsePositiveInt(this.form.controls.patientId.value);
+    const currentAdmissionId = parsePositiveInt(this.form.controls.admissionId.value);
     if (patientId == null) {
       this.admissionOptions = [];
       this.appointmentOptions = [];
       return;
     }
-    this.admissionOptions = buildAdmissionOptions(this.allAdmissions, this.patientMap, {
-      excludeClosed: true,
-    }).filter((o) => this.allAdmissions.find((a) => a.id === o.id)?.patientId === patientId);
+    this.admissionOptions = buildAdmissionOptions(
+      this.allAdmissions.filter((a) => {
+        if (a.patientId !== patientId) {
+          return false;
+        }
+        if (currentAdmissionId != null && a.id === currentAdmissionId) {
+          return true;
+        }
+        return isAdmissionOpenForMedicalCare(a.status);
+      }),
+      this.patientMap,
+    );
     this.refreshAppointmentOptions();
   }
 
@@ -224,10 +315,18 @@ export class MedicalCareFormDialogComponent implements OnInit {
 
   private patchFrom(c: MedicalCareResponse): void {
     this.loading = false;
+    this.loadedEpisode = {
+      patientId: c.patientId,
+      admissionId: c.admissionId,
+      appointmentId: c.appointmentId,
+    };
+    this.rebuildPatientOptions(c.patientId);
+    this.rebuildDoctorOptions(c.doctorId);
+    this.form.patchValue({ patientId: String(c.patientId) }, { emitEvent: false });
+    this.refreshContextOptions();
     const orderChecks = checkboxPatchFromCareAndOrders(c.requiresHospitalization, this.existingActiveOrderTypes);
     this.form.patchValue(
       {
-        patientId: String(c.patientId),
         admissionId: c.admissionId != null ? String(c.admissionId) : '',
         appointmentId: c.appointmentId != null ? String(c.appointmentId) : '',
         doctorId: String(c.doctorId),
@@ -243,7 +342,39 @@ export class MedicalCareFormDialogComponent implements OnInit {
     this.refreshAppointmentOptions();
   }
 
+  /** Restaura IDs de episodio si el autocomplete los perdió al editar otros campos. */
+  private reconcileEpisodeFields(): void {
+    if (this.loadedEpisode == null) {
+      return;
+    }
+    let patientId = parsePositiveInt(this.form.controls.patientId.value);
+    if (patientId == null) {
+      this.form.controls.patientId.setValue(String(this.loadedEpisode.patientId), { emitEvent: false });
+      patientId = this.loadedEpisode.patientId;
+    }
+    if (patientId !== this.loadedEpisode.patientId) {
+      return;
+    }
+    if (
+      parsePositiveInt(this.form.controls.admissionId.value) == null &&
+      this.loadedEpisode.admissionId != null
+    ) {
+      this.form.controls.admissionId.setValue(String(this.loadedEpisode.admissionId), { emitEvent: false });
+    }
+    if (
+      parsePositiveInt(this.form.controls.appointmentId.value) == null &&
+      this.loadedEpisode.appointmentId != null
+    ) {
+      this.form.controls.appointmentId.setValue(String(this.loadedEpisode.appointmentId), { emitEvent: false });
+    }
+    this.refreshContextOptions();
+    this.refreshAppointmentOptions();
+  }
+
   submit(): void {
+    if (this.isEdit) {
+      this.reconcileEpisodeFields();
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       let msg = 'Revise los campos marcados: hay datos obligatorios incompletos o inválidos.';

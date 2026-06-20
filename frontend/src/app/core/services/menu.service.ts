@@ -13,6 +13,7 @@ export interface AppMenuItem {
 const ALL_STAFF = [
   'ROLE_ADMINISTRADOR',
   'ROLE_MEDICO',
+  'ROLE_MEDICO-JEFE',
   'ROLE_RECEPCIONISTA',
   'ROLE_CAJERO',
   'ROLE_FARMACIA',
@@ -28,12 +29,12 @@ export class MenuService {
   /** Items del menú lateral (rutas bajo `/app`). */
   private readonly allItems: AppMenuItem[] = [
     { path: '/app/panel', label: 'Panel', icon: 'dashboard', roles: ALL_STAFF },
-    { path: '/app/pacientes', label: 'Pacientes', icon: 'personal_injury', roles: ['ROLE_ADMINISTRADOR', 'ROLE_MEDICO', 'ROLE_RECEPCIONISTA', 'ROLE_CAJERO'] },
+    { path: '/app/pacientes', label: 'Pacientes', icon: 'personal_injury', roles: ['ROLE_ADMINISTRADOR', 'ROLE_MEDICO', 'ROLE_MEDICO-JEFE', 'ROLE_RECEPCIONISTA', 'ROLE_CAJERO'] },
     { path: '/app/citas', label: 'Citas', icon: 'event', roles: ['ROLE_ADMINISTRADOR', 'ROLE_MEDICO', 'ROLE_RECEPCIONISTA'] },
     { path: '/app/admisiones', label: 'Admisiones', icon: 'local_hospital', roles: ['ROLE_ADMINISTRADOR', 'ROLE_RECEPCIONISTA'] },
     { path: '/app/triage', label: 'Triage', icon: 'emergency', roles: ['ROLE_ADMINISTRADOR', 'ROLE_RECEPCIONISTA'] },
-    { path: '/app/atenciones', label: 'Atenciones médicas', icon: 'medical_services', roles: ['ROLE_ADMINISTRADOR', 'ROLE_MEDICO'] },
-    { path: '/app/ordenes', label: 'Órdenes médicas', icon: 'assignment', roles: ['ROLE_ADMINISTRADOR', 'ROLE_MEDICO', 'ROLE_FARMACIA'] },
+    { path: '/app/atenciones', label: 'Atenciones médicas', icon: 'medical_services', roles: ['ROLE_ADMINISTRADOR', 'ROLE_MEDICO', 'ROLE_MEDICO-JEFE'] },
+    { path: '/app/ordenes', label: 'Órdenes médicas', icon: 'assignment', roles: ['ROLE_ADMINISTRADOR', 'ROLE_MEDICO', 'ROLE_MEDICO-JEFE', 'ROLE_FARMACIA'] },
     { path: '/app/laboratorio', label: 'Laboratorio', icon: 'science', roles: ['ROLE_ADMINISTRADOR', 'ROLE_MEDICO', 'ROLE_LABORATORIO'] },
     { path: '/app/imagenes', label: 'Imágenes', icon: 'photo_camera', roles: ['ROLE_ADMINISTRADOR', 'ROLE_MEDICO'] },
     { path: '/app/medicamentos', label: 'Medicamentos', icon: 'medication', roles: ['ROLE_ADMINISTRADOR', 'ROLE_FARMACIA'] },

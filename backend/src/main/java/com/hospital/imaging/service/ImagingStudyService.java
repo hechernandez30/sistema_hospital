@@ -82,6 +82,34 @@ public class ImagingStudyService {
         ensureImagingStatus(status);
         study.setStatus(status);
         study.setResponsibleStaff(resolveStaff(request.responsibleStaffId()));
+        return saveNewImagingStudy(study);
+    }
+
+    /**
+     * Crea estudio de imagen pendiente al generar una orden médica tipo IMAGEN (p. ej. desde atención).
+     * Idempotente: no duplica si ya existe registro para la orden.
+     */
+    @Transactional
+    public void ensurePendingRecordForMedicalOrder(MedicalOrder order) {
+        if (!ORDER_TYPE_IMAGE.equals(order.getOrderType())) {
+            return;
+        }
+        if (imagingStudyRepository.existsByMedicalOrder_Id(order.getId())) {
+            return;
+        }
+        ImagingStudy study = new ImagingStudy();
+        study.setMedicalOrder(order);
+        study.setStudyType(PENDING_TEXT);
+        study.setScheduledAt(null);
+        study.setPerformedAt(null);
+        study.setReportResult(null);
+        study.setResultFile(null);
+        study.setStatus("PENDIENTE");
+        study.setResponsibleStaff(null);
+        saveNewImagingStudy(study);
+    }
+
+    private ImagingStudyResponse saveNewImagingStudy(ImagingStudy study) {
         ImagingStudy saved = imagingStudyRepository.save(study);
         businessAuditRecorder.safeRecord(
                 "imaging",
@@ -92,6 +120,8 @@ public class ImagingStudyService {
                 snapshotImagingMinimal(saved));
         return toResponse(saved);
     }
+
+    private static final String PENDING_TEXT = "Pendiente";
 
     @Transactional
     public ImagingStudyResponse update(Long id, ImagingStudyUpdateRequest request) {

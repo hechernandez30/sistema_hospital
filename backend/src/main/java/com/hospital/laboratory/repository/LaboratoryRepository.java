@@ -17,6 +17,9 @@ public interface LaboratoryRepository extends JpaRepository<Laboratory, Long> {
 
     List<Laboratory> findByStatus(String status);
 
+    @Query("select l.recordNumber from Laboratory l where l.recordNumber is not null and l.recordNumber <> ''")
+    List<String> findAllRecordNumbers();
+
     @Query(
             """
             select l from Laboratory l

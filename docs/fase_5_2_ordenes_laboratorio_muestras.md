@@ -145,3 +145,34 @@ El alta de **`MedicalOrder`** sigue desde la API/pantalla de órdenes; **no se a
 - Integrar navegación contextual (desde lista de **atención** o **paciente**) hacia órdenes filtradas y laboratorio sin duplicar APIs.
 - Valorar **webhook/cola interna liviana** o bandera “resultado disponible” + listado por médico (sin motor de correo hasta definir infra).
 - Políticas de tamaño/longitud para `attachment`/`result` y eventual **storage** objetos (solo con cambio BD/aprobación).
+
+---
+
+## Addendum — Fase 9.3 (mayo 2026)
+
+Ver **`docs/fase_9_3_operacion_clinica_integrada.md`**.
+
+### Órdenes desde atención médica
+
+- Al guardar atención (alta/edición), checkboxes crean órdenes `PENDIENTE` / prioridad `NORMAL` si el tipo no tiene orden activa previa.
+
+### Fulfillment automático al crear orden
+
+- `LABORATORIO` → registro lab pendiente (`ensurePendingRecordForMedicalOrder`).
+- `IMAGEN` → registro imagen pendiente (`ensurePendingRecordForMedicalOrder`).
+
+### Correlativo expediente lab (auto-create)
+
+- Formato CU06: `AAAA-MM-DD-CC-NNNNNNN`.
+- Backend: `LaboratoryRecordNumberGenerator` (ya no `"Pendiente"` en `recordNumber`).
+- CC `LQ` cuando `requestType` es null (caso auto-create desde atención).
+
+### Permisos médico
+
+- GET `/api/medications` permitido a MEDICO y MEDICO-JEFE (formulario orden FARMACIA carga medicamentos bajo demanda).
+
+### Archivos adicionales
+
+- `MedicalOrderService.ensureFulfillmentRecords()`
+- `LaboratoryService`, `ImagingStudyService`, `LaboratoryRecordNumberGenerator.java`
+- `medical-care-order-request.util.ts`, `medical-order-form-dialog.component.ts`

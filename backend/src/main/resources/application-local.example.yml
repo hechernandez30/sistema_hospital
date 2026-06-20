@@ -1,0 +1,14 @@
+# Plantilla para correo Gmail (contraseña de aplicación, no la contraseña normal).
+# 1. Copie este archivo como application-local.yml en la misma carpeta.
+# 2. Complete username/password con su cuenta Gmail y contraseña de aplicación.
+
+spring:
+  mail:
+    username: su-cuenta@gmail.com
+    password: xxxxxxxxxxxxxxxx
+
+app:
+  mail:
+    enabled: true
+    from-name: Hospital H&H
+    from-address: su-cuenta@gmail.com

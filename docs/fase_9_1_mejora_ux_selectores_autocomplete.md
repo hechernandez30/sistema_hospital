@@ -67,10 +67,12 @@ Se reemplazaron los campos de entrada manual de IDs internos en los formularios 
 
 ### Atención médica
 
-- **Paciente / médico:** como citas.
-- **Admisión:** contexto del paciente; sin `RECHAZADO`/`ANULADO`.
+- **Paciente (9.3):** solo pacientes con admisión **PENDIENTE**, **ADMITIDO** o **TRANSFERIDO** (`buildPatientOptionsForMedicalCare`).
+- **Médico (9.3):** nombre + especialidad en etiqueta (`buildDoctorOptions`).
+- **Admisión:** contexto del paciente; estados abiertos PENDIENTE/ADMITIDO/TRANSFERIDO (en edición conserva admisión actual).
 - **Cita opcional:** citas activas del paciente (o del paciente de la admisión seleccionada).
-- **Envía:** `patientId`, `doctorId`, `admissionId`, `appointmentId` (opc.).
+- **Edición (9.3):** secciones listado **Órdenes médicas** y **Exámenes** (lab/imagen) con detalle al clic.
+- **Envía:** `patientId`, `doctorId`, `admissionId`, `appointmentId` (opc.); checkboxes generan órdenes al guardar.
 
 ### Orden médica — atención (`medicalCareId`)
 

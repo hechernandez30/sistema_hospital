@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
 
@@ -108,4 +109,15 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to,
             @Param("doctorId") Long doctorId);
+
+    @Query(
+            """
+            select a from Appointment a
+            join fetch a.patient
+            join fetch a.doctor d
+            left join fetch d.user
+            left join fetch a.specialty
+            where a.id = :id
+            """)
+    Optional<Appointment> findByIdWithDetailsForNotification(@Param("id") Long id);
 }

@@ -11,6 +11,7 @@ import com.hospital.laboratory.dto.LaboratoryResponse;
 import com.hospital.laboratory.dto.LaboratoryUpdateRequest;
 import com.hospital.laboratory.entity.Laboratory;
 import com.hospital.laboratory.repository.LaboratoryRepository;
+import com.hospital.laboratory.support.LaboratoryRecordNumberGenerator;
 import com.hospital.medicalorder.entity.MedicalOrder;
 import com.hospital.medicalorder.repository.MedicalOrderRepository;
 import com.hospital.staff.entity.Staff;
@@ -22,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.time.LocalDate;
 
 @Service
 public class LaboratoryService {
@@ -87,6 +89,37 @@ public class LaboratoryService {
         Laboratory lab = new Laboratory();
         lab.setMedicalOrder(order);
         applyCreate(lab, request);
+        return saveNewLaboratory(lab);
+    }
+
+    /**
+     * Crea registro de laboratorio pendiente al generar una orden médica tipo LABORATORIO (p. ej. desde atención).
+     * Idempotente: no duplica si ya existe registro para la orden.
+     */
+    @Transactional
+    public void ensurePendingRecordForMedicalOrder(MedicalOrder order) {
+        if (!ORDER_TYPE_LAB.equals(order.getOrderType())) {
+            return;
+        }
+        if (laboratoryRepository.existsByMedicalOrder_Id(order.getId())) {
+            return;
+        }
+        Laboratory lab = new Laboratory();
+        lab.setMedicalOrder(order);
+        lab.setRequesterType("INTERNO");
+        lab.setRequestType(null);
+        lab.setRecordNumber(LaboratoryRecordNumberGenerator.nextFromExisting(
+                laboratoryRepository.findAllRecordNumbers(), null, LocalDate.now()));
+        lab.setSampleDescription(PENDING_TEXT);
+        lab.setSampleReceived(false);
+        lab.setSampleValid(null);
+        lab.setIncident(PENDING_TEXT);
+        lab.setResult(PENDING_TEXT);
+        lab.setStatus("PENDIENTE");
+        saveNewLaboratory(lab);
+    }
+
+    private LaboratoryResponse saveNewLaboratory(Laboratory lab) {
         Laboratory saved = laboratoryRepository.save(lab);
         businessAuditRecorder.safeRecord(
                 "laboratory",
@@ -97,6 +130,8 @@ public class LaboratoryService {
                 snapshotLaboratoryMinimal(saved));
         return toResponse(saved);
     }
+
+    private static final String PENDING_TEXT = "Pendiente";
 
     @Transactional
     public LaboratoryResponse update(Long id, LaboratoryUpdateRequest request) {

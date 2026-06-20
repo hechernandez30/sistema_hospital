@@ -31,6 +31,7 @@
           [options]="patientOptions"
           [loading]="loading"
           [loadError]="catalogError"
+          emptyMessage="No hay pacientes con admisión pendiente, admitida o transferida."
         />
         <app-entity-autocomplete
           formControlName="doctorId"
@@ -48,7 +49,7 @@
           [loading]="loading"
           [loadError]="catalogError"
           hint=""
-          emptyMessage="No hay admisiones válidas para este paciente."
+          emptyMessage="No hay admisiones pendientes, admitidas o transferidas para este paciente."
         />
         <app-entity-autocomplete
           formControlName="appointmentId"
@@ -97,6 +98,121 @@
           }
         </div>
       </div>
+
+      @if (isEdit) {
+        <section class="linked-section">
+          <p class="section-label">Órdenes médicas</p>
+          @if (linkedDataLoading) {
+            <div class="linked-loading">
+              <mat-progress-spinner diameter="24" mode="indeterminate" />
+            </div>
+          } @else if (careOrders.length === 0) {
+            <p class="linked-empty">Sin órdenes médicas vinculadas.</p>
+          } @else {
+            <ul class="pick-list">
+              @for (order of careOrders; track order.id) {
+                <li>
+                  <button
+                    type="button"
+                    class="pick-item"
+                    [class.selected]="selectedOrderId === order.id"
+                    [ngClass]="orderTone(order.status)"
+                    (click)="toggleOrder(order)"
+                  >
+                    #{{ order.id }} · {{ medicalOrderTypeLabel(order.orderType) }} ·
+                    {{ medicalOrderStatusLabel(order.status) }}
+                  </button>
+                </li>
+              }
+            </ul>
+            @if (selectedOrder; as order) {
+              <div class="detail-panel">
+                <p><strong>Orden #{{ order.id }}</strong></p>
+                <p>Tipo: {{ medicalOrderTypeLabel(order.orderType) }}</p>
+                <p>Estado: {{ medicalOrderStatusLabel(order.status) }}</p>
+                <p>Prioridad: {{ medicalOrderPriorityLabel(order.priority) }}</p>
+                @if (order.orderDate) {
+                  <p>Fecha: {{ order.orderDate }}</p>
+                }
+                <p>Descripción: {{ order.description }}</p>
+                @if (order.observations?.trim()) {
+                  <p>Observaciones: {{ order.observations }}</p>
+                }
+              </div>
+            }
+          }
+        </section>
+
+        <section class="linked-section">
+          <p class="section-label">Exámenes</p>
+          @if (linkedDataLoading) {
+            <div class="linked-loading">
+              <mat-progress-spinner diameter="24" mode="indeterminate" />
+            </div>
+          } @else if (careExams.length === 0) {
+            <p class="linked-empty">Sin exámenes de laboratorio o imagen.</p>
+          } @else {
+            <ul class="pick-list">
+              @for (exam of careExams; track examListKey(exam)) {
+                <li>
+                  <button
+                    type="button"
+                    class="pick-item"
+                    [class.selected]="selectedExamKey === examListKey(exam)"
+                    [ngClass]="fulfillmentToneClass(exam.tone)"
+                    (click)="toggleExam(exam)"
+                  >
+                    {{ exam.label }} · {{ exam.statusLabel }}
+                  </button>
+                </li>
+              }
+            </ul>
+            @if (selectedExam; as exam) {
+              <div class="detail-panel">
+                @if (exam.lab) {
+                  <p><strong>{{ exam.label }}</strong></p>
+                  <p>Orden médica: #{{ exam.lab.medicalOrderId }}</p>
+                  <p>Estado: {{ exam.statusLabel }}</p>
+                  @if (exam.lab.requestType?.trim()) {
+                    <p>Tipo solicitud: {{ exam.lab.requestType }}</p>
+                  }
+                  @if (exam.lab.sampleDescription?.trim()) {
+                    <p>Muestra: {{ exam.lab.sampleDescription }}</p>
+                  }
+                  <p>Muestra recibida: {{ exam.lab.sampleReceived ? 'Sí' : 'No' }}</p>
+                  @if (exam.lab.result?.trim()) {
+                    <p>Resultado: {{ exam.lab.result }}</p>
+                  }
+                  @if (exam.lab.incident?.trim()) {
+                    <p>Incidencia: {{ exam.lab.incident }}</p>
+                  }
+                  @if (exam.lab.attachment) {
+                    <p>Adjunto: {{ exam.lab.attachment.originalFileName }}</p>
+                  }
+                }
+                @if (exam.imaging) {
+                  <p><strong>{{ exam.label }}</strong></p>
+                  <p>Orden médica: #{{ exam.imaging.medicalOrderId }}</p>
+                  <p>Estado: {{ exam.statusLabel }}</p>
+                  <p>Tipo estudio: {{ exam.imaging.studyType }}</p>
+                  @if (exam.imaging.scheduledAt) {
+                    <p>Programado: {{ exam.imaging.scheduledAt }}</p>
+                  }
+                  @if (exam.imaging.performedAt) {
+                    <p>Realizado: {{ exam.imaging.performedAt }}</p>
+                  }
+                  @if (exam.imaging.reportResult?.trim()) {
+                    <p>Informe: {{ exam.imaging.reportResult }}</p>
+                  }
+                  @if (exam.imaging.resultFile?.trim()) {
+                    <p>Archivo: {{ exam.imaging.resultFile }}</p>
+                  }
+                }
+              </div>
+            }
+          }
+        </section>
+      }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">Cancelar</button>

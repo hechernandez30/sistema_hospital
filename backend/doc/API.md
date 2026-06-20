@@ -33,8 +33,9 @@ Los roles en token coinciden con BD (`ROLE_<NOMBRE>`). Resumen:
 |-----|------------------|
 | **ADMINISTRADOR** | Todo `/api/**` no cubierto por reglas más específicas (acceso total efectivo). |
 | **AUDITOR** | Solo `/api/audit-logs/**` (la API solo expone GET en bitácora). |
-| **MEDICO** | `/api/patients/**`, `/api/appointments/**`, `/api/medical-cares/**`, `/api/medical-orders/**`, `/api/laboratory/**`, `/api/imaging/**` |
-| **RECEPCIONISTA** | `/api/patients/**` (sin crear/editar solo CAJERO), `/api/appointments/**`, `/api/admissions/**`, `/api/triage/**` |
+| **MEDICO** | `/api/patients/**`, `/api/appointments/**`, `/api/medical-cares/**` (propias vía filtro servicio), `/api/medical-orders/**`, `/api/laboratory/**`, `/api/imaging/**`; **GET** `/api/medications/**`, `/api/staff/**`, `/api/specialties/**` |
+| **MEDICO-JEFE** | Igual que MEDICO pero **`/api/medical-cares/**` sin filtro** (todas las atenciones); rol operativo para reasignación |
+| **RECEPCIONISTA** | `/api/patients/**`, `/api/appointments/**`, `/api/admissions/**`, `/api/triage/**`; **GET** `/api/staff/**`, `/api/specialties/**` (pickers citas/admisiones) |
 | **CAJERO** | `/api/payments/**` y **solo GET** sobre `/api/patients/**` (incl. seguros anidados bajo paciente). |
 | **FARMACIA** | `/api/medications/**`, `/api/medical-orders/**` |
 | **LABORATORIO** | `/api/laboratory/**` |

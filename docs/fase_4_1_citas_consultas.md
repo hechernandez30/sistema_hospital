@@ -56,8 +56,28 @@
 - **JWT** y **roles** en `SecurityConfig` (solo aclaración UX en formulario).
 - **Estados** del dominio: mismos valores.
 - **`@Future` en DTOs**: se mantiene como estaba; permite coherencia “cita futura” en creación/edición. Para **reprogramaciones en el pasado** o cierres retroactivos puede chocar con validación Bean Validation; mitigación futura (p. ej. quitar solo en UPDATE o usar grupos) — **no tocado** en esta fase según restricción explícita del usuario.
-- **Notificaciones reales**: checkboxes sin cambio.
-- **Salas / otros módulos** (admisiones, triage, pagos, etc.).
+- **Notificaciones reales**: implementadas en addendum 9.3 (correo Gmail); SMS/WhatsApp quitados de UI.
+
+## Addendum — Fase 9.3: correo Gmail (mayo 2026)
+
+Ver **`docs/fase_9_3_operacion_clinica_integrada.md` §8**.
+
+### UI
+
+- Checkbox único: **“Enviar confirmación por correo al paciente”**.
+- Eliminados checks **SMS** y **WhatsApp**.
+
+### Backend
+
+- Spring Mail + SMTP Gmail; credenciales en `application-local.yml` (no versionado) o env vars.
+- Envío **asíncrono** (`@Async` + evento post-commit): guardar cita no espera al correo.
+- Dispara en crear, editar y cancelar si `notifyEmail = true` y paciente tiene email.
+
+### Archivos
+
+- `appointment/mail/AppointmentNotificationMailService.java`
+- `appointment/mail/AppointmentEmailNotificationListener.java`
+- `mail/MailProperties.java`, `application.yml` (sección `spring.mail`)
 
 ## Extensión 4.1b — FA02 médico no disponible
 

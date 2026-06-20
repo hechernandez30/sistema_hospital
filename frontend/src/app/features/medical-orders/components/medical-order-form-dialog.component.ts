@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -63,6 +64,7 @@ export class MedicalOrderFormDialogComponent implements OnInit {
   private readonly medicationApi = inject(MedicationApiService);
   private readonly dialogRef = inject(MatDialogRef<MedicalOrderFormDialogComponent, boolean>);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly destroyRef = inject(DestroyRef);
   readonly dialogData = inject<MedicalOrderFormDialogData>(MAT_DIALOG_DATA);
 
   readonly orderTypes = [...MEDICAL_ORDER_TYPES];
@@ -72,6 +74,7 @@ export class MedicalOrderFormDialogComponent implements OnInit {
 
   medicalCareOptions: EntityPickerOption[] = [];
   medications: MedicationResponse[] = [];
+  medicationsLoading = false;
   catalogError: string | null = null;
 
   loading = false;
@@ -95,11 +98,9 @@ export class MedicalOrderFormDialogComponent implements OnInit {
     forkJoin({
       cares: this.medicalCareApi.list(),
       patients: this.patientApi.list(),
-      medications: this.medicationApi.list(),
     }).subscribe({
-      next: ({ cares, patients, medications }) => {
+      next: ({ cares, patients }) => {
         this.medicalCareOptions = buildMedicalCareOptions(cares, patientsToMap(patients));
-        this.medications = medications.filter((m) => m.active);
         this.catalogError = null;
         if (this.dialogData.mode === 'edit' && this.dialogData.medicalOrderId != null) {
           this.api.getById(this.dialogData.medicalOrderId).subscribe({
@@ -111,6 +112,33 @@ export class MedicalOrderFormDialogComponent implements OnInit {
         }
       },
       error: (err: unknown) => this.failLoad(err),
+    });
+
+    this.form.controls.orderType.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((orderType) => {
+      if (orderType === 'FARMACIA') {
+        this.ensureMedicationsLoaded();
+      }
+    });
+  }
+
+  private ensureMedicationsLoaded(): void {
+    if (this.medications.length > 0 || this.medicationsLoading) {
+      return;
+    }
+    this.medicationsLoading = true;
+    this.medicationApi.list().subscribe({
+      next: (medications) => {
+        this.medicationsLoading = false;
+        this.medications = medications.filter((m) => m.active);
+      },
+      error: (err: unknown) => {
+        this.medicationsLoading = false;
+        this.snackBar.open(
+          getHttpErrorMessage(err, 'No se pudo cargar el catálogo de medicamentos.'),
+          'Cerrar',
+          { duration: 7000 },
+        );
+      },
     });
   }
 
@@ -171,6 +199,9 @@ export class MedicalOrderFormDialogComponent implements OnInit {
         status: o.status as (typeof MEDICAL_ORDER_STATUSES)[number],
         observations: o.observations ?? '',
       });
+      if (o.orderType === 'FARMACIA') {
+        this.ensureMedicationsLoaded();
+      }
     };
 
     if (o.orderType === 'FARMACIA' && this.dialogData.medicalOrderId != null) {

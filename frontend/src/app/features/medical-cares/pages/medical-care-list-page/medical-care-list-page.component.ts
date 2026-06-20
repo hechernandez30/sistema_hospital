@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
@@ -26,7 +26,7 @@ import { PatientResponse } from '../../../patients/models/patient.models';
 import { StaffApiService } from '../../../staff/services/staff-api.service';
 import { StaffResponse } from '../../../staff/models/staff.models';
 import { AuthService } from '../../../../core/services/auth.service';
-import { ROLES_MEDICAL_CARE, ROLES_RRHH_SPECIALTIES } from '../../../../core/constants/role-routes';
+import { ROLE_MEDICO_JEFE, ROLES_MEDICAL_CARE, ROLES_STAFF_SPECIALTY_READ } from '../../../../core/constants/role-routes';
 import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
 
 @Component({
@@ -47,6 +47,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error-message';
     MatInputModule,
     FormsModule,
     DatePipe,
+    NgClass,
   ],
   templateUrl: './medical-care-list-page.component.html',
   styleUrl: './medical-care-list-page.component.scss',
@@ -60,7 +61,11 @@ export class MedicalCareListPageComponent implements OnInit, AfterViewInit {
   private readonly auth = inject(AuthService);
 
   readonly canMutate = this.auth.hasAnyRole(ROLES_MEDICAL_CARE);
-  private readonly canResolveStaff = this.auth.hasAnyRole(ROLES_RRHH_SPECIALTIES);
+  readonly isChiefMedicalView = this.auth.hasAnyRole([ROLE_MEDICO_JEFE]);
+  private readonly canResolveStaff = this.auth.hasAnyRole(ROLES_STAFF_SPECIALTY_READ);
+
+  /** Personal del jefe médico logueado (para colorear filas pendientes de asignar). */
+  private chiefStaffId: number | null = null;
 
   filterPatientId = '';
   displayedColumns = ['id', 'careDate', 'patientLabel', 'doctorLabel', 'diagnosis', 'requiresHospitalization', 'actions'];
@@ -165,11 +170,26 @@ export class MedicalCareListPageComponent implements OnInit, AfterViewInit {
   private applyRows(cares: MedicalCareResponse[], patients: PatientResponse[], staff: StaffResponse[]): void {
     const pmap = new Map(patients.map((p) => [p.id, p] as const));
     const smap = new Map(staff.map((s) => [s.id, s] as const));
+    if (this.isChiefMedicalView) {
+      const userId = this.auth.getUserId();
+      const chiefStaff = staff.find((s) => s.userId === userId && s.staffType === 'MEDICO');
+      this.chiefStaffId = chiefStaff?.id ?? null;
+    } else {
+      this.chiefStaffId = null;
+    }
     this.dataSource.data = cares.map((c) => ({
       ...c,
       patientLabel: labelPatient(pmap.get(c.patientId), c.patientId),
-      doctorLabel: labelStaff(smap.get(c.doctorId), c.doctorId),
+      doctorLabel: labelDoctor(smap.get(c.doctorId), c.doctorId),
     }));
+  }
+
+  /** Rojo: aún asignadas al jefe. Verde: ya asignadas a otro médico. */
+  rowClass(row: MedicalCareView): string {
+    if (!this.isChiefMedicalView || this.chiefStaffId == null) {
+      return '';
+    }
+    return row.doctorId === this.chiefStaffId ? 'row-chief-pending' : 'row-assigned-other';
   }
 
   applyTextFilter(value: string): void {
@@ -221,9 +241,12 @@ function labelPatient(p: PatientResponse | undefined, id: number): string {
   return `${p.firstName} ${p.lastName} (${p.patientCode})`;
 }
 
-function labelStaff(s: StaffResponse | undefined, id: number): string {
+function labelDoctor(s: StaffResponse | undefined, id: number): string {
   if (!s) {
-    return `Personal #${id}`;
+    return `Médico #${id}`;
   }
-  return `${s.employeeCode} — ${s.staffType}`;
+  const first = s.linkedUserFirstName?.trim() ?? '';
+  const last = s.linkedUserLastName?.trim() ?? '';
+  const name = `${first} ${last}`.trim();
+  return name || s.employeeCode || `Médico #${id}`;
 }

@@ -16,7 +16,13 @@ import { SpecialtyResponse } from '../specialties/models/specialty.models';
 import { EntityPickerOption } from './entity-picker.models';
 
 const CLOSED_ADMISSION = new Set(['RECHAZADO', 'ANULADO']);
+/** Admisiones válidas para nueva atención médica (picker de paciente y admisión). */
+export const ADMISSION_STATUSES_OPEN_FOR_MEDICAL_CARE = new Set(['PENDIENTE', 'ADMITIDO', 'TRANSFERIDO']);
 const ACTIVE_APPOINTMENT = new Set(['PROGRAMADA', 'REPROGRAMADA']);
+
+export function isAdmissionOpenForMedicalCare(status: string | null | undefined): boolean {
+  return ADMISSION_STATUSES_OPEN_FOR_MEDICAL_CARE.has((status ?? '').trim().toUpperCase());
+}
 
 export function patientSearchBlob(p: PatientResponse): string {
   return [p.firstName, p.lastName, p.dpiNit, p.patientCode, String(p.id)]
@@ -45,25 +51,60 @@ export function buildPatientOptions(patients: PatientResponse[], activeOnly = tr
     .sort((a, b) => a.label.localeCompare(b.label, 'es'));
 }
 
+/** Pacientes con al menos una admisión pendiente, admitida o transferida. */
+export function buildPatientOptionsForMedicalCare(
+  patients: PatientResponse[],
+  admissions: AdmissionResponse[],
+  includePatientId?: number,
+): EntityPickerOption[] {
+  const eligiblePatientIds = new Set<number>();
+  for (const admission of admissions) {
+    if (isAdmissionOpenForMedicalCare(admission.status)) {
+      eligiblePatientIds.add(admission.patientId);
+    }
+  }
+  if (includePatientId != null) {
+    eligiblePatientIds.add(includePatientId);
+  }
+  return buildPatientOptions(patients.filter((p) => eligiblePatientIds.has(p.id)));
+}
+
+function formatDoctorFullName(staff: StaffResponse): string {
+  const first = staff.linkedUserFirstName?.trim() ?? '';
+  const last = staff.linkedUserLastName?.trim() ?? '';
+  const full = `${first} ${last}`.trim();
+  return full || 'Médico sin nombre';
+}
+
+/** Opciones de médico: `Nombre Apellido — Especialidad` (código en sublabel). */
 export function buildDoctorOptions(
   staff: StaffResponse[],
   specialties: SpecialtyResponse[],
   activeOnly = true,
+  includeStaffId?: number | null,
 ): EntityPickerOption[] {
   const specMap = new Map(specialties.map((s) => [s.id, s.name] as const));
+  const includeId = includeStaffId ?? null;
   return staff
-    .filter((s) => (!activeOnly || s.active) && s.staffType === 'MEDICO')
+    .filter((s) => {
+      if (s.staffType !== 'MEDICO') {
+        return false;
+      }
+      if (includeId != null && s.id === includeId) {
+        return true;
+      }
+      return !activeOnly || s.active;
+    })
     .map((s) => {
-      const spec = s.specialtyId != null ? specMap.get(s.specialtyId) : null;
-      const specPart = spec ? ` · ${spec}` : '';
+      const name = formatDoctorFullName(s);
+      const specName =
+        s.specialtyId != null ? (specMap.get(s.specialtyId) ?? 'Sin especialidad') : 'Sin especialidad';
+      const code = s.employeeCode?.trim() || `#${s.id}`;
       return {
         id: s.id,
-        label: `${s.employeeCode} — Médico${specPart}`,
-        sublabel: `Lic. ${s.licenseNumber ?? '—'} · #${s.id}`,
-        searchText: [s.employeeCode, s.staffType, spec, s.licenseNumber, String(s.id)]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase(),
+        label: `${name} — ${specName}`,
+        sublabel: code,
+        searchText: [name, specName, code, s.licenseNumber, String(s.id)].filter(Boolean).join(' ').toLowerCase(),
       };
     })
     .sort((a, b) => a.label.localeCompare(b.label, 'es'));

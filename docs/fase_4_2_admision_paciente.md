@@ -119,3 +119,25 @@
 ## Recomendación para Fase 4.3
 
 Según plan del hospital, la siguiente oleada típica sería **Triage CU** o primera **Atención** (solo si el orden en `AGENTS.md`/roadmap lo confirma), con uso de esta admisión como contexto pero sin duplicar reglas financieras. Opcional más adelante: selector guiado paciente desde lista/cache (solo GET existentes); no requiere DDL.
+
+---
+
+## Addendum — Fase 9.3 (mayo 2026)
+
+Ver **`docs/fase_9_3_operacion_clinica_integrada.md`**.
+
+### Auto-atención médica al crear admisión
+
+Tras `POST /api/admissions`, si el estado ∈ `{ PENDIENTE, ADMITIDO, TRANSFERIDO }`:
+
+- Se invoca `MedicalCareService.ensurePendingForAdmission`.
+- Se crea atención con médico **MEDICO-JEFE** y campos clínicos `"Pendiente"`.
+- Requiere un único usuario **MEDICO-JEFE** con personal tipo MEDICO activo.
+- **Idempotente:** no duplica si ya hay atención para la admisión.
+
+Reglas compartidas: `AdmissionStatusRules.AUTO_MEDICAL_CARE_STATUSES`.
+
+### Archivos adicionales
+
+- `AdmissionService.java`
+- `MedicalCareService.java`, `ChiefMedicalDoctorResolver.java`

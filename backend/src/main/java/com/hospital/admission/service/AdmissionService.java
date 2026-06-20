@@ -14,6 +14,7 @@ import com.hospital.exception.BusinessRuleException;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.insurance.entity.Insurance;
 import com.hospital.insurance.repository.InsuranceRepository;
+import com.hospital.medicalcare.service.MedicalCareService;
 import com.hospital.patient.entity.Patient;
 import com.hospital.patient.repository.PatientRepository;
 import com.hospital.user.entity.User;
@@ -38,6 +39,7 @@ public class AdmissionService {
     private final InsuranceRepository insuranceRepository;
     private final UserRepository userRepository;
     private final BusinessAuditRecorder businessAuditRecorder;
+    private final MedicalCareService medicalCareService;
 
     public AdmissionService(
             AdmissionRepository admissionRepository,
@@ -45,13 +47,15 @@ public class AdmissionService {
             AppointmentRepository appointmentRepository,
             InsuranceRepository insuranceRepository,
             UserRepository userRepository,
-            BusinessAuditRecorder businessAuditRecorder) {
+            BusinessAuditRecorder businessAuditRecorder,
+            MedicalCareService medicalCareService) {
         this.admissionRepository = admissionRepository;
         this.patientRepository = patientRepository;
         this.appointmentRepository = appointmentRepository;
         this.insuranceRepository = insuranceRepository;
         this.userRepository = userRepository;
         this.businessAuditRecorder = businessAuditRecorder;
+        this.medicalCareService = medicalCareService;
     }
 
     @Transactional(readOnly = true)
@@ -84,6 +88,7 @@ public class AdmissionService {
                 request.transferredArea(),
                 request.admittedByUserId());
         Admission saved = admissionRepository.save(admission);
+        medicalCareService.createPendingFromAdmission(saved);
         AdmissionResponse created = toResponse(saved);
         businessAuditRecorder.safeRecord(
                 "admissions",

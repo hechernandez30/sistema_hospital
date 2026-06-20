@@ -16,9 +16,7 @@
     <div class="field full"><span class="label">Inicio</span><span class="value">{{ data.startAt | date: 'medium' }}</span></div>
     <div class="field full"><span class="label">Fin</span><span class="value">{{ data.endAt | date: 'medium' }}</span></div>
     <div class="field full"><span class="label">Motivo</span><span class="value pre">{{ data.reason ?? '—' }}</span></div>
-    <div class="field"><span class="label">Correo</span><span class="value">{{ data.notifyEmail ? 'Sí' : 'No' }}</span></div>
-    <div class="field"><span class="label">SMS</span><span class="value">{{ data.notifySms ? 'Sí' : 'No' }}</span></div>
-    <div class="field"><span class="label">WhatsApp</span><span class="value">{{ data.notifyWhatsapp ? 'Sí' : 'No' }}</span></div>
+    <div class="field"><span class="label">Correo</span><span class="value">{{ data.notifyEmail ? 'Sí (confirmación)' : 'No' }}</span></div>
     <div class="field">
       <span class="label">Usuario que registró</span>
       <span class="value">{{ data.createdByUserId != null ? 'Usuario #' + data.createdByUserId : '—' }}</span>

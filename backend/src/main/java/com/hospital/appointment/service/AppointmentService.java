@@ -4,6 +4,7 @@ import com.hospital.appointment.dto.AppointmentCreateRequest;
 import com.hospital.appointment.dto.AppointmentResponse;
 import com.hospital.appointment.dto.AppointmentUpdateRequest;
 import com.hospital.appointment.entity.Appointment;
+import com.hospital.appointment.mail.AppointmentEmailNotificationEvent;
 import com.hospital.appointment.repository.AppointmentRepository;
 import com.hospital.auditlog.BusinessAuditActions;
 import com.hospital.auditlog.BusinessAuditRecorder;
@@ -17,6 +18,7 @@ import com.hospital.staff.entity.Staff;
 import com.hospital.staff.repository.StaffRepository;
 import com.hospital.user.entity.User;
 import com.hospital.user.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +45,7 @@ public class AppointmentService {
     private final SpecialtyRepository specialtyRepository;
     private final UserRepository userRepository;
     private final BusinessAuditRecorder businessAuditRecorder;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AppointmentService(
             AppointmentRepository appointmentRepository,
@@ -50,13 +53,15 @@ public class AppointmentService {
             StaffRepository staffRepository,
             SpecialtyRepository specialtyRepository,
             UserRepository userRepository,
-            BusinessAuditRecorder businessAuditRecorder) {
+            BusinessAuditRecorder businessAuditRecorder,
+            ApplicationEventPublisher eventPublisher) {
         this.appointmentRepository = appointmentRepository;
         this.patientRepository = patientRepository;
         this.staffRepository = staffRepository;
         this.specialtyRepository = specialtyRepository;
         this.userRepository = userRepository;
         this.businessAuditRecorder = businessAuditRecorder;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -104,6 +109,7 @@ public class AppointmentService {
                 BusinessAuditActions.CREATE,
                 null,
                 snapshotAppointmentMinimal(saved));
+        publishEmailNotification(saved.getId(), AppointmentEmailNotificationEvent.Kind.CREATED);
         return toResponse(saved);
     }
 
@@ -145,6 +151,7 @@ public class AppointmentService {
                 BusinessAuditActions.UPDATE,
                 prior,
                 snapshotAppointmentMinimal(saved));
+        publishEmailNotification(saved.getId(), AppointmentEmailNotificationEvent.Kind.UPDATED);
         return toResponse(saved);
     }
 
@@ -165,6 +172,11 @@ public class AppointmentService {
                 BusinessAuditActions.UPDATE,
                 prior,
                 snapshotAppointmentMinimal(saved));
+        publishEmailNotification(saved.getId(), AppointmentEmailNotificationEvent.Kind.CANCELLED);
+    }
+
+    private void publishEmailNotification(Long appointmentId, AppointmentEmailNotificationEvent.Kind kind) {
+        eventPublisher.publishEvent(new AppointmentEmailNotificationEvent(appointmentId, kind));
     }
 
     private void mapCommon(
