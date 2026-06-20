@@ -11,5 +11,5 @@ WORKDIR /app
 COPY --from=build /app/target/hospital-api-*.jar app.jar
 EXPOSE 8080
 ENV SPRING_PROFILES_ACTIVE=railway
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseSerialGC -Xss512k"
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=50.0 -XX:+UseSerialGC -Xss512k"
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT:-8080} -jar app.jar"]
