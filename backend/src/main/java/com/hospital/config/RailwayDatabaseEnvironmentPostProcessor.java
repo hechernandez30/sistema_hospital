@@ -55,11 +55,11 @@ public class RailwayDatabaseEnvironmentPostProcessor implements EnvironmentPostP
     }
 
     private static boolean isRailwayProfile(ConfigurableEnvironment environment) {
-        if (environment.matchesProfiles("railway")) {
+        if (environment.matchesProfiles("railway | prod")) {
             return true;
         }
         String active = environment.getProperty("SPRING_PROFILES_ACTIVE", "");
-        return active.contains("railway");
+        return active.contains("railway") || active.contains("prod");
     }
 
     private static String decode(String value) {
