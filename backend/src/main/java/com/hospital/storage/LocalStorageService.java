@@ -2,6 +2,7 @@ package com.hospital.storage;
 
 import com.hospital.exception.BusinessRuleException;
 import jakarta.annotation.PostConstruct;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,7 @@ import java.nio.file.StandardCopyOption;
 
 @Service
 @ConditionalOnProperty(name = "app.storage.type", havingValue = "local", matchIfMissing = true)
+@ConditionalOnMissingBean(StorageService.class)
 public class LocalStorageService implements StorageService {
 
     private final Path basePath;

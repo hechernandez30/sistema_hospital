@@ -6,6 +6,7 @@ import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.hospital.exception.BusinessRuleException;
 import jakarta.annotation.PostConstruct;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +17,8 @@ import java.io.InputStream;
  * Azure Blob Storage — recomendado para nube con créditos Azure for Students (GitHub Student Pack).
  */
 @Service
-@ConditionalOnProperty(name = "app.storage.type", havingValue = "azure")
+@ConditionalOnExpression(
+        "'${app.storage.type:}'.equals('azure') && !'${app.storage.azure.connection-string:}'.isBlank()")
 public class AzureBlobStorageService implements StorageService {
 
     private final BlobContainerClient containerClient;
