@@ -36,4 +36,20 @@ public interface ImagingStudyRepository extends JpaRepository<ImagingStudy, Long
             @Param("doctorId") Long doctorId,
             @Param("specialtyId") Long specialtyId,
             @Param("status") String status);
+
+    @Query(
+            """
+            select mc.doctor.id, count(i) from ImagingStudy i
+            join i.medicalOrder mo
+            join mo.medicalCare mc
+            where mc.doctor.staffType = 'MEDICO'
+            and i.status = 'COMPLETADO'
+            and mo.orderDate >= :from and mo.orderDate < :to
+            and (:doctorId is null or mc.doctor.id = :doctorId)
+            group by mc.doctor.id
+            """)
+    List<Object[]> countCompletedImagingByDoctor(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("doctorId") Long doctorId);
 }

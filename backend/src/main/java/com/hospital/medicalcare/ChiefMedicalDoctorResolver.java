@@ -7,6 +7,8 @@ import com.hospital.user.entity.User;
 import com.hospital.user.repository.UserRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 /**
  * Resuelve el registro de personal del único usuario con rol {@code MEDICO-JEFE}.
  */
@@ -47,5 +49,14 @@ public class ChiefMedicalDoctorResolver {
                     "El personal vinculado al MEDICO-JEFE está inactivo.");
         }
         return staff;
+    }
+
+    /** Identificador del jefe médico, vacío si la configuración no es válida (p. ej. reportes). */
+    public Optional<Long> findChiefDoctorStaffId() {
+        try {
+            return Optional.of(resolveChiefDoctorStaff().getId());
+        } catch (BusinessRuleException ex) {
+            return Optional.empty();
+        }
     }
 }

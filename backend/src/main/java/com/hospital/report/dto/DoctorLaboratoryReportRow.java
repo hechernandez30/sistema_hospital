@@ -10,7 +10,10 @@ public record DoctorLaboratoryReportRow(
         String patientName,
         Long doctorId,
         String doctorName,
+        String recordNumber,
         String status,
         boolean sampleReceived,
+        boolean hasAttachment,
+        LocalDateTime orderDate,
         LocalDateTime receptionAt,
         LocalDateTime resultAt) {}

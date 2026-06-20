@@ -125,6 +125,32 @@
             <mat-option value="false">No requiere</mat-option>
           </mat-select>
         </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Solo pendientes</mat-label>
+          <mat-select [(ngModel)]="pendingOnly">
+            <mat-option value="">Todos</mat-option>
+            <mat-option value="true">Sí</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Pendientes reasignación</mat-label>
+          <mat-select [(ngModel)]="pendingReassignmentOnly">
+            <mat-option value="">Todos</mat-option>
+            <mat-option value="true">Sí</mat-option>
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @if (selectedType === 'triage') {
+        <mat-form-field appearance="outline">
+          <mat-label>Prioridad</mat-label>
+          <mat-select [(ngModel)]="priority">
+            <mat-option value="">Todas</mat-option>
+            @for (p of triagePriorities; track p) {
+              <mat-option [value]="p">{{ p }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
       }
     </div>
 

@@ -8,6 +8,7 @@ import com.hospital.report.dto.DoctorLaboratoryReportRow;
 import com.hospital.report.dto.DoctorMedicalCareReportRow;
 import com.hospital.report.dto.DoctorMedicalOrderReportRow;
 import com.hospital.report.dto.DoctorProductivityReportRow;
+import com.hospital.report.dto.DoctorTriageReportRow;
 import com.hospital.report.service.DoctorReportService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,8 +53,11 @@ public class DoctorReportController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(required = false) Long doctorId,
             @RequestParam(required = false) Long specialtyId,
-            @RequestParam(required = false) Boolean requiresHospitalization) {
-        return doctorReportService.medicalCares(dateFrom, dateTo, doctorId, specialtyId, requiresHospitalization);
+            @RequestParam(required = false) Boolean requiresHospitalization,
+            @RequestParam(required = false) Boolean pendingOnly,
+            @RequestParam(required = false) Boolean pendingReassignmentOnly) {
+        return doctorReportService.medicalCares(
+                dateFrom, dateTo, doctorId, specialtyId, requiresHospitalization, pendingOnly, pendingReassignmentOnly);
     }
 
     @GetMapping("/medical-orders")
@@ -105,5 +109,15 @@ public class DoctorReportController {
             @RequestParam(required = false) Long specialtyId,
             @RequestParam(required = false) String status) {
         return doctorReportService.imaging(dateFrom, dateTo, doctorId, specialtyId, status);
+    }
+
+    @GetMapping("/triage")
+    public List<DoctorTriageReportRow> triage(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) Long doctorId,
+            @RequestParam(required = false) Long specialtyId,
+            @RequestParam(required = false) String priority) {
+        return doctorReportService.triage(dateFrom, dateTo, doctorId, specialtyId, priority);
     }
 }

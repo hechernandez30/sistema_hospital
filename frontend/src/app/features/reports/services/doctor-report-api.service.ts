@@ -11,6 +11,7 @@ import {
   DoctorMedicalCareReportRow,
   DoctorMedicalOrderReportRow,
   DoctorProductivityReportRow,
+  DoctorTriageReportRow,
 } from '../models/doctor-report.models';
 
 @Injectable({ providedIn: 'root' })
@@ -49,11 +50,23 @@ export class DoctorReportApiService {
   medicalCares(
     dateFrom: string,
     dateTo: string,
-    filters: { doctorId?: number; specialtyId?: number; requiresHospitalization?: boolean | null },
+    filters: {
+      doctorId?: number;
+      specialtyId?: number;
+      requiresHospitalization?: boolean | null;
+      pendingOnly?: boolean | null;
+      pendingReassignmentOnly?: boolean | null;
+    },
   ): Observable<DoctorMedicalCareReportRow[]> {
     let params = this.rangeWithDoctorParams(dateFrom, dateTo, filters);
     if (filters.requiresHospitalization != null) {
       params = params.set('requiresHospitalization', String(filters.requiresHospitalization));
+    }
+    if (filters.pendingOnly === true) {
+      params = params.set('pendingOnly', 'true');
+    }
+    if (filters.pendingReassignmentOnly === true) {
+      params = params.set('pendingReassignmentOnly', 'true');
     }
     return this.http.get<DoctorMedicalCareReportRow[]>(`${this.base}/medical-cares`, { params });
   }
@@ -113,6 +126,18 @@ export class DoctorReportApiService {
     return this.http.get<DoctorImagingReportRow[]>(`${this.base}/imaging`, {
       params: this.rangeWithDoctorParams(dateFrom, dateTo, filters),
     });
+  }
+
+  triage(
+    dateFrom: string,
+    dateTo: string,
+    filters: { doctorId?: number; specialtyId?: number; priority?: string },
+  ): Observable<DoctorTriageReportRow[]> {
+    let params = this.rangeWithDoctorParams(dateFrom, dateTo, filters);
+    if (filters.priority?.trim()) {
+      params = params.set('priority', filters.priority.trim().toUpperCase());
+    }
+    return this.http.get<DoctorTriageReportRow[]>(`${this.base}/triage`, { params });
   }
 
   private rangeWithDoctorParams(

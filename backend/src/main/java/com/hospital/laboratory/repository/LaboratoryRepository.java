@@ -41,4 +41,36 @@ public interface LaboratoryRepository extends JpaRepository<Laboratory, Long> {
             @Param("doctorId") Long doctorId,
             @Param("specialtyId") Long specialtyId,
             @Param("status") String status);
+
+    @Query(
+            """
+            select mc.doctor.id, count(l) from Laboratory l
+            join l.medicalOrder mo
+            join mo.medicalCare mc
+            where mc.doctor.staffType = 'MEDICO'
+            and l.status = 'COMPLETADO'
+            and mo.orderDate >= :from and mo.orderDate < :to
+            and (:doctorId is null or mc.doctor.id = :doctorId)
+            group by mc.doctor.id
+            """)
+    List<Object[]> countCompletedLaboratoryByDoctor(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("doctorId") Long doctorId);
+
+    @Query(
+            """
+            select mc.doctor.id, count(l) from Laboratory l
+            join l.medicalOrder mo
+            join mo.medicalCare mc
+            where mc.doctor.staffType = 'MEDICO'
+            and l.status in ('PENDIENTE', 'EN_PROCESO')
+            and mo.orderDate >= :from and mo.orderDate < :to
+            and (:doctorId is null or mc.doctor.id = :doctorId)
+            group by mc.doctor.id
+            """)
+    List<Object[]> countPendingLaboratoryByDoctor(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("doctorId") Long doctorId);
 }

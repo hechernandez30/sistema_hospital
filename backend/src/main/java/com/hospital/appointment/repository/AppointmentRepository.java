@@ -112,6 +112,20 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     @Query(
             """
+            select a.doctor.id, count(a) from Appointment a
+            where a.doctor.staffType = 'MEDICO'
+            and a.status = 'NO_ASISTIO'
+            and a.startAt >= :from and a.startAt < :to
+            and (:doctorId is null or a.doctor.id = :doctorId)
+            group by a.doctor.id
+            """)
+    List<Object[]> countNoShowAppointmentsByDoctor(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("doctorId") Long doctorId);
+
+    @Query(
+            """
             select a from Appointment a
             join fetch a.patient
             join fetch a.doctor d

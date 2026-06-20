@@ -2,17 +2,15 @@ package com.hospital.report.dto;
 
 import java.time.LocalDateTime;
 
-public record DoctorAdmissionReportRow(
+public record DoctorTriageReportRow(
+        Long triageId,
         Long admissionId,
         Long patientId,
         String patientName,
         Long doctorId,
         String doctorName,
         String specialtyName,
-        Long appointmentId,
-        Long medicalCareId,
-        String doctorSource,
         String admissionType,
-        String status,
-        LocalDateTime admissionDate,
-        LocalDateTime dischargeDate) {}
+        String priority,
+        Integer targetMinutes,
+        LocalDateTime registeredAt) {}

@@ -6,6 +6,11 @@ public record DoctorProductivityReportRow(
         String specialtyName,
         long appointmentCount,
         long attendedAppointmentCount,
+        long noShowAppointmentCount,
         long medicalCareCount,
+        long pendingCareCount,
         long medicalOrderCount,
-        long admissionCount) {}
+        long admissionCount,
+        long labCompletedCount,
+        long labPendingCount,
+        long imagingCompletedCount) {}

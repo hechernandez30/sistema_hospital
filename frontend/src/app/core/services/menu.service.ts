@@ -40,6 +40,12 @@ export class MenuService {
     { path: '/app/medicamentos', label: 'Medicamentos', icon: 'medication', roles: ['ROLE_ADMINISTRADOR', 'ROLE_FARMACIA'] },
     { path: '/app/pagos', label: 'Pagos', icon: 'payments', roles: ['ROLE_ADMINISTRADOR', 'ROLE_CAJERO'] },
     { path: '/app/reportes', label: 'Reportes', icon: 'insights', roles: ['ROLE_ADMINISTRADOR', 'ROLE_AUDITOR'] },
+    {
+      path: '/app/reportes/medicos',
+      label: 'Reportes clínicos',
+      icon: 'medical_information',
+      roles: ['ROLE_ADMINISTRADOR', 'ROLE_AUDITOR', 'ROLE_MEDICO-JEFE'],
+    },
     { path: '/app/bitacora', label: 'Bitácora', icon: 'history', roles: ['ROLE_ADMINISTRADOR', 'ROLE_AUDITOR'] },
     { path: '/app/usuarios', label: 'Usuarios', icon: 'group', roles: ['ROLE_ADMINISTRADOR'] },
     { path: '/app/roles', label: 'Roles', icon: 'admin_panel_settings', roles: ['ROLE_ADMINISTRADOR'] },

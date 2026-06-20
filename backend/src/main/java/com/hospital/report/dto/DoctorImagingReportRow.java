@@ -12,5 +12,7 @@ public record DoctorImagingReportRow(
         String doctorName,
         String studyType,
         String status,
+        boolean hasReport,
+        LocalDateTime orderDate,
         LocalDateTime scheduledAt,
         LocalDateTime performedAt) {}

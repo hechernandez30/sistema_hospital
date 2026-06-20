@@ -14,6 +14,7 @@ import {
   ROLES_PATIENTS,
   ROLES_PAYMENTS,
   ROLES_REPORTS,
+  ROLES_DOCTOR_REPORTS,
   ROLES_RRHH_SPECIALTIES,
 } from '../core/constants/role-routes';
 
@@ -129,7 +130,7 @@ export const intranetRoutes: Routes = [
       {
         path: 'reportes/medicos',
         canActivate: [roleGuard],
-        data: { title: 'Reportes de médicos', roles: [...ROLES_REPORTS] },
+        data: { title: 'Reportes de médicos', roles: [...ROLES_DOCTOR_REPORTS] },
         loadComponent: () =>
           import('../features/reports/pages/doctor-reports-page/doctor-reports-page.component').then(
             (m) => m.DoctorReportsPageComponent,

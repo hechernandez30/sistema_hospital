@@ -39,16 +39,23 @@ public interface AdmissionRepository extends JpaRepository<Admission, Long> {
 
     @Query(
             """
-            select a from Admission a
+            select distinct a from Admission a
             join fetch a.patient
             left join fetch a.appointment ap
-            left join fetch ap.doctor d
-            left join fetch d.user
-            left join fetch d.specialty
+            left join fetch ap.doctor apDoc
+            left join fetch apDoc.user
+            left join fetch apDoc.specialty
+            left join MedicalCare mc on mc.admission.id = a.id
+            left join fetch mc.doctor careDoc
+            left join fetch careDoc.user
+            left join fetch careDoc.specialty
             where a.admissionDate >= :from and a.admissionDate < :to
-            and ap is not null and d.staffType = 'MEDICO'
-            and (:doctorId is null or d.id = :doctorId)
-            and (:specialtyId is null or d.specialty.id = :specialtyId)
+            and (
+                (careDoc is not null and careDoc.staffType = 'MEDICO')
+                or (apDoc is not null and apDoc.staffType = 'MEDICO')
+            )
+            and (:doctorId is null or careDoc.id = :doctorId or apDoc.id = :doctorId)
+            and (:specialtyId is null or careDoc.specialty.id = :specialtyId or apDoc.specialty.id = :specialtyId)
             and (:status is null or a.status = :status)
             and (:admissionType is null or a.admissionType = :admissionType)
             order by a.admissionDate asc, a.id asc
@@ -63,12 +70,12 @@ public interface AdmissionRepository extends JpaRepository<Admission, Long> {
 
     @Query(
             """
-            select ap.doctor.id, count(a) from Admission a
-            join a.appointment ap
-            where ap.doctor.staffType = 'MEDICO'
+            select mc.doctor.id, count(distinct a.id) from Admission a
+            join MedicalCare mc on mc.admission.id = a.id
+            where mc.doctor.staffType = 'MEDICO'
             and a.admissionDate >= :from and a.admissionDate < :to
-            and (:doctorId is null or ap.doctor.id = :doctorId)
-            group by ap.doctor.id
+            and (:doctorId is null or mc.doctor.id = :doctorId)
+            group by mc.doctor.id
             """)
     List<Object[]> countAdmissionsByDoctor(
             @Param("from") LocalDateTime from,

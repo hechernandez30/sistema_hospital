@@ -25,6 +25,7 @@ import {
   DOCTOR_ORDER_STATUSES,
   DOCTOR_ORDER_TYPES,
   DOCTOR_REPORT_TYPES,
+  DOCTOR_TRIAGE_PRIORITIES,
   DoctorReportRow,
   DoctorReportType,
 } from '../../models/doctor-report.models';
@@ -68,6 +69,7 @@ export class DoctorReportsPageComponent implements OnInit {
   readonly orderStatuses = DOCTOR_ORDER_STATUSES;
   readonly labImagingStatuses = DOCTOR_LAB_IMAGING_STATUSES;
   readonly attendanceTypes = DOCTOR_ATTENDANCE_TYPES;
+  readonly triagePriorities = DOCTOR_TRIAGE_PRIORITIES;
 
   selectedType: DoctorReportType = 'catalog';
   dateFrom = '';
@@ -80,6 +82,9 @@ export class DoctorReportsPageComponent implements OnInit {
   activeFilter = '';
   attendance = '';
   requiresHospitalization = '';
+  pendingOnly = '';
+  pendingReassignmentOnly = '';
+  priority = '';
 
   doctors: StaffResponse[] = [];
   specialties: SpecialtyResponse[] = [];
@@ -166,6 +171,8 @@ export class DoctorReportsPageComponent implements OnInit {
             doctorId: doctor,
             specialtyId: specialty,
             requiresHospitalization: this.parseTriState(this.requiresHospitalization),
+            pendingOnly: this.parseTriState(this.pendingOnly),
+            pendingReassignmentOnly: this.parseTriState(this.pendingReassignmentOnly),
           })
           .subscribe({ next: finish, error: fail });
         break;
@@ -209,6 +216,15 @@ export class DoctorReportsPageComponent implements OnInit {
             doctorId: doctor,
             specialtyId: specialty,
             status: this.status,
+          })
+          .subscribe({ next: finish, error: fail });
+        break;
+      case 'triage':
+        this.api
+          .triage(this.dateFrom, this.dateTo, {
+            doctorId: doctor,
+            specialtyId: specialty,
+            priority: this.priority,
           })
           .subscribe({ next: finish, error: fail });
         break;

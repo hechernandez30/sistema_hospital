@@ -9,6 +9,8 @@ public record DoctorAppointmentReportRow(
         Long doctorId,
         String doctorName,
         String specialtyName,
+        String reason,
+        boolean notifyEmail,
         LocalDateTime startAt,
         LocalDateTime endAt,
         String status) {}
