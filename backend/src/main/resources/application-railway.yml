@@ -3,21 +3,33 @@ spring:
     activate:
       on-profile: railway
   datasource:
-    url: jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}?sslmode=require
-    username: ${PGUSER}
-    password: ${PGPASSWORD}
+    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:railway}?sslmode=prefer
+    username: ${PGUSER:postgres}
+    password: ${PGPASSWORD:}
     driver-class-name: org.postgresql.Driver
-
-server:
-  port: ${PORT:8080}
+    hikari:
+      connection-timeout: 60000
+      initialization-fail-timeout: 120000
 
 app:
   storage:
     type: local
     local:
-      base-path: ./data/uploads
+      base-path: /tmp/uploads
   jwt:
-    secret: ${JWT_SECRET}
+    secret: ${JWT_SECRET:railway-demo-clave-secreta-de-al-menos-32-bytes!!}
   cors:
     allowed-origins:
       - ${CORS_ORIGIN:http://localhost:4200}
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true

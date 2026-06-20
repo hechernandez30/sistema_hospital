@@ -42,12 +42,15 @@ Guarda y **Redeploy**.
 
 | Variable | Valor |
 |----------|--------|
-| `SPRING_PROFILES_ACTIVE` | `railway` |
-| `JWT_SECRET` | Clave UTF-8 de al menos 32 caracteres |
-| `CORS_ORIGIN` | URL de Vercel (ej. `https://tu-app.vercel.app`) — actualizar después del paso 3 |
+| `SPRING_PROFILES_ACTIVE` | `railway` (el Dockerfile ya lo fija; redundante pero útil) |
+| `DATABASE_URL` | Referencia `${{Postgres.DATABASE_URL}}` **o** variables `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` |
+| `JWT_SECRET` | Clave UTF-8 de al menos 32 caracteres (opcional: hay default en perfil `railway`) |
+| `CORS_ORIGIN` | URL de Vercel — actualizar después del paso 3 |
 | `MAIL_ENABLED` | `false` |
 
-### 2.5 Cargar la base de datos
+> **Healthcheck:** Railway usa `/actuator/health/liveness` (solo JVM viva). `/actuator/health` completo falla si la BD no responde.
+
+### 2.5 Cargar la base de datos (obligatorio antes del deploy)
 
 1. Postgres → **Connect** → copia la URL externa.
 2. Ejecuta con `psql` o DBeaver:
@@ -58,7 +61,21 @@ Guarda y **Redeploy**.
 
 Settings → **Networking** → **Generate Domain** (ej. `https://hospital-api-production-xxxx.up.railway.app`).
 
-Prueba: `GET https://TU-URL/actuator/health` → debe responder `{"status":"UP"}`.
+Prueba: `GET https://TU-URL/actuator/health/liveness` → `{"status":"UP"}`.
+
+---
+
+## Solución de problemas (healthcheck)
+
+| Síntoma en logs | Causa | Solución |
+|-----------------|-------|----------|
+| `Connection refused` / timeout healthcheck | App no arrancó o puerto incorrecto | Verifica `Root Directory = backend`, redeploy con Dockerfile nuevo |
+| `Could not resolve placeholder 'JWT_SECRET'` | Perfil `railway` sin default antiguo | Pull último código o define `JWT_SECRET` |
+| `Schema-validation: missing table` | SQL no ejecutado | Ejecuta `hospital_postgresql_15_tablas_es.sql` en Postgres |
+| `Connection to localhost:5432` | Perfil `railway` no activo | `SPRING_PROFILES_ACTIVE=railway` |
+| Healthcheck 401 | Ruta actuator bloqueada | Pull último código (permite `/actuator/health/**`) |
+| Healthcheck 503 en `/actuator/health` | BD caída o schema inválido | Usa liveness; carga SQL; referencia `${{Postgres.DATABASE_URL}}` |
+| `PSQLException` SSL | `sslmode=require` en red interna | Pull último código (`sslmode=prefer`) |
 
 ---
 

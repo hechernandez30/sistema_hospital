@@ -25,6 +25,7 @@ public class HospitalPublicEndpointMatcher implements RequestMatcher {
         matchers.add(new AntPathRequestMatcher("/**", HttpMethod.OPTIONS.name()));
         matchers.add(new AntPathRequestMatcher("/error"));
         matchers.add(new AntPathRequestMatcher("/actuator/health", HttpMethod.GET.name()));
+        matchers.add(new AntPathRequestMatcher("/actuator/health/**", HttpMethod.GET.name()));
         matchers.add(new AntPathRequestMatcher("/api/auth/login", HttpMethod.POST.name()));
         if (environment.acceptsProfiles(Profiles.of("dev"))) {
             matchers.add(new AntPathRequestMatcher("/swagger-ui.html"));
