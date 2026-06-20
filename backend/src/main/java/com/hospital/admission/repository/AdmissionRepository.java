@@ -46,9 +46,9 @@ public interface AdmissionRepository extends JpaRepository<Admission, Long> {
             left join fetch apDoc.user
             left join fetch apDoc.specialty
             left join MedicalCare mc on mc.admission.id = a.id
-            left join fetch mc.doctor careDoc
-            left join fetch careDoc.user
-            left join fetch careDoc.specialty
+            left join mc.doctor careDoc
+            left join careDoc.user
+            left join careDoc.specialty
             where a.admissionDate >= :from and a.admissionDate < :to
             and (
                 (careDoc is not null and careDoc.staffType = 'MEDICO')
