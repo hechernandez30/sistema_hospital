@@ -45,7 +45,7 @@ Guarda y **Redeploy**.
 | `SPRING_PROFILES_ACTIVE` | `railway` (el Dockerfile ya lo fija; redundante pero útil) |
 | `DATABASE_URL` | Referencia `${{Postgres.DATABASE_URL}}` **o** variables `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` |
 | `JWT_SECRET` | Clave UTF-8 de al menos 32 caracteres (opcional: hay default en perfil `railway`) |
-| `CORS_ORIGIN` | URL de Vercel — actualizar después del paso 3 |
+| `CORS_ORIGIN` | `https://sistema-hospital-lake.vercel.app` |
 | `MAIL_ENABLED` | `false` |
 
 > **Healthcheck:** Railway usa `/actuator/health/liveness` (solo JVM viva). `/actuator/health` completo falla si la BD no responde.
@@ -59,9 +59,9 @@ Guarda y **Redeploy**.
 
 ### 2.6 URL del API
 
-Settings → **Networking** → **Generate Domain** (ej. `https://hospital-api-production-xxxx.up.railway.app`).
+Settings → **Networking** → **Generate Domain** → `https://sistemahospital-production-80d5.up.railway.app`
 
-Prueba: `GET https://TU-URL/actuator/health/liveness` → `{"status":"UP"}`.
+Prueba: `GET https://sistemahospital-production-80d5.up.railway.app/actuator/health/liveness` → `{"status":"UP"}`.
 
 ---
 
@@ -81,19 +81,16 @@ Prueba: `GET https://TU-URL/actuator/health/liveness` → `{"status":"UP"}`.
 
 ## 3. Vercel — frontend
 
+URL: **https://sistema-hospital-lake.vercel.app**
+
 1. [vercel.com](https://vercel.com) → importar `hechernandez30/sistema_hospital`.
 2. **Root Directory**: `frontend`
-3. Antes del deploy, edita `frontend/src/environments/environment.ts`:
-
-```typescript
-apiUrl: 'https://TU-URL-RAILWAY.up.railway.app',
-```
-
+3. `API_URL` en `vercel.json`: `https://sistemahospital-production-80d5.up.railway.app`
 4. Deploy.
 
 ### CORS
 
-Vuelve a Railway y pon `CORS_ORIGIN` = URL exacta de Vercel (sin `/` final). Redeploy backend.
+En Railway: `CORS_ORIGIN=https://sistema-hospital-lake.vercel.app` → Redeploy backend.
 
 ---
 

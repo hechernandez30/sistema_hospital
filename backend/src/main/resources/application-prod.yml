@@ -21,7 +21,7 @@ app:
     secret: ${JWT_SECRET:railway-demo-clave-secreta-de-al-menos-32-bytes!!}
   cors:
     allowed-origins:
-      - ${CORS_ORIGIN:http://localhost:4200}
+      - ${CORS_ORIGIN:https://sistema-hospital-lake.vercel.app}
 
 management:
   endpoint:

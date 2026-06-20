@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
-  /** URL absoluta del API en producción (ajustar despliegue) */
-  apiUrl: 'http://localhost:8080',
+  /** Backend Railway — producción */
+  apiUrl: 'https://sistemahospital-production-80d5.up.railway.app',
 
   /**
    * Datos mostrados en el aviso de privacidad (CU02). Definir valores reales por institución antes de producción.

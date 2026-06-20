@@ -3,5 +3,8 @@
   "buildCommand": "npm run build:vercel",
   "outputDirectory": "dist/hospital-web/browser",
   "framework": null,
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "env": {
+    "API_URL": "https://sistemahospital-production-80d5.up.railway.app"
+  }
 }

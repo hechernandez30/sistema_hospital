@@ -2,11 +2,10 @@ import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const apiUrl = process.env.API_URL?.trim().replace(/\/+$/, '');
+const defaultApiUrl = 'https://sistemahospital-production-80d5.up.railway.app';
+const apiUrl = (process.env.API_URL?.trim() || defaultApiUrl).replace(/\/+$/, '');
 if (!apiUrl) {
-  console.error(
-    'Falta API_URL. En Vercel → Settings → Environment Variables, define API_URL con la URL del backend Railway (ej. https://xxx.up.railway.app).',
-  );
+  console.error('Falta API_URL.');
   process.exit(1);
 }
 
